@@ -1,6 +1,6 @@
-#include "../include/dropboxUtil.h"
-#include "../include/dropboxClient.h"
-#include "../include/dropboxServer.h"
+#include "../include/dropboxUtil.hpp"
+#include "../include/dropboxClient.hpp"
+#include "../include/dropboxServer.hpp"
 
 #include <iostream>
 int main() {
