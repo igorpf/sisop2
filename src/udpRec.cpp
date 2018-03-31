@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#define BUFFER_SIZE 64000
 
 int main(int argc, char **argv){
     struct  sockaddr_in peer;
@@ -66,14 +67,14 @@ int main(int argc, char **argv){
         exit(1);
     }
 
-    struct timeval read_timeout;
-    read_timeout.tv_sec = 0;
+//    struct timeval read_timeout;
+//    read_timeout.tv_sec = 0;
 //    read_timeout.tv_usec = 10;
-    read_timeout.tv_usec = 5*1000*1000;
-    setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &read_timeout, sizeof read_timeout);
+//    read_timeout.tv_usec = 5*1000*1000;
+//    setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &read_timeout, sizeof read_timeout);
 
     std::cout << "Socket inicializado. Aguardando mensagens..." << std::endl << std::endl;
-    char buffer[12500];
+    char buffer[BUFFER_SIZE];
     // Recebe pacotes do cliente e responde com string "ACK"
     std::string ack("ack");
     std::ofstream outputFile;
@@ -85,8 +86,9 @@ int main(int argc, char **argv){
             rc = recvfrom(s,buffer,sizeof(buffer),0,(struct sockaddr *) &peer,(socklen_t *)&peerlen);
             outputFile << buffer << std::endl;
 //            std::cout << "Recebido " << buffer << std::endl << std::endl << std::endl;
+            std::cout << "Recebido mais um pacote" << std::endl << std::endl << std::endl;
             sendto(s,ack.c_str(),ack.length(),0,(struct sockaddr *)&peer, peerlen);
-        } while (rc > 0);
+        } while (rc > 0 && buffer[0] != '\0');
         outputFile.close();
     } else {
 
