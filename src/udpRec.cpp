@@ -1,5 +1,7 @@
 
 #include <iostream>
+#include <fstream>
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -12,11 +14,11 @@ int main(int argc, char **argv){
     struct  sockaddr_in peer;
     SOCKET  s;
     int porta, peerlen, rc, i;
-    char buffer[100];
+    std::string outPath;
 
-    if(argc < 2) {
+    if(argc < 5) {
         std::cout << "Utilizar:" << std::endl;
-        std::cout << "rec -p <porta>" << std::endl;
+        std::cout << "rec -p <porta> -o <arq>" << std::endl;
         exit(1);
     }
 
@@ -30,6 +32,10 @@ int main(int argc, char **argv){
                         std::cout << "Porta invalida" << std::endl;
                         exit(1);
                     }
+                    break;
+                case 'o':
+                    i++;
+                    outPath.assign(argv[i], sizeof(argv[i]));
                     break;
                 default:
                     std::cout << "Parametro invalido " << i << ": " << argv[i] << std::endl;
@@ -60,16 +66,30 @@ int main(int argc, char **argv){
         exit(1);
     }
 
+    struct timeval read_timeout;
+    read_timeout.tv_sec = 0;
+//    read_timeout.tv_usec = 10;
+    read_timeout.tv_usec = 5*1000*1000;
+    setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &read_timeout, sizeof read_timeout);
+
     std::cout << "Socket inicializado. Aguardando mensagens..." << std::endl << std::endl;
-
-// Recebe pacotes do cliente e responde com string "ACK"
+    char buffer[12500];
+    // Recebe pacotes do cliente e responde com string "ACK"
     std::string ack("ack");
-    while (1) {
-        rc = recvfrom(s,buffer,sizeof(buffer),0,(struct sockaddr *) &peer,(socklen_t *)&peerlen);
-        std::cout << "Recebido " << buffer << std::endl;
+    std::ofstream outputFile;
+    outputFile.open(outPath.c_str());
+    if(outputFile.is_open()) {
+        do {
+            memset(&buffer,0,sizeof(buffer));
+//            std::cout << "Antes do receive: " << buffer << std::endl;
+            rc = recvfrom(s,buffer,sizeof(buffer),0,(struct sockaddr *) &peer,(socklen_t *)&peerlen);
+            outputFile << buffer << std::endl;
+//            std::cout << "Recebido " << buffer << std::endl << std::endl << std::endl;
+            sendto(s,ack.c_str(),ack.length(),0,(struct sockaddr *)&peer, peerlen);
+        } while (rc > 0);
+        outputFile.close();
+    } else {
 
-        sendto(s,ack.c_str(),ack.length(),0,(struct sockaddr *)&peer, peerlen);
-        // printf("Enviado ACK\n\n");
     }
 
 }

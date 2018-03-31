@@ -1,12 +1,6 @@
-/**
-* Retirado do template baixado na página dos laboratórios de redes
-*
-* Modificado por Christian Schmitz e Igor Pires Ferreira
-*
-* Testada a compilação em Linux
-*/
-
 #include <iostream>
+#include <fstream>
+
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -14,7 +8,9 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+
 #define SOCKET  int
+#define BUFFER_SIZE 12500
 
 int main(int argc, char **argv){
     struct sockaddr_in peer;
@@ -22,20 +18,26 @@ int main(int argc, char **argv){
     double rate = 1.0;
     int porta, peerlen, rc, i;
     char ip[16];
+    std::string filePath;
 
-    if(argc < 7) {
-        std::cout << "Utilizar:" << std::endl;
-        std::cout << "trans -h <numero_ip> -p <porta> -r <rate>" << std::endl;
+    if(argc < 9) {
+        std::cout << "Utilizar: (argc " << argc << ")" << std::endl;
+        std::cout << "trans -h <numero_ip> -p <porta> -r <rate> -f <arquivo>" << std::endl;
         exit(1);
     }
 
     // Pega parametros
-    for(i=1; i<argc; i++) {
+    for(i = 1; i < argc; i++) {
         if(argv[i][0]=='-') {
             switch(argv[i][1]) {
                 case 'h': // Numero IP
                     i++;
                     strcpy(ip, argv[i]);
+                    break;
+                case 'f': // Numero IP
+                    i++;
+                    filePath.assign(argv[i], sizeof(argv[i]));
+//                    std::cout << filePath << std::endl;
                     break;
                 case 'p': // porta
                     i++;
@@ -75,15 +77,29 @@ int main(int argc, char **argv){
     peer.sin_addr.s_addr = inet_addr(ip);
     peerlen = sizeof(peer);
 
-    // Envia pacotes Hello e aguarda resposta
-    //time to sleep in us
     int sleepTime = (1000000.0/(rate/100000.0));
     char ack[4];
-    std::string buffer("Hello");
-    while(1) {
-        sendto(s, buffer.c_str(), buffer.length(), 0, (struct sockaddr *)&peer, peerlen);
+    std::ifstream inputFile;
+    inputFile.open(filePath.c_str());
+    if(inputFile.is_open()) {
+        inputFile.seekg(0, inputFile.end);
+        size_t length = inputFile.tellg();
+        inputFile.seekg(0, inputFile.beg);
+        char buffer[length+1];
+//        while(inputFile) {
+        inputFile.read(buffer, sizeof(buffer));
+        buffer[length] = '\0';
+//        std::cout << buffer << std::endl << " sz of " << sizeof(buffer) << std::endl;
+        sendto(s, buffer, sizeof(buffer), 0, (struct sockaddr *)&peer, peerlen);
         usleep(sleepTime);
         rc = recvfrom(s,ack,sizeof(ack),0,(struct sockaddr *) &peer,(socklen_t *)&peerlen);
+        ack[3] = '\0';
         std::cout << ack << " veio pra ser ack, bits recebidos: " << rc << std::endl;
+//        }
+        sendto(s, NULL, 0, 0, (struct sockaddr *)&peer, peerlen);
+        inputFile.close();
+    } else {
+        std::cout << "could not open file " << filePath << std::endl;
+        exit(1);
     }
 }
