@@ -72,7 +72,7 @@ int main(int argc, char **argv){
     }
 
     std::cout << "Initialized socket " << std::endl << std::endl;
-    char buffer[BUFFER_SIZE];
+    char buffer[BUFFER_SIZE+1];
 
     std::string ack("ack");
     std::ofstream outputFile;
@@ -86,7 +86,8 @@ int main(int argc, char **argv){
         memset(&buffer,0,sizeof(buffer));
 //        std::cout << "Antes do receive: " << buffer << std::endl;
         rc = recvfrom(s,buffer,sizeof(buffer),0,(struct sockaddr *) &peer,(socklen_t *)&peerlen);
-        outputFile << buffer << std::endl;
+        buffer[BUFFER_SIZE+1] = '\0';
+        outputFile << buffer ;
 //        std::cout << "Recebido " << buffer << std::endl << std::endl << std::endl;
         std::cout << "Recebido mais um pacote" << std::endl << std::endl << std::endl;
         sendto(s,ack.c_str(),ack.length(),0,(struct sockaddr *)&peer, peerlen);

@@ -94,7 +94,7 @@ int main(int argc, char **argv){
 
     while(packets--) {
         memset(&buffer,0,sizeof(buffer));
-        inputFile.read(buffer, sizeof(buffer));
+        inputFile.read(buffer, sizeof(buffer)-1);
         buffer[BUFFER_SIZE] = '\0';
 //        std::cout << buffer << std::endl << " sz of " << sizeof(buffer) << std::endl;
         sendto(sock, buffer, sizeof(buffer), 0, (struct sockaddr *)&peer, peerlen);
