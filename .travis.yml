@@ -1,0 +1,44 @@
+# Language setup
+language: cpp
+sudo: required
+
+# Matrix with linux configuration using gcc 7, should we support macOS?
+matrix:
+  include:
+    - os: linux
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-7
+      env:
+         - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
+
+before_install:
+    - eval "${MATRIX_EVAL}"
+
+# Install a recent version of CMake
+install:
+    - |
+        if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then
+          CMAKE_URL="https://cmake.org/files/v3.11/cmake-3.11.0-Linux-x86_64.tar.gz"
+          mkdir cmake && travis_retry wget --no-check-certificate --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C cmake
+          export PATH=${DEPS_DIR}/cmake/bin:${PATH}
+        else
+          brew upgrade cmake || brew install cmake
+        fi
+    - cmake --version
+
+before_script:
+    - cmake -H. -B_builds -DHUNTER_STATUS_DEBUG=ON -DCMAKE_BUILD_TYPE=Debug
+    - cmake --build _builds --config Debug
+
+# Run the unit tests
+script:
+    - echo "Running util unit tests"
+    - ./_builds/util/test/util_test
+    - echo "Running client unit tests"
+    - ./_builds/client/test/client_test
+    - echo "Running server unit tests"
+    - ./_builds/server/test/server_test
