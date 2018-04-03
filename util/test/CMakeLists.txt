@@ -9,7 +9,10 @@ hunter_add_package(GTest)
 find_package(GTest CONFIG REQUIRED)
 
 # Add the executable
-add_executable(util_test util_test.cpp)
+add_executable(util_test
+        ../include/dropboxUtil.hpp
+        ../src/dropboxUtil.cpp
+        util_test.cpp)
 
 # Target libraries
 target_link_libraries(util_test PUBLIC GTest::main)
