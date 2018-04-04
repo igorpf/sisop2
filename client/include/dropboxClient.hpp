@@ -51,4 +51,7 @@ void delete_file(const std::string& filename);
  */
 void close_session();
 
+//test functions
+void start_client();
+
 #endif // SISOP2_CLIENT_INCLUDE_DROPBOXCLIENT_H

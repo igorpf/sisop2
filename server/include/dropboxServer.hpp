@@ -23,4 +23,8 @@ void receive_file(const std::string& filename);
  */
 void send_file(const std::string& filename);
 
+
+//test functions
+void start_server();
+
 #endif // SISOP2_SERVER_INCLUDE_DROPBOXSERVER_H
