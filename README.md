@@ -1,4 +1,6 @@
-# Sisop2 [![Build Status](https://travis-ci.org/igorpf/sisop2.svg?branch=master)](https://travis-ci.org/igorpf/sisop2)
+# Sisop2
+
+[![Build Status](https://travis-ci.org/igorpf/sisop2.svg?branch=master)](https://travis-ci.org/igorpf/sisop2)
 
 Repositório para o trabalho da cadeira de Sistemas Operacionais II - UFRGS 2018/1
 

@@ -30,19 +30,18 @@ install:
   fi
 - cmake --version
 
+# Run CMake configuration and build
 before_script:
 - cmake -H. -B_builds -DHUNTER_STATUS_DEBUG=OFF -DCMAKE_BUILD_TYPE=Release
 - cmake --build _builds --config Release
 
 # Run the unit tests
 script:
-- echo "Running util unit tests"
 - "./_builds/util/test/util_test"
-- echo "Running client unit tests"
 - "./_builds/client/test/client_test"
-- echo "Running server unit tests"
 - "./_builds/server/test/server_test"
 
+# Slack notifications
 notifications:
   slack:
     secure: TGA9QFpkh5ZHkJPlyN89RhTi3zzdfaxfYJAn9FKsR7qpfp+bvyJXa520KcbcdPryvXB7nt+hcNtsnHvWaKyfa1mb76iYQJ1glMYfBQTXCorBFN+VZeLOvAuH4nm5XQssX2e1jP++o86sBeCKum0v0N47DONF6qosDKo7gKiN9v+/SBY1MymGZJOcFORMilzYUyr4xIb3KHJVzrQeIIkxn2MCND6GUlMEdqSs8Qg0XhRst+yz8ZK2C0OePam4woaGV6cwiSXKb4ddux+9GThzED7uVstFekMbbD76FDK6AxstCbQoug1wYazky8BK3BFlxcqP9d+Jm21vDQf0UHS1qwq3BCfElWJlrOZA8Rmu18S7MWKdrdO+DVnFtwwpHfNakplEM4BpGcFPhS2u0BJE2gT1qScN/cQKkT/eUF6rDv5UKPcLPurTMSYdR2PccShDpGoLr38o82yATZCQ4EmQyMjVfsousQrWYXRuopF+pvLveOOpRkNIWcVNiu4iv0nAz6KNx+kwC607xNu+wZJfcS04p7r+QpH1uRj3o9SmG0iSAGslUjYEUFerNuFE97uwXKSIMTZO3ttGxjzOfCNhfiNR6fV/1TtpDhjNh7mlC2fXc2D2/PNrcopz5wjj2JduY8YekAhY2/TgdfNicnTUXFJxpK0EZ3TQfcjJy6afLK8=
