@@ -6,8 +6,6 @@
 
 //TODO(jfguimaraes) Tornar Util uma biblioteca? Faria os includes ficarem mais limpos
 
-#define TRAVIS_TEST "This is only to trigger a Travis CI build"
-
 typedef struct file_info {
     std::string name;
     uint64_t size;
