@@ -31,8 +31,8 @@ install:
 - cmake --version
 
 before_script:
-- cmake -H. -B_builds -DHUNTER_STATUS_DEBUG=ON -DCMAKE_BUILD_TYPE=Debug
-- cmake --build _builds --config Debug
+- cmake -H. -B_builds -DHUNTER_STATUS_DEBUG=OFF -DCMAKE_BUILD_TYPE=Release
+- cmake --build _builds --config Release
 
 # Run the unit tests
 script:
