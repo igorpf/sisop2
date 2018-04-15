@@ -26,4 +26,11 @@ typedef struct file_transfer_request {
 void send_file(file_transfer_request request);
 void receive_file(file_transfer_request request);
 
+typedef struct {
+    file_transfer_request request;
+    u_int16_t sequence_number;
+    bool is_connected;
+    bool has_finished;
+} file_transfer_connection;
+
 #endif // SISOP2_UTIL_INCLUDE_DROPBOXUTIL_H

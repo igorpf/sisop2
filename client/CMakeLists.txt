@@ -10,6 +10,8 @@ find_package(Boost CONFIG REQUIRED program_options)
 
 # Add the executable
 add_executable(dropboxClient
+        ../util/include/dropboxUtil.hpp
+        ../util/src/dropboxUtil.cpp
         include/dropboxClient.hpp
         src/dropboxClient.cpp
         src/main.cpp)
