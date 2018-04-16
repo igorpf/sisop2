@@ -36,9 +36,8 @@ void send_file(file_transfer_request request) {
         exit(1);
     }
 
-    struct timeval tv;
-    tv.tv_sec = 0;
-    tv.tv_usec = TIMEOUT_MS;
+    struct timeval tv = {0, TIMEOUT_US};
+
     if(setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) {
         std::cerr << "Error setting timeout" << std::endl;
     }
@@ -138,9 +137,8 @@ void receive_file(file_transfer_request request) {
     if(strcmp(ack,"ACK"))
         exit(1);
 
-    struct timeval tv;
-    tv.tv_sec = 0;
-    tv.tv_usec = TIMEOUT_MS;
+    struct timeval tv = {0, TIMEOUT_US};
+
     if(setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) {
         std::cerr << "Error setting timeout" << std::endl;
     }

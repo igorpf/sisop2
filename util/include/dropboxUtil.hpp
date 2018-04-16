@@ -6,7 +6,8 @@
 
 #define SOCKET  int
 #define BUFFER_SIZE 64000 //approximately an ip packet size
-#define TIMEOUT_MS (5 * 1000 * 1000)
+//#define TIMEOUT_US (5 * 1000 * 1000)
+#define TIMEOUT_US (500)
 #define DEFAULT_ERROR_CODE 1
 
 //TODO(jfguimaraes) Tornar Util uma biblioteca? Faria os includes ficarem mais limpos
