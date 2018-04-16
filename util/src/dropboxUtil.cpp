@@ -18,8 +18,8 @@ void send_file(file_transfer_request request) {
     SOCKET sock;
 
     if((sock = socket(AF_INET, SOCK_DGRAM,0)) < 0) {
-        std::cout << "Error creating socket" << std::endl ;
-        exit(1);
+        std::cerr << "Error creating socket" << std::endl ;
+        exit(DEFAULT_ERROR_CODE);
     }
 
     server_address.sin_family = AF_INET;
@@ -27,13 +27,20 @@ void send_file(file_transfer_request request) {
     server_address.sin_addr.s_addr = inet_addr(request.ip.c_str());
     peer_length = sizeof(server_address);
 
-    int sleepTime = (1000000.0/(request.transfer_rate/100000.0));
+//    int sleepTime = (1000000.0/(request.transfer_rate/100000.0));
     std::ifstream input_file;
     input_file.open(request.in_file_path.c_str());
 
     if(!input_file.is_open()) {
-        std::cout << "could not open file " << request.in_file_path << std::endl;
+        std::cerr << "could not open file " << request.in_file_path << std::endl;
         exit(1);
+    }
+
+    struct timeval tv;
+    tv.tv_sec = 0;
+    tv.tv_usec = TIMEOUT_MS;
+    if(setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) {
+        std::cerr << "Error setting timeout" << std::endl;
     }
 
     input_file.seekg(0, input_file.end);
@@ -48,13 +55,16 @@ void send_file(file_transfer_request request) {
     sendto(sock,"SYN",4,0,(struct sockaddr *)&server_address, peer_length);
     char syn_ack[8];
     recvfrom(sock,syn_ack,sizeof(syn_ack),0,(struct sockaddr *) &from,(socklen_t *)&peer_length);
-    if(strcmp(syn_ack, "SYN+ACK"))
+    if(strcmp(syn_ack, "SYN+ACK")) {
+        std::cerr << "Error receiving SYN+ACK to open connection" << std::endl;
         exit(1);
+    }
     sendto(sock,"ACK", 4,0,(struct sockaddr *)&server_address, peer_length);
 
     char ack[4];
     while(packets--) {
         memset(&buffer,0,sizeof(buffer));
+        memset(&ack, 0 , sizeof(ack));
         input_file.read(buffer, sizeof(buffer)-1);
         buffer[BUFFER_SIZE] = '\0';
 //        std::cout << buffer << std::endl << " sz of " << sizeof(buffer) << std::endl;
@@ -63,7 +73,7 @@ void send_file(file_transfer_request request) {
         recvfrom(sock, ack, sizeof(ack), 0,(struct sockaddr *) &from,(socklen_t *)&peer_length);
         ack[3] = '\0';
         if(strcmp(ack, "ACK")) {
-            std::cout << "error receiving ack from server" << std::endl;
+            std::cerr << "error receiving ack from server" << std::endl;
             exit(1);
         }
         std::cout << ack << " received" << std::endl;
@@ -80,6 +90,7 @@ void send_file(file_transfer_request request) {
     recvfrom(sock, fin_ack, sizeof(fin_ack), 0,(struct sockaddr *) &from,(socklen_t *)&peer_length);
     fin_ack[7] = '\0';
     if(strcmp(fin_ack,"FIN+ACK")) {
+        std::cerr << "Error receiving FIN+ACK to close connection" << std::endl;
         exit(1);
     }
     sendto(sock, "ACK", 4, 0, (struct sockaddr *)&server_address, peer_length);
@@ -92,7 +103,7 @@ void receive_file(file_transfer_request request) {
     std::string out_path = request.in_file_path;
 
     if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-        std::cout << "Error creating socket" << std::endl;
+        std::cerr << "Error creating socket" << std::endl;
         exit(1);
     }
 
@@ -103,7 +114,7 @@ void receive_file(file_transfer_request request) {
     peer_length = sizeof(server_addr);
 
     if(bind(sock,(struct sockaddr *) &server_addr, peer_length)) {
-        std::cout << "Bind error" << std::endl;
+        std::cerr << "Bind error" << std::endl;
         exit(1);
     }
 
@@ -113,7 +124,7 @@ void receive_file(file_transfer_request request) {
     std::ofstream output_file;
     output_file.open(out_path.c_str());
     if(!output_file.is_open()) {
-        std::cout << "Could not receive file!" << std::endl;
+        std::cerr << "Could not receive file!" << std::endl;
         exit(1);
     }
 
@@ -127,10 +138,21 @@ void receive_file(file_transfer_request request) {
     if(strcmp(ack,"ACK"))
         exit(1);
 
+    struct timeval tv;
+    tv.tv_sec = 0;
+    tv.tv_usec = TIMEOUT_MS;
+    if(setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) {
+        std::cerr << "Error setting timeout" << std::endl;
+    }
+
     do {
         memset(&buffer,0,sizeof(buffer));
 //        std::cout << "Antes do receive: " << buffer << std::endl;
         received_bytes = recvfrom(sock,buffer,sizeof(buffer),0,(struct sockaddr *) &client_addr,(socklen_t *)&peer_length);
+        if(received_bytes < 0) {
+            std::cerr << "error receiving packet from client" << std::endl;
+            exit(1);
+        }
         buffer[BUFFER_SIZE] = '\0';
         output_file << buffer ;
 //        std::cout << "Recebido " << buffer << std::endl << std::endl << std::endl;
@@ -142,11 +164,13 @@ void receive_file(file_transfer_request request) {
     char fin[4];
     recvfrom(sock,fin,sizeof(fin),0,(struct sockaddr *) &client_addr,(socklen_t *)&peer_length);
     if(strcmp(fin,"FIN")) {
+        std::cerr << "error receiving FIN from client" << std::endl;
         exit(1);
     }
     sendto(sock, "FIN+ACK", 8, 0,(struct sockaddr *)&client_addr, peer_length);
     recvfrom(sock, ack, sizeof(ack),0,(struct sockaddr *) &client_addr,(socklen_t *)&peer_length);
     if(strcmp(ack,"ACK")) {
+        std::cerr << "error receiving ACK from client" << std::endl;
         exit(1);
     }
 }
