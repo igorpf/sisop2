@@ -46,7 +46,7 @@ void send_file(file_transfer_request request) {
     size_t file_length = input_file.tellg();
     input_file.seekg(0, input_file.beg);
 
-    int packets = ceil(file_length/((float) BUFFER_SIZE)), received_bytes;
+    int packets = ceil(file_length/((float) BUFFER_SIZE)), sent_packets = 0, received_bytes;
     char buffer[BUFFER_SIZE+1];
 //    std::cout << "Divided in " << packets << " packets. File size: " << file_length <<  std::endl;
 
@@ -68,13 +68,26 @@ void send_file(file_transfer_request request) {
         buffer[BUFFER_SIZE] = '\0';
 //        std::cout << buffer << std::endl << " sz of " << sizeof(buffer) << std::endl;
         std::cout << "Sending buffer size of: " << sizeof(buffer) << std::endl;
-        sendto(sock, buffer, sizeof(buffer), 0, (struct sockaddr *)&server_address, peer_length);
-        recvfrom(sock, ack, sizeof(ack), 0,(struct sockaddr *) &from,(socklen_t *)&peer_length);
-        ack[3] = '\0';
-        if(strcmp(ack, "ACK")) {
-            std::cerr << "error receiving ack from server" << std::endl;
-            exit(1);
-        }
+        bool ack_error;
+        int retransmissions = 0;
+        do {
+            sendto(sock, buffer, sizeof(buffer), 0, (struct sockaddr *)&server_address, peer_length);
+            received_bytes = recvfrom(sock, ack, sizeof(ack), 0,(struct sockaddr *) &from,(socklen_t *)&peer_length);
+            ack[3] = '\0';
+            ack_error = received_bytes <= 0 || strcmp(ack, "ACK") != 0;
+            if(ack_error) {
+                std::cerr << "Error receiving ACK, retransmitting packet of number " << sent_packets <<  std::endl;
+                retransmissions++;
+                if(retransmissions >= MAX_RETRANSMSSIONS) {
+                    std::cerr << "Achieved maximum retransmissions of " << retransmissions
+                              << ", aborting file transmission" <<  std::endl;
+                    exit(DEFAULT_ERROR_CODE);
+                }
+            }
+            else
+                sent_packets++;
+        } while(ack_error);
+
         std::cout << ack << " received" << std::endl;
 //        usleep(sleepTime);
     }
