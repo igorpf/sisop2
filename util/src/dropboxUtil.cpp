@@ -12,6 +12,15 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+/**
+ * TODO: send all relevant file aspects:
+ *  - name
+ *  - modification date
+ *  - permissions
+ *  -
+ *
+ */
+
 void send_file(file_transfer_request request) {
     struct sockaddr_in server_address, from;
     int peer_length;
@@ -29,7 +38,7 @@ void send_file(file_transfer_request request) {
 
 //    int sleepTime = (1000000.0/(request.transfer_rate/100000.0));
     std::ifstream input_file;
-    input_file.open(request.in_file_path.c_str());
+    input_file.open(request.in_file_path.c_str(), std::ios::binary);
 
     if(!input_file.is_open()) {
         std::cerr << "could not open file " << request.in_file_path << std::endl;
@@ -47,7 +56,7 @@ void send_file(file_transfer_request request) {
     input_file.seekg(0, input_file.beg);
 
     int packets = ceil(file_length/((float) BUFFER_SIZE)), sent_packets = 0, received_bytes;
-    char buffer[BUFFER_SIZE+1];
+    char buffer[BUFFER_SIZE];
 //    std::cout << "Divided in " << packets << " packets. File size: " << file_length <<  std::endl;
 
     //start handshake
@@ -64,14 +73,13 @@ void send_file(file_transfer_request request) {
     while(packets--) {
         memset(&buffer,0,sizeof(buffer));
         memset(&ack, 0 , sizeof(ack));
-        input_file.read(buffer, sizeof(buffer)-1);
-        buffer[BUFFER_SIZE] = '\0';
+        input_file.read(buffer, sizeof(buffer));
 //        std::cout << buffer << std::endl << " sz of " << sizeof(buffer) << std::endl;
-        std::cout << "Sending buffer size of: " << sizeof(buffer) << std::endl;
+        std::cout << "Sending buffer size of: " << input_file.gcount() << std::endl;
         bool ack_error;
         int retransmissions = 0;
         do {
-            sendto(sock, buffer, sizeof(buffer), 0, (struct sockaddr *)&server_address, peer_length);
+            sendto(sock, buffer, input_file.gcount(), 0, (struct sockaddr *)&server_address, peer_length);
             received_bytes = recvfrom(sock, ack, sizeof(ack), 0,(struct sockaddr *) &from,(socklen_t *)&peer_length);
             ack[3] = '\0';
             ack_error = received_bytes <= 0 || strcmp(ack, "ACK") != 0;
@@ -134,7 +142,7 @@ void receive_file(file_transfer_request request) {
     char buffer[BUFFER_SIZE+1];
 
     std::ofstream output_file;
-    output_file.open(out_path.c_str());
+    output_file.open(out_path.c_str(), std::ios::binary);
     if(!output_file.is_open()) {
         std::cerr << "Could not receive file!" << std::endl;
         exit(1);
@@ -156,20 +164,20 @@ void receive_file(file_transfer_request request) {
         std::cerr << "Error setting timeout" << std::endl;
     }
 
+    bool writable_packet;
     do {
         memset(&buffer,0,sizeof(buffer));
-//        std::cout << "Antes do receive: " << buffer << std::endl;
         received_bytes = recvfrom(sock,buffer,sizeof(buffer),0,(struct sockaddr *) &client_addr,(socklen_t *)&peer_length);
         if(received_bytes < 0) {
             std::cerr << "error receiving packet from client" << std::endl;
             exit(1);
         }
-        buffer[BUFFER_SIZE] = '\0';
-        output_file << buffer ;
-//        std::cout << "Recebido " << buffer << std::endl << std::endl << std::endl;
-        std::cout << "Recebido mais um pacote" << std::endl;
+        writable_packet = received_bytes > 0 && buffer[0] != '\0';
+        if(writable_packet) 
+            output_file.write(buffer, received_bytes > BUFFER_SIZE? BUFFER_SIZE : received_bytes);
+        std::cout << "Recebido mais um pacote, bytes recebidos: " << received_bytes << std::endl;
         sendto(sock, "ACK", 4,0,(struct sockaddr *)&client_addr, peer_length);
-    } while (received_bytes > 0 && buffer[0] != '\0');
+    } while (writable_packet);
     output_file.close();
 
     char fin[4];

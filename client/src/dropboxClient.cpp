@@ -48,7 +48,8 @@ const std::string loopback_ip = "127.0.0.1";
 void start_client()
 {
     file_transfer_request request;
-    request.in_file_path = std::string("Makefile");
+    request.in_file_path = std::string("dropboxClient");
+//    request.in_file_path = std::string("Makefile");
     request.ip = std::string(loopback_ip);
     request.port = port;
     request.transfer_rate = 1000;

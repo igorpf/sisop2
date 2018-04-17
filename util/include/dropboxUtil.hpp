@@ -4,11 +4,12 @@
 #include <ctime>
 #include <string>
 
-#define SOCKET  int
-#define BUFFER_SIZE 64000 //approximately an ip packet size
-#define TIMEOUT_US (500)
-#define MAX_RETRANSMSSIONS 20
-#define DEFAULT_ERROR_CODE 1
+typedef int SOCKET;
+const uint16_t BUFFER_SIZE = 64000; //approximately an ip packet size
+//#define TIMEOUT_US (500)  //valid timeout
+const uint64_t TIMEOUT_US  = 5000000000; //invalid timeout
+const uint8_t MAX_RETRANSMSSIONS = 20;
+const uint8_t DEFAULT_ERROR_CODE = 1;
 
 //TODO(jfguimaraes) Tornar Util uma biblioteca? Faria os includes ficarem mais limpos
 
