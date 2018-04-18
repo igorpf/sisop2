@@ -33,7 +33,6 @@ const int port = 9001;
 void start_server()
 {
     file_transfer_request request;
-    request.in_file_path = std::string("acc");
     request.ip = std::string("127.0.0.1");
     request.port = port;
     receive_file(request);

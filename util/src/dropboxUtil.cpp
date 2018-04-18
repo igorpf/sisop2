@@ -69,6 +69,8 @@ void send_file(file_transfer_request request) {
     }
     sendto(sock,"ACK", 4,0,(struct sockaddr *)&server_address, peer_length);
 
+    sendto(sock, request.in_file_path.c_str(), request.in_file_path.size(), 0,(struct sockaddr *)&server_address, peer_length);
+
     char ack[4];
     while(packets--) {
         memset(&buffer,0,sizeof(buffer));
@@ -99,7 +101,7 @@ void send_file(file_transfer_request request) {
         std::cout << ack << " received" << std::endl;
 //        usleep(sleepTime);
     }
-    buffer[0] = '\0';
+    buffer[0] = -1;
     sendto(sock, buffer, 1, 0, (struct sockaddr *)&server_address, peer_length);
     recvfrom(sock, ack, sizeof(ack), 0,(struct sockaddr *) &from,(socklen_t *)&peer_length);
     input_file.close();
@@ -120,7 +122,6 @@ void receive_file(file_transfer_request request) {
     struct sockaddr_in server_addr, client_addr;
     SOCKET sock;
     int peer_length, received_bytes;
-    std::string out_path = request.in_file_path;
 
     if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
         std::cerr << "Error creating socket" << std::endl;
@@ -141,13 +142,6 @@ void receive_file(file_transfer_request request) {
     std::cout << "Initialized socket " << std::endl << std::endl;
     char buffer[BUFFER_SIZE+1];
 
-    std::ofstream output_file;
-    output_file.open(out_path.c_str(), std::ios::binary);
-    if(!output_file.is_open()) {
-        std::cerr << "Could not receive file!" << std::endl;
-        exit(1);
-    }
-
     //start handshake
     char ack[4], syn[4];
     recvfrom(sock, syn, sizeof(syn), 0,(struct sockaddr *) &client_addr,(socklen_t *)&peer_length);
@@ -157,6 +151,16 @@ void receive_file(file_transfer_request request) {
     recvfrom(sock, ack, sizeof(ack), 0,(struct sockaddr *) &client_addr,(socklen_t *)&peer_length);
     if(strcmp(ack,"ACK"))
         exit(1);
+
+    received_bytes = recvfrom(sock, buffer, sizeof(buffer), 0,(struct sockaddr *) &client_addr,(socklen_t *)&peer_length);
+    std::string out_path(buffer, received_bytes);
+    std::cout << "Receiving file of name: " << out_path << std::endl;
+    std::ofstream output_file;
+    output_file.open(out_path.c_str(), std::ios::binary);
+    if(!output_file.is_open()) {
+        std::cerr << "Could not receive file!" << std::endl;
+        exit(1);
+    }
 
     struct timeval tv = {0, TIMEOUT_US};
 
@@ -172,8 +176,8 @@ void receive_file(file_transfer_request request) {
             std::cerr << "error receiving packet from client" << std::endl;
             exit(1);
         }
-        writable_packet = received_bytes > 0 && buffer[0] != '\0';
-        if(writable_packet) 
+        writable_packet = received_bytes > 1 && buffer[0] != -1;
+        if(writable_packet)
             output_file.write(buffer, received_bytes > BUFFER_SIZE? BUFFER_SIZE : received_bytes);
         std::cout << "Recebido mais um pacote, bytes recebidos: " << received_bytes << std::endl;
         sendto(sock, "ACK", 4,0,(struct sockaddr *)&client_addr, peer_length);
