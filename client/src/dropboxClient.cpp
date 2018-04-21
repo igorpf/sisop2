@@ -14,6 +14,23 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
+#include "../include/command_parser.hpp"
+
+void start_client(int argc, char **argv) {
+    CommandParser command_parser;
+
+    command_parser.ParseInput(argc, argv);
+    command_parser.ShowHelpMessage();
+    command_parser.ValidateInput();
+
+    //TODO Implement login on server and spawning of background syncing thread
+    throw std::logic_error("function not implemented");
+}
+
+void login_server(const std::string& host, int port) {
+    throw std::logic_error("function not implemented");
+}
+
 const std::string Client::LOGGER_NAME = "Client";
 
 Client::Client(uint64_t device_id, const std::string &user_id) : device_id_(device_id), user_id_(user_id) {
@@ -47,6 +64,7 @@ void Client::login_server(const std::string& host, int32_t port) {
 
 void Client::send_file(const std::string& filename)
 {
+    throw std::logic_error("function not implemented");
     util::file_transfer_request request;
     request.in_file_path = filename;
     request.peer_length = peer_length_;
@@ -65,14 +83,28 @@ void Client::close_session() {
     throw std::logic_error("Function not implemented");
 }
 
+void send_file(const std::string& filename)
+{
+    throw std::logic_error("function not implemented");
 void Client::sync_client() {
     throw std::logic_error("Function not implemented");
 }
 
+void get_file(const std::string& filename)
+{
+    throw std::logic_error("function not implemented");
 void Client::get_file(const std::string& filename) {
     throw std::logic_error("Function not implemented");
 }
 
+void delete_file(const std::string& filename)
+{
+    throw std::logic_error("function not implemented");
+}
+
+void close_session()
+{
+    throw std::logic_error("function not implemented");
 void Client::delete_file(const std::string& filename) {
     throw std::logic_error("Function not implemented");
 }

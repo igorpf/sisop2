@@ -1,11 +1,12 @@
-#ifndef SISOP2_CLIENT_INCLUDE_DROPBOXCLIENT_H
-#define SISOP2_CLIENT_INCLUDE_DROPBOXCLIENT_H
-
-#include "../../util/include/dropboxUtil.hpp"
+#ifndef SISOP2_CLIENT_INCLUDE_DROPBOXCLIENT_HPP
+#define SISOP2_CLIENT_INCLUDE_DROPBOXCLIENT_HPP
 
 #include <string>
 #include <vector>
 
+#include "../../util/include/dropboxUtil.hpp"
+
+typedef struct {
 #include <netinet/in.h>
 #include <spdlog/spdlog.h>
 
@@ -19,6 +20,20 @@ typedef struct client {
     std::vector<util::file_info> user_files;
 } client;
 
+/**
+ * Initiates the client parsing the command line arguments, logging into the server
+ * and spawning the background syncing thread, throws if one of the steps fails
+ * @param argc Program's argument count
+ * @param argv Program's argument vector
+ */
+void start_client(int argc, char **argv);
+
+/**
+ * Estabelece uma conexão entre o cliente e o servidor
+ * @param host Endereço do servidor
+ * @param port Porta de acesso ao servidor
+ */
+void login_server(const std::string& host, int port);
 class Client {
 public:
 
@@ -63,6 +78,7 @@ public:
      */
     void close_session();
 
+#endif // SISOP2_CLIENT_INCLUDE_DROPBOXCLIENT_HPP
 private:
     bool logged_in_;
     uint64_t device_id_;

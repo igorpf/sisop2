@@ -1,5 +1,5 @@
-#ifndef SISOP2_UTIL_INCLUDE_DROPBOXUTIL_H
-#define SISOP2_UTIL_INCLUDE_DROPBOXUTIL_H
+#ifndef SISOP2_UTIL_INCLUDE_DROPBOXUTIL_HPP
+#define SISOP2_UTIL_INCLUDE_DROPBOXUTIL_HPP
 
 #include <ctime>
 #include <string>
@@ -10,6 +10,11 @@
 #include <netinet/in.h>
 //TODO(jfguimaraes) Tornar Util uma biblioteca? Faria os includes ficarem mais limpos
 
+typedef struct {
+    std::string name;
+    int64_t size;
+    time_t last_modification_time;
+} file_info;
 namespace filesystem = boost::filesystem;
 
 namespace DropboxUtil {
@@ -37,6 +42,7 @@ namespace DropboxUtil {
         time_t last_modification_time;
     } file_info;
 
+#endif // SISOP2_UTIL_INCLUDE_DROPBOXUTIL_HPP
     typedef struct file_transfer_request {
         struct sockaddr_in server_address;
         SOCKET socket;
