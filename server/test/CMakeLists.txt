@@ -10,9 +10,10 @@ find_package(GTest CONFIG REQUIRED)
 
 # Add the executable
 add_executable(server_test
+        ../../util/include/dropboxUtil.hpp
+        ../../util/src/dropboxUtil.cpp
         ../include/dropboxServer.hpp
         ../src/dropboxServer.cpp
-        ../src/main.cpp
         server_test.cpp)
 
 # Target libraries
