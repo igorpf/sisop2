@@ -38,9 +38,7 @@ filesystem::perms parse_permissions_from_string(const std::string &perms)
     for (auto &it : perms_vec) {
         p = p | it;
     }
-
     return p;
-
 }
 
 void send_file(file_transfer_request request) {
@@ -59,7 +57,6 @@ void send_file(file_transfer_request request) {
     server_address.sin_addr.s_addr = inet_addr(request.ip.c_str());
     peer_length = sizeof(server_address);
 
-//    int sleepTime = (1000000.0/(request.transfer_rate/100000.0));
     std::ifstream input_file;
     input_file.open(request.in_file_path.c_str(), std::ios::binary);
 
@@ -92,35 +89,41 @@ void send_file(file_transfer_request request) {
     }
     sendto(sock,"ACK", 4,0,(struct sockaddr *)&server_address, peer_length);
 
+    // send file name
     sendto(sock, request.in_file_path.c_str(), request.in_file_path.size(), 0,(struct sockaddr *)&server_address, peer_length);
     recvfrom(sock, ack, sizeof(ack), 0,(struct sockaddr *) &from,(socklen_t *)&peer_length);
     if(strcmp(ack, "ACK")) {
         std::cerr << "Error receiving ack of file path packet" << std::endl;
+        exit(1);
     }
 
     struct stat st;
     if(stat(request.in_file_path.c_str(), &st) != 0) {
         std::cerr << "Error getting modification time of file " << request.in_file_path << std::endl;
+        exit(1);
     }
     else
         std::cout << "Modification time of file: "<< st.st_mtim.tv_sec << std::endl;
 
+    // send file modification time
     std::string mod_time = std::to_string(st.st_mtim.tv_sec);
     sendto(sock, mod_time.c_str(), mod_time.size(), 0,(struct sockaddr *)&server_address, peer_length);
     recvfrom(sock, ack, sizeof(ack), 0,(struct sockaddr *) &from,(socklen_t *)&peer_length);
     if(strcmp(ack, "ACK")) {
         std::cerr << "Error receiving ack of file modification time" << std::endl;
+        exit(1);
     }
 
+    // send file permissions
     filesystem::path path(request.in_file_path);
     filesystem::perms file_permissions = filesystem::status(path).permissions();
     std::cout << "Permissions " << (file_permissions) << std::endl;
-
     std::string file_perms_str = std::to_string(file_permissions);
     sendto(sock, file_perms_str.c_str(), file_perms_str.size(), 0,(struct sockaddr *)&server_address, peer_length);
     recvfrom(sock, ack, sizeof(ack), 0,(struct sockaddr *) &from,(socklen_t *)&peer_length);
     if(strcmp(ack, "ACK")) {
         std::cerr << "Error receiving ack of file permissions" << std::endl;
+        exit(1);
     }
 
     while(packets--) {
@@ -149,7 +152,6 @@ void send_file(file_transfer_request request) {
         } while(ack_error);
 
         std::cout << ack << " received" << std::endl;
-//        usleep(sleepTime);
     }
     buffer[0] = EOF_SYMBOL;
     sendto(sock, buffer, 1, 0, (struct sockaddr *)&server_address, peer_length);
