@@ -12,8 +12,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
-void login_server(const std::string& host, int port) {
-    struct sockaddr_in server_address, from;
+void Client::login_server(const std::string& host, int port) {
     int peer_length;
     SOCKET sock;
 
@@ -23,37 +22,40 @@ void login_server(const std::string& host, int port) {
         exit(DEFAULT_ERROR_CODE);
     }
 
-    server_address.sin_family = AF_INET;
-    server_address.sin_port = htons(port);
-    server_address.sin_addr.s_addr = inet_addr(host.c_str());
-    peer_length = sizeof(server_address);
-    sendto(sock,"ACK", 4,0,(struct sockaddr *)&server_address, peer_length);
+    port_ = port;
+    server_addr_.sin_family = AF_INET;
+    server_addr_.sin_port = htons(port);
+    server_addr_.sin_addr.s_addr = inet_addr(host.c_str());
+    peer_length = sizeof(server_addr_);
+    sendto(sock,"ACK", 4,0,(struct sockaddr *)&server_addr_, peer_length);
 //    char c[] = {-1};
-//    sendto(sock, c, 1, 0,(struct sockaddr *)&server_address, peer_length);
+//    sendto(sock, c, 1, 0,(struct sockaddr *)&server_addr_, peer_length);
+    logged_in_ = true;
 }
 
 
-void sync_client()
+void Client::sync_client()
 {
     throw std::logic_error("Function not implemented");
 }
 
-void send_file(const std::string& filename)
+void Client::send_file(const std::string& filename)
 {
     throw std::logic_error("Function not implemented");
 }
 
-void get_file(const std::string& filename)
+void Client::get_file(const std::string& filename)
 {
     throw std::logic_error("Function not implemented");
 }
 
-void delete_file(const std::string& filename)
+void Client::delete_file(const std::string& filename)
 {
     throw std::logic_error("Function not implemented");
 }
 
-void close_session()
+void Client::close_session()
 {
     throw std::logic_error("Function not implemented");
 }
+
