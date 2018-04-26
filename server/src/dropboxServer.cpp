@@ -11,7 +11,49 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <vector>
+#include <algorithm>
 
+// Utility functions
+std::vector<std::string> split_tokens(const std::string &str) {
+    std::stringstream stream(str);
+    std::string buffer;
+    std::vector<std::string> tokens;
+    while(stream >> buffer)
+        tokens.push_back(buffer);
+    return tokens;
+}
+
+// Server methods
+bool Server::has_client_connected(const std::string &client_id) {
+    auto cli_iterator = std::find_if(clients_.begin(), clients_.end(),
+                                     [&](const client& c) -> bool { return client_id == c.user_id;});
+    return !(cli_iterator == clients_.end());
+}
+
+
+void Server::parse_command(const std::string &command_line) {
+    auto tokens = split_tokens(command_line);
+    auto command = tokens[0];
+    if(command == "connect") {
+        auto user_id = tokens[1], device_id = tokens[2];
+        add_client(user_id, static_cast<uint64_t>(std::stoi(device_id)));
+    }
+}
+
+
+void Server::add_client(const std::string &user_id, uint64_t device_id) {
+    if(!has_client_connected(user_id)) {
+        client new_client;
+        new_client.user_id = user_id;
+        new_client.logged_in;
+        clients_.push_back(new_client);
+        std::cout << "Connected new client, total clients: " << clients_.size() << std::endl;
+    }
+    auto cli_iterator = std::find_if(clients_.begin(), clients_.end(),
+                                     [&](const client& c) -> bool { return user_id == c.user_id;});
+    cli_iterator->devices.insert(device_id);
+}
 
 void Server::sync_server()
 {
@@ -64,5 +106,7 @@ void Server::listen() {
                   << " port " << client.sin_port
                   << " the message: " << buffer << std::endl;
         continue_listening = !(received_bytes == 1 && buffer[0] == -1);
+        parse_command(buffer);
     } while(continue_listening);
 }
+

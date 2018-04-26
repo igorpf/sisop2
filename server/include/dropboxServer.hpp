@@ -6,8 +6,19 @@
 #include <string>
 
 #include <netinet/in.h>
+#include <vector>
+#include <set>
 
 const uint16_t DEFAULT_SERVER_PORT = 9001;
+
+typedef struct {
+    bool logged_in;
+    //TODO(jfguimaraes) Como identificar um novo dispositivo?
+//    uint64_t devices[2];
+    std::set<uint64_t> devices;
+    std::string user_id;
+    std::vector<file_info> user_files;
+} client;
 
 class Server {
 public:
@@ -41,6 +52,13 @@ public:
     void send_file(const std::string& filename);
 
 private:
+    // command related methods
+    void parse_command(const std::string &command_line);
+    void add_client(const std::string &client_id, uint64_t device_id);
+
+    // utility methods
+    bool has_client_connected(const std::string &client_id);
+
     /**
      * True if the server has been successfully started, false otherwise
      * */
@@ -49,6 +67,7 @@ private:
     struct sockaddr_in server_addr_;
     SOCKET socket_;
     int peer_length_;
+    std::vector<client> clients_;
 };
 
 

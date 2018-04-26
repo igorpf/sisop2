@@ -10,6 +10,9 @@
 
 class Client {
 public:
+
+    Client(uint64_t device_id_, const std::string &user_id_);
+
     /**
      * Estabelece uma conexão entre o cliente e o servidor
      * @param host Endereço do servidor
@@ -50,7 +53,7 @@ public:
 private:
     // attributes from specification
     bool logged_in_;
-    uint64_t devices_[2];
+    uint64_t device_id_;
     std::string user_id_;
     std::vector<file_info> user_files_;
 
