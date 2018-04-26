@@ -12,4 +12,8 @@ typedef struct file_info {
     time_t last_modification_time;
 } file_info;
 
+typedef int SOCKET;
+const int8_t DEFAULT_ERROR_CODE = -1;
+const uint16_t BUFFER_SIZE = 64000;
+
 #endif // SISOP2_UTIL_INCLUDE_DROPBOXUTIL_H
