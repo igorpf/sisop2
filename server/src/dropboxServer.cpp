@@ -4,6 +4,8 @@
 #include <cstring>
 #include <iostream>
 #include <sstream>
+#include <vector>
+#include <algorithm>
 
 #include <unistd.h>
 #include <sys/types.h>
@@ -11,8 +13,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-#include <vector>
-#include <algorithm>
+
 
 // Utility functions
 std::vector<std::string> split_tokens(const std::string &str) {
@@ -24,6 +25,13 @@ std::vector<std::string> split_tokens(const std::string &str) {
     return tokens;
 }
 
+std::string get_errno_with_message(const std::string &base_message = "") {
+    std::ostringstream str_stream;
+    str_stream << base_message << ", error code " << errno << std::endl;
+    return str_stream.str();
+}
+
+
 // Server methods
 bool Server::has_client_connected(const std::string &client_id) {
     auto cli_iterator = std::find_if(clients_.begin(), clients_.end(),
@@ -31,13 +39,16 @@ bool Server::has_client_connected(const std::string &client_id) {
     return !(cli_iterator == clients_.end());
 }
 
-
 void Server::parse_command(const std::string &command_line) {
     auto tokens = split_tokens(command_line);
     auto command = tokens[0];
     if(command == "connect") {
         auto user_id = tokens[1], device_id = tokens[2];
         add_client(user_id, static_cast<uint64_t>(std::stoi(device_id)));
+    } else if (command == "download") {
+        send_file(tokens[1]);
+    } else if (command == "upload") {
+        receive_file(tokens[1]);
     }
 }
 
@@ -68,12 +79,6 @@ void Server::receive_file(const std::string& filename)
 void Server::send_file(const std::string& filename)
 {
     throw std::logic_error("Function not implemented");
-}
-
-std::string get_errno_with_message(const std::string &base_message = "") {
-    std::ostringstream str_stream;
-    str_stream << base_message << ", error code " << errno << std::endl;
-    return str_stream.str();
 }
 
 void Server::start(uint16_t port) {
