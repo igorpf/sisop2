@@ -1,9 +1,16 @@
 #include "../include/dropboxClient.hpp"
 
+#include <spdlog/spdlog.h>
+
+const auto logger = spdlog::stdout_color_mt("client");
 
 int main(int argc, char* argv[])
 {
-    start_client();
 
+    try {
+        start_client();
+    } catch (std::exception &exception) {
+        logger->error(exception.what());
+    }
     return 0;
 }

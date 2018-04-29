@@ -1,11 +1,12 @@
 #include "../include/dropboxUtil.hpp"
 
+#include <cmath>
 #include <iostream>
 #include <fstream>
 #include <cmath>
 #include <cstring>
 #include <cstdlib>
-
+#include <spdlog/spdlog.h>
 
 #include <unistd.h>
 #include <sys/stat.h>
@@ -14,6 +15,10 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+// TODO move to class attribute
+const auto logger = spdlog::stdout_color_mt("util");
+
+// to write to a file, use spdlog::basic_logger_mt("logger", "logs/log.txt")
 
 filesystem::perms parse_permissions_from_string(const std::string &perms)
 {
@@ -42,14 +47,14 @@ filesystem::perms parse_permissions_from_string(const std::string &perms)
 }
 
 void send_file(file_transfer_request request) {
+    spdlog::set_level(spdlog::level::debug);
     struct sockaddr_in server_address, from;
     int peer_length;
     SOCKET sock;
     char ack[4];
 
     if((sock = socket(AF_INET, SOCK_DGRAM,0)) < 0) {
-        std::cerr << "Error creating socket" << std::endl ;
-        exit(DEFAULT_ERROR_CODE);
+        throw std::runtime_error("Error creating socket");
     }
 
     server_address.sin_family = AF_INET;
@@ -61,14 +66,14 @@ void send_file(file_transfer_request request) {
     input_file.open(request.in_file_path.c_str(), std::ios::binary);
 
     if(!input_file.is_open()) {
-        std::cerr << "could not open file " << request.in_file_path << std::endl;
-        exit(1);
+        logger->error("Could not open file {}", request.in_file_path);
+        throw std::runtime_error("Error opening file");
     }
 
     struct timeval tv = {0, TIMEOUT_US};
 
     if(setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) {
-        std::cerr << "Error setting timeout" << std::endl;
+        logger->error("Error setting timeout");
     }
 
     filesystem::path path(request.in_file_path);
@@ -80,19 +85,19 @@ void send_file(file_transfer_request request) {
     else
         throw std::runtime_error("path does not point to a file");
 
-    int64_t packets = static_cast<int64_t>(ceil(file_length / ((float) BUFFER_SIZE))),
+    int64_t packets = static_cast<int64_t>(std::ceil(file_length / ((float) BUFFER_SIZE))),
             sent_packets = 0,
             received_bytes;
     char buffer[BUFFER_SIZE];
-    std::cout << "Divided in " << packets << " packets. File size: " << file_length <<  std::endl;
+    logger->info("Divided in file transmission in {} packets. File size: {}", packets, file_length);
 
     //start handshake
     sendto(sock,"SYN",4,0,(struct sockaddr *)&server_address, peer_length);
     char syn_ack[8];
     recvfrom(sock,syn_ack,sizeof(syn_ack),0,(struct sockaddr *) &from,(socklen_t *)&peer_length);
     if(strcmp(syn_ack, "SYN+ACK") != 0 != 0) {
-        std::cerr << "Error receiving SYN+ACK to open connection" << std::endl;
-        exit(1);
+        logger->error("Error receiving SYN+ACK to open connection");
+        throw std::runtime_error("Handshake failure");
     }
     sendto(sock,"ACK", 4,0,(struct sockaddr *)&server_address, peer_length);
 
@@ -100,44 +105,43 @@ void send_file(file_transfer_request request) {
     sendto(sock, request.in_file_path.c_str(), request.in_file_path.size(), 0,(struct sockaddr *)&server_address, peer_length);
     recvfrom(sock, ack, sizeof(ack), 0,(struct sockaddr *) &from,(socklen_t *)&peer_length);
     if(strcmp(ack, "ACK") != 0) {
-        std::cerr << "Error receiving ack of file path packet" << std::endl;
-        exit(1);
+        logger->error("Error receiving ack of file path packet");
+        throw std::runtime_error("Packet confirmation error");
     }
 
-    struct stat st;
+    struct stat st{};
     if(stat(request.in_file_path.c_str(), &st) != 0) {
-        std::cerr << "Error getting modification time of file " << request.in_file_path << std::endl;
+        logger->error("Error getting modification time of file {}", request.in_file_path);
         exit(1);
     }
-    else
-        std::cout << "Modification time of file: "<< st.st_mtim.tv_sec << std::endl;
+    logger->info("Modification time of file: {}", st.st_mtim.tv_sec );
 
     // send file modification time
     std::string mod_time = std::to_string(st.st_mtim.tv_sec);
     sendto(sock, mod_time.c_str(), mod_time.size(), 0,(struct sockaddr *)&server_address, peer_length);
     recvfrom(sock, ack, sizeof(ack), 0,(struct sockaddr *) &from,(socklen_t *)&peer_length);
     if(strcmp(ack, "ACK") != 0) {
-        std::cerr << "Error receiving ack of file modification time" << std::endl;
-        exit(1);
+        logger->error("Error receiving ack of file modification time");
+        throw std::runtime_error("Packet confirmation error");
     }
 
     // send file permissions
-//    filesystem::path path(request.in_file_path);
     filesystem::perms file_permissions = filesystem::status(path).permissions();
-    std::cout << "Permissions " << (file_permissions) << std::endl;
+    logger->info("File permissions:  {}", file_permissions);
     std::string file_perms_str = std::to_string(file_permissions);
     sendto(sock, file_perms_str.c_str(), file_perms_str.size(), 0,(struct sockaddr *)&server_address, peer_length);
     recvfrom(sock, ack, sizeof(ack), 0,(struct sockaddr *) &from,(socklen_t *)&peer_length);
     if(strcmp(ack, "ACK") != 0) {
-        std::cerr << "Error receiving ack of file permissions" << std::endl;
-        exit(1);
+        logger->error("Error receiving ack of file permissions");
+        throw std::runtime_error("Packet confirmation error");
     }
 
     while(packets--) {
         std::fill(buffer, buffer + sizeof(buffer), 0);
         std::fill(ack, buffer + sizeof(ack), 0);
         input_file.read(buffer, sizeof(buffer));
-        std::cout << "Sending buffer size of: " << input_file.gcount() << std::endl;
+        logger->debug("Sending buffer size of: {}", input_file.gcount());
+
         bool ack_error;
         int retransmissions = 0;
         do {
@@ -146,20 +150,20 @@ void send_file(file_transfer_request request) {
             ack[3] = '\0';
             ack_error = received_bytes <= 0 || strcmp(ack, "ACK") != 0 != 0;
             if(ack_error) {
-                std::cerr << "Error receiving ACK, retransmitting packet of number " << sent_packets <<  std::endl;
+                logger->error("Error receiving ACK, retransmitting packet of number {}", sent_packets);
                 retransmissions++;
                 if(retransmissions >= MAX_RETRANSMSSIONS) {
-                    std::cerr << "Achieved maximum retransmissions of " << retransmissions
-                              << ", aborting file transmission" <<  std::endl;
-                    exit(DEFAULT_ERROR_CODE);
+                    logger->error("Achieved maximum retransmissions of {}, aborting file transmission", retransmissions);
+                    throw std::runtime_error("Maximum retransmissions achieved");
                 }
             }
             else
                 sent_packets++;
         } while(ack_error);
 
-        std::cout << ack << " received" << std::endl;
+        logger->debug("ACK received");
     }
+    logger->debug("Sending end of file");
     buffer[0] = EOF_SYMBOL;
     sendto(sock, buffer, 1, 0, (struct sockaddr *)&server_address, peer_length);
     recvfrom(sock, ack, sizeof(ack), 0,(struct sockaddr *) &from,(socklen_t *)&peer_length);
@@ -171,20 +175,20 @@ void send_file(file_transfer_request request) {
     recvfrom(sock, fin_ack, sizeof(fin_ack), 0,(struct sockaddr *) &from,(socklen_t *)&peer_length);
     fin_ack[7] = '\0';
     if(strcmp(fin_ack,"FIN+ACK") != 0) {
-        std::cerr << "Error receiving FIN+ACK to close connection" << std::endl;
-        exit(1);
+        logger->error("Error receiving FIN+ACK to close connection");
+        throw std::runtime_error("Error finishing connection");
     }
     sendto(sock, "ACK", 4, 0, (struct sockaddr *)&server_address, peer_length);
 }
 
 void receive_file(file_transfer_request request) {
-    struct sockaddr_in server_addr {0}, client_addr;
+    spdlog::set_level(spdlog::level::debug);
+    struct sockaddr_in server_addr {0}, client_addr{0};
     SOCKET sock;
     int peer_length, received_bytes;
 
     if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-        std::cerr << "Error creating socket" << std::endl;
-        exit(1);
+        throw std::runtime_error("Error creating socket");
     }
 
     server_addr.sin_family = AF_INET;
@@ -193,32 +197,37 @@ void receive_file(file_transfer_request request) {
     peer_length = sizeof(server_addr);
 
     if(bind(sock,(struct sockaddr *) &server_addr, peer_length)) {
-        std::cerr << "Bind error" << std::endl;
-        exit(1);
+        throw std::runtime_error("Bind error");
     }
 
-    std::cout << "Initialized socket " << std::endl << std::endl;
+    logger->info("Initialized socket");
+
     char buffer[BUFFER_SIZE+1];
 
     //start handshake
     char ack[4], syn[4];
     recvfrom(sock, syn, sizeof(syn), 0,(struct sockaddr *) &client_addr,(socklen_t *)&peer_length);
-    if(strcmp(syn,"SYN") != 0)
-        exit(1);
+    if(strcmp(syn,"SYN") != 0) {
+        logger->error("Error receiving SYN packet from client");
+        throw std::runtime_error("Handshake error");
+    }
+
     sendto(sock, "SYN+ACK", 8, 0, (struct sockaddr *)&client_addr, peer_length);
     recvfrom(sock, ack, sizeof(ack), 0,(struct sockaddr *) &client_addr,(socklen_t *)&peer_length);
-    if(strcmp(ack,"ACK") != 0)
-        exit(1);
+    if(strcmp(ack,"ACK") != 0) {
+        logger->error("Error receiving ACK packet from client");
+        throw std::runtime_error("Handshake error");
+    }
+
 
     received_bytes = recvfrom(sock, buffer, sizeof(buffer), 0,(struct sockaddr *) &client_addr,(socklen_t *)&peer_length);
     sendto(sock, "ACK", 4,0,(struct sockaddr *)&client_addr, peer_length);
     std::string out_path(buffer, received_bytes);
-    std::cout << "Receiving file of name: " << out_path << std::endl;
+    logger->info("Receiving file of name: {}", out_path);
     std::ofstream output_file;
     output_file.open(out_path.c_str(), std::ios::binary);
     if(!output_file.is_open()) {
-        std::cerr << "Could not receive file!" << std::endl;
-        exit(1);
+        throw std::runtime_error("Error opening file");
     }
 
     std::fill(buffer, buffer + sizeof(buffer), 0);
@@ -226,8 +235,7 @@ void receive_file(file_transfer_request request) {
     sendto(sock, "ACK", 4,0,(struct sockaddr *)&client_addr, peer_length);
     std::string file_mod_time(buffer, received_bytes);
     filesystem::path path(out_path);
-    std::cout << "File modification time" << file_mod_time << std::endl;
-
+    logger->info("File modification time: {}", file_mod_time);
 
     std::fill(buffer, buffer + sizeof(buffer), 0);
     received_bytes = recvfrom(sock, buffer, sizeof(buffer), 0,(struct sockaddr *) &client_addr,(socklen_t *)&peer_length);
@@ -236,12 +244,12 @@ void receive_file(file_transfer_request request) {
 
     filesystem::permissions(path, parse_permissions_from_string(file_perm));
 
-    std::cout << "Received permisions of file: " << file_perm << " " << parse_permissions_from_string(file_perm) << std::endl;
+    logger->info("Received permissions of file: {} ", file_perm);
 
     struct timeval tv = {0, TIMEOUT_US};
 
     if(setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) {
-        std::cerr << "Error setting timeout" << std::endl;
+        logger->error("Error setting timeout");
     }
 
     bool writable_packet;
@@ -249,13 +257,12 @@ void receive_file(file_transfer_request request) {
         std::fill(buffer, buffer + sizeof(buffer), 0);
         received_bytes = recvfrom(sock,buffer,sizeof(buffer),0,(struct sockaddr *) &client_addr,(socklen_t *)&peer_length);
         if(received_bytes < 0) {
-            std::cerr << "error receiving packet from client" << std::endl;
-            exit(1);
+            throw std::runtime_error("Error receiving packet from client");
         }
         writable_packet = received_bytes > 1 || (received_bytes == 1 && buffer[0] != EOF_SYMBOL);
         if(writable_packet)
             output_file.write(buffer, received_bytes > BUFFER_SIZE? BUFFER_SIZE : received_bytes);
-        std::cout << "Recebido mais um pacote, bytes recebidos: " << received_bytes << std::endl;
+        logger->debug("Received packet. Bytes: {}", received_bytes);
         sendto(sock, "ACK", 4,0,(struct sockaddr *)&client_addr, peer_length);
     } while (writable_packet);
     output_file.close();
@@ -264,13 +271,13 @@ void receive_file(file_transfer_request request) {
     char fin[4];
     recvfrom(sock,fin,sizeof(fin),0,(struct sockaddr *) &client_addr,(socklen_t *)&peer_length);
     if(strcmp(fin,"FIN") != 0) {
-        std::cerr << "error receiving FIN from client" << std::endl;
-        exit(1);
+        logger->error("Error receiving FIN from client");
+        throw std::runtime_error("Error finishing connection");
     }
     sendto(sock, "FIN+ACK", 8, 0,(struct sockaddr *)&client_addr, peer_length);
     recvfrom(sock, ack, sizeof(ack),0,(struct sockaddr *) &client_addr,(socklen_t *)&peer_length);
     if(strcmp(ack,"ACK") != 0) {
-        std::cerr << "error receiving ACK from client" << std::endl;
-        exit(1);
+        logger->error("Error receiving ACK from client");
+        throw std::runtime_error("Error finishing connection");
     }
 }
