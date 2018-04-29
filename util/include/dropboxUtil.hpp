@@ -8,18 +8,17 @@
 //TODO(jfguimaraes) Tornar Util uma biblioteca? Faria os includes ficarem mais limpos
 
 typedef int SOCKET;
-const uint16_t BUFFER_SIZE = 64000; //approximately an ip packet size
-//const uint64_t TIMEOUT_US (500);  //valid timeout
-const uint64_t TIMEOUT_US  = 5000000000; //invalid timeout
-const uint8_t MAX_RETRANSMSSIONS = 20;
-const uint8_t DEFAULT_ERROR_CODE = 1;
+const int32_t BUFFER_SIZE = 64000; //approximately an ip packet size
+const int64_t TIMEOUT_US  = 500000000000; // to disable timeout, set 500000000000 as value
+const int8_t MAX_RETRANSMSSIONS = 20;
+const int8_t DEFAULT_ERROR_CODE = 1;
 const int8_t EOF_SYMBOL = -1;
 
 namespace filesystem = boost::filesystem;
 
 typedef struct file_info {
     std::string name;
-    uint64_t size;
+    int64_t size;
     time_t last_modification_time;
 } file_info;
 
@@ -38,8 +37,8 @@ typedef struct {
     bool has_finished;
 } file_transfer_connection;
 
-template <typename Collection,typename unop>
-Collection map(Collection col,unop op) {
+template <typename Collection,typename UnaryOperator>
+Collection map(Collection col, UnaryOperator op) {
     std::transform(col.begin(),col.end(),col.begin(),op);
     return col;
 }

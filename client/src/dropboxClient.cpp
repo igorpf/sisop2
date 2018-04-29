@@ -49,33 +49,8 @@ void start_client()
 {
     file_transfer_request request;
     request.in_file_path = std::string("dropboxClient");
-//    request.in_file_path = std::string("Makefile");
     request.ip = std::string(loopback_ip);
     request.port = port;
     request.transfer_rate = 1000;
     send_file(request);
 }
-//void start_client() {
-//    std::cout << "Dropbox client running..." << std::endl;
-//    struct sockaddr_in peer;
-//    int peer_length;
-//    SOCKET sock;
-//
-//    if((sock = socket(AF_INET, SOCK_DGRAM,0)) < 0) {
-//        std::cout << "Error creating socket" << std::endl ;
-//        exit(1);
-//    }
-//
-//    peer.sin_family = AF_INET;
-//    peer.sin_port = htons(port);
-//    peer.sin_addr.s_addr = inet_addr(loopback_ip.c_str());
-//    peer_length = sizeof(peer);
-//
-//    char buffer[] = "Hello", end[]="end", serverResp[50];
-//    for(int i = 0; i < 10;i++) {
-//        sendto(sock, buffer, sizeof(buffer), 0, (struct sockaddr *)&peer, peer_length);
-//        recvfrom(sock, serverResp, sizeof(serverResp), 0,(struct sockaddr *) &peer,(socklen_t *)&peer_length);
-//        std::cout << "Server responded: " << serverResp << std::endl;
-//    }
-//    sendto(sock, end, sizeof(end), 0, (struct sockaddr *)&peer, peer_length);
-//}
