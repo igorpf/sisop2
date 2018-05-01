@@ -113,7 +113,7 @@ void send_file(file_transfer_request request) {
     struct stat st{};
     if(stat(request.in_file_path.c_str(), &st) != 0) {
         logger->error("Error getting modification time of file {}", request.in_file_path);
-        exit(1);
+        throw std::runtime_error("Error getting modification time of file");
     }
     logger->info("Modification time of file: {}", st.st_mtim.tv_sec );
 
