@@ -48,7 +48,7 @@ filesystem::perms parse_permissions_from_string(const std::string &perms)
 
 void send_file(file_transfer_request request) {
     spdlog::set_level(spdlog::level::debug);
-    struct sockaddr_in server_address, from;
+    struct sockaddr_in server_address{}, from{};
     int peer_length;
     SOCKET sock;
     char ack[4];
@@ -183,6 +183,8 @@ void send_file(file_transfer_request request) {
         throw std::runtime_error("Error finishing connection");
     }
     sendto(sock, "ACK", 4, 0, (struct sockaddr *)&server_address, static_cast<socklen_t>(peer_length));
+
+    logger->info("Successfully sent file");
 }
 
 void receive_file(file_transfer_request request) {
@@ -200,7 +202,7 @@ void receive_file(file_transfer_request request) {
     server_addr.sin_addr.s_addr = INADDR_ANY;
     peer_length = sizeof(server_addr);
 
-    if(bind(sock,(struct sockaddr *) &server_addr, peer_length)) {
+    if(bind(sock, (struct sockaddr *) &server_addr, static_cast<socklen_t>(peer_length))) {
         throw std::runtime_error("Bind error");
     }
 
@@ -284,4 +286,5 @@ void receive_file(file_transfer_request request) {
         logger->error("Error receiving ACK from client");
         throw std::runtime_error("Error finishing connection");
     }
+    logger->info("Transferred file successfully!");
 }
