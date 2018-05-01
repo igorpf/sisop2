@@ -16,9 +16,9 @@
 #include <arpa/inet.h>
 
 // TODO move to class attribute
-const auto logger = spdlog::stdout_color_mt("util");
-
-// to write to a file, use spdlog::basic_logger_mt("logger", "logs/log.txt")
+const auto logger = spdlog::basic_logger_mt("util", "log.txt");
+// to write to a file, use spdlog::basic_logger_mt("util", "logs/log.txt")
+// to write to stdout, use spdlog::stdout_color_mt("util")
 
 filesystem::perms parse_permissions_from_string(const std::string &perms)
 {
