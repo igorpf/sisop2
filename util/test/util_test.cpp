@@ -4,7 +4,7 @@
 
 TEST(FilePermissions, ReadOnlyFile)
 {
-    auto perms_int = static_cast<uint16_t>(
+    auto perms_int = static_cast<int16_t>(
         filesystem::owner_read | filesystem::group_read | filesystem::others_read
     );
     filesystem::perms perms = parse_permissions_from_string(std::to_string(perms_int));

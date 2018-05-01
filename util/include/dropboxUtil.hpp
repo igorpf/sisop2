@@ -23,8 +23,8 @@ typedef struct file_info {
 } file_info;
 
 typedef struct file_transfer_request {
-    uint16_t port;
-    uint16_t transfer_rate;
+    int32_t port;
+    int32_t transfer_rate;
     std::string ip;
     std::string in_file_path;
     std::string out_file_path;
@@ -32,7 +32,7 @@ typedef struct file_transfer_request {
 
 typedef struct {
     file_transfer_request request;
-    u_int16_t sequence_number;
+    int32_t sequence_number;
     bool is_connected;
     bool has_finished;
 } file_transfer_connection;

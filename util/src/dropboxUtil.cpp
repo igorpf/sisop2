@@ -33,7 +33,7 @@ filesystem::perms parse_permissions_from_string(const std::string &perms)
         filesystem::others_write,
         filesystem::others_exe
     };
-    auto perms_int = static_cast<uint16_t>(std::stoi(perms));
+    auto perms_int = static_cast<int16_t>(std::stoi(perms));
 
     perms_vec = map(perms_vec, [&](filesystem::perms p) -> filesystem::perms {
         return p & perms_int? p : filesystem::no_perms;

@@ -9,7 +9,7 @@
 typedef struct client {
     bool logged_in;
     //TODO(jfguimaraes) Como identificar um novo dispositivo?
-    uint64_t devices[2];
+    int64_t devices[2];
     std::string user_id;
     std::vector<file_info> user_files;
 } client;
