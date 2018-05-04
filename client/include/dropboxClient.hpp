@@ -9,7 +9,7 @@
 typedef struct client {
     bool logged_in;
     //TODO(jfguimaraes) Como identificar um novo dispositivo?
-    uint64_t devices[2];
+    int64_t devices[2];
     std::string user_id;
     std::vector<file_info> user_files;
 } client;
@@ -50,5 +50,8 @@ void delete_file(const std::string& filename);
  * Fecha a sessão com o servidor
  */
 void close_session();
+
+//test functions
+void start_client();
 
 #endif // SISOP2_CLIENT_INCLUDE_DROPBOXCLIENT_H
