@@ -71,4 +71,8 @@ private:
 };
 
 
+
+//test functions
+void start_server();
+
 #endif // SISOP2_SERVER_INCLUDE_DROPBOXSERVER_H

@@ -1,3 +1,4 @@
+#include "../../util/include/dropboxUtil.hpp"
 #include "../include/dropboxServer.hpp"
 
 #include <stdexcept>
@@ -13,7 +14,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-
+#include <cstring>
+#include <iostream>
 
 // Utility functions
 std::vector<std::string> split_tokens(const std::string &str) {
@@ -79,6 +81,17 @@ void Server::receive_file(const std::string& filename)
 void Server::send_file(const std::string& filename)
 {
     throw std::logic_error("Function not implemented");
+}
+
+
+const int port = 9001;
+
+void start_server()
+{
+    file_transfer_request request;
+    request.ip = std::string("127.0.0.1");
+    request.port = port;
+    receive_file(request);
 }
 
 void Server::start(uint16_t port) {
