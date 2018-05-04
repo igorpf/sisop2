@@ -1,21 +1,19 @@
 #include "../../util/include/dropboxUtil.hpp"
 #include "../include/dropboxServer.hpp"
 
-#include <stdexcept>
+#include <algorithm>
 #include <cstring>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 #include <vector>
-#include <algorithm>
 
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-#include <cstring>
-#include <iostream>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 // Utility functions
 std::vector<std::string> split_tokens(const std::string &str) {
@@ -91,7 +89,8 @@ void start_server()
     file_transfer_request request;
     request.ip = std::string("127.0.0.1");
     request.port = port;
-    receive_file(request);
+    DropboxUtil::File file_util;
+    file_util.receive_file(request);
 }
 
 void Server::start(uint16_t port) {

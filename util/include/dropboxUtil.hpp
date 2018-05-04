@@ -5,6 +5,7 @@
 #include <string>
 #include <algorithm>
 #include <boost/filesystem.hpp>
+#include <spdlog/spdlog.h>
 //TODO(jfguimaraes) Tornar Util uma biblioteca? Faria os includes ficarem mais limpos
 
 typedef int SOCKET;
@@ -43,8 +44,16 @@ Collection map(Collection col, UnaryOperator op) {
     return col;
 }
 
-void send_file(file_transfer_request request);
-void receive_file(file_transfer_request request);
-filesystem::perms parse_permissions_from_string(const std::string& perms);
+namespace DropboxUtil {
+    class File {
+    public:
+        void send_file(file_transfer_request request);
+        void receive_file(file_transfer_request request);
+        filesystem::perms parse_file_permissions_from_string(const std::string &perms);
+        File();
+    private:
+        std::shared_ptr<spdlog::logger> logger;
+    };
+}
 
 #endif // SISOP2_UTIL_INCLUDE_DROPBOXUTIL_H

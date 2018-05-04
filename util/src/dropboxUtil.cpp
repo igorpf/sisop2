@@ -1,26 +1,20 @@
 #include "../include/dropboxUtil.hpp"
 
 #include <cmath>
-#include <iostream>
-#include <fstream>
-#include <cmath>
-#include <cstring>
 #include <cstdlib>
-#include <spdlog/spdlog.h>
+#include <cstring>
+#include <fstream>
+#include <iostream>
 
-#include <unistd.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
+#include <unistd.h>
 
-// TODO move to class attribute
-const auto logger = spdlog::basic_logger_mt("util", "log.txt");
-// to write to a file, use spdlog::basic_logger_mt("util", "logs/log.txt")
-// to write to stdout, use spdlog::stdout_color_mt("util")
 
-filesystem::perms parse_permissions_from_string(const std::string &perms)
+filesystem::perms DropboxUtil::File::parse_file_permissions_from_string(const std::string &perms)
 {
     std::vector<filesystem::perms> perms_vec = {
         filesystem::owner_read,
@@ -33,7 +27,7 @@ filesystem::perms parse_permissions_from_string(const std::string &perms)
         filesystem::others_write,
         filesystem::others_exe
     };
-    auto perms_int = static_cast<int16_t>(std::stoi(perms));
+    auto perms_int = static_cast<uint16_t>(std::stoi(perms));
 
     perms_vec = map(perms_vec, [&](filesystem::perms p) -> filesystem::perms {
         return p & perms_int? p : filesystem::no_perms;
@@ -46,8 +40,7 @@ filesystem::perms parse_permissions_from_string(const std::string &perms)
     return p;
 }
 
-void send_file(file_transfer_request request) {
-    spdlog::set_level(spdlog::level::debug);
+void DropboxUtil::File::send_file(file_transfer_request request) {
     struct sockaddr_in server_address{}, from{};
     int peer_length;
     SOCKET sock;
@@ -187,8 +180,7 @@ void send_file(file_transfer_request request) {
     logger->info("Successfully sent file");
 }
 
-void receive_file(file_transfer_request request) {
-    spdlog::set_level(spdlog::level::debug);
+void DropboxUtil::File::receive_file(file_transfer_request request) {
     struct sockaddr_in server_addr {0}, client_addr{0};
     SOCKET sock;
     int64_t peer_length, received_bytes;
@@ -248,7 +240,7 @@ void receive_file(file_transfer_request request) {
     sendto(sock, "ACK", 4, 0, (struct sockaddr *)&client_addr, static_cast<socklen_t>(peer_length));
     std::string file_perm(buffer, static_cast<unsigned long>(received_bytes));
 
-    filesystem::permissions(path, parse_permissions_from_string(file_perm));
+    filesystem::permissions(path, parse_file_permissions_from_string(file_perm));
 
     logger->info("Received permissions of file: {} ", file_perm);
 
@@ -287,4 +279,13 @@ void receive_file(file_transfer_request request) {
         throw std::runtime_error("Error finishing connection");
     }
     logger->info("Transferred file successfully!");
+}
+
+DropboxUtil::File::File() {
+    /**
+     *  to write to a file, use spdlog::basic_logger_mt("File", "logs/log.txt")
+     *  to write to stdout, use spdlog::stdout_color_mt("File")
+     */
+    logger = spdlog::basic_logger_mt("File", "log.txt");
+    spdlog::set_level(spdlog::level::debug);
 }
