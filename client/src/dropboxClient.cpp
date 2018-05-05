@@ -43,16 +43,12 @@ void Client::sync_client() {
 
 }
 
-
-const std::string loopback_ip = "127.0.0.1";
-
 void Client::send_file(const std::string& filename)
 {
     file_transfer_request request;
     request.in_file_path = std::string("dropboxClient");
-    request.ip = std::string(loopback_ip);
-    request.port = port;
-    request.transfer_rate = 1000;
+    request.ip = std::string(LOOPBACK_IP);
+    request.port = DEFAULT_SERVER_PORT;
 
     DropboxUtil::File file_util;
     file_util.send_file(request);
