@@ -14,6 +14,8 @@ const int64_t TIMEOUT_US  = 50000; // to disable timeout, set 500000000000 as va
 const int8_t MAX_RETRANSMSSIONS = 20;
 const int8_t DEFAULT_ERROR_CODE = 1;
 const int8_t EOF_SYMBOL = -1;
+const int16_t DEFAULT_SERVER_PORT = 9001;
+const std::string LOOPBACK_IP("127.0.0.1");
 
 namespace filesystem = boost::filesystem;
 

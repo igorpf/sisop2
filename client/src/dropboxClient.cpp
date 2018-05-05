@@ -43,7 +43,7 @@ void Client::sync_client() {
 
 }
 
-const int port = 9001;
+
 const std::string loopback_ip = "127.0.0.1";
 
 void Client::send_file(const std::string& filename)

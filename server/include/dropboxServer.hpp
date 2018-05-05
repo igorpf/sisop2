@@ -9,8 +9,6 @@
 #include <vector>
 #include <set>
 
-const uint16_t DEFAULT_SERVER_PORT = 9001;
-
 typedef struct {
     bool logged_in;
     //TODO(jfguimaraes) Como identificar um novo dispositivo?

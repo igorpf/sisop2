@@ -81,14 +81,11 @@ void Server::send_file(const std::string& filename)
     throw std::logic_error("Function not implemented");
 }
 
-
-const int port = 9001;
-
 void start_server()
 {
     file_transfer_request request;
-    request.ip = std::string("127.0.0.1");
-    request.port = port;
+    request.ip = std::string(LOOPBACK_IP);
+    request.port = DEFAULT_SERVER_PORT;
     DropboxUtil::File file_util;
     file_util.receive_file(request);
 }
