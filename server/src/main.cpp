@@ -10,7 +10,6 @@ int main(int argc, char* argv[])
         Server server;
         server.start();
         server.listen();
-        start_server();
     } catch (std::exception &exception) {
         std::cerr << exception.what() << std::endl;
     }

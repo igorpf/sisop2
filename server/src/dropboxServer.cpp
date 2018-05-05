@@ -40,6 +40,7 @@ bool Server::has_client_connected(const std::string &client_id) {
 }
 
 void Server::parse_command(const std::string &command_line) {
+    logger_->debug("Debugging command {}", command_line);
     auto tokens = split_tokens(command_line);
     auto command = tokens[0];
     if(command == "connect") {
@@ -73,21 +74,20 @@ void Server::sync_server()
 
 void Server::receive_file(const std::string& filename)
 {
-    throw std::logic_error("Function not implemented");
+    // TODO set filename from filename and don't transmit
+    file_transfer_request request;
+    request.ip = std::string(LOOPBACK_IP);
+    request.port = DEFAULT_SERVER_PORT;
+    request.socket = socket_;
+    request.server_address = server_addr_;
+    request.peer_length = peer_length_;
+    DropboxUtil::File file_util;
+    file_util.receive_file(request);
 }
 
 void Server::send_file(const std::string& filename)
 {
     throw std::logic_error("Function not implemented");
-}
-
-void start_server()
-{
-    file_transfer_request request;
-    request.ip = std::string(LOOPBACK_IP);
-    request.port = DEFAULT_SERVER_PORT;
-    DropboxUtil::File file_util;
-    file_util.receive_file(request);
 }
 
 void Server::start(int32_t port) {
@@ -101,7 +101,7 @@ void Server::start(int32_t port) {
     peer_length_ = sizeof(server_addr_);
     port_ = port;
 
-    if(bind(socket_, (struct sockaddr *) &server_addr_, static_cast<socklen_t>(peer_length_)) == DEFAULT_ERROR_CODE)
+    if(bind(socket_, (struct sockaddr *) &server_addr_, peer_length_) == DEFAULT_ERROR_CODE)
         throw std::runtime_error(get_errno_with_message("Bind error"));
     logger_->info("Initialized socket of number {} for server", socket_);
     has_started_ = true;
@@ -116,7 +116,8 @@ void Server::listen() {
     struct sockaddr_in client{};
     ssize_t received_bytes;
     do {
-        received_bytes = recvfrom(socket_, buffer, sizeof(buffer), 0,(struct sockaddr *) &client, (socklen_t *)&peer_length_);
+        std::fill(buffer, buffer + sizeof(buffer), 0);
+        received_bytes = recvfrom(socket_, buffer, sizeof(buffer), 0, (struct sockaddr *) &client, &peer_length_);
         logger_->debug("Received from client {} port {} the message: {}", inet_ntoa(client.sin_addr), client.sin_port, buffer);
         continue_listening = !(received_bytes == 1 && buffer[0] == -1);
         parse_command(buffer);

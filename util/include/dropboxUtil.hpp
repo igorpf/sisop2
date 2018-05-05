@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <boost/filesystem.hpp>
 #include <spdlog/spdlog.h>
+
+#include <netinet/in.h>
 //TODO(jfguimaraes) Tornar Util uma biblioteca? Faria os includes ficarem mais limpos
 
 typedef int SOCKET;
@@ -27,10 +29,11 @@ typedef struct file_info {
 
 typedef struct file_transfer_request {
     int32_t port;
-    int32_t transfer_rate;
+    struct sockaddr_in server_address;
+    SOCKET socket;
+    socklen_t peer_length;
     std::string ip;
     std::string in_file_path;
-    std::string out_file_path;
 } file_transfer_request;
 
 template <typename Collection,typename UnaryOperator>

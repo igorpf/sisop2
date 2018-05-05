@@ -41,19 +41,8 @@ filesystem::perms DropboxUtil::File::parse_file_permissions_from_string(const st
 }
 
 void DropboxUtil::File::send_file(file_transfer_request request) {
-    struct sockaddr_in server_address{}, from{};
-    int peer_length;
-    SOCKET sock;
+    struct sockaddr_in from{};
     char ack[4];
-
-    if((sock = socket(AF_INET, SOCK_DGRAM,0)) < 0) {
-        throw std::runtime_error("Error creating socket");
-    }
-
-    server_address.sin_family = AF_INET;
-    server_address.sin_port = htons(request.port);
-    server_address.sin_addr.s_addr = inet_addr(request.ip.c_str());
-    peer_length = sizeof(server_address);
 
     std::ifstream input_file;
     input_file.open(request.in_file_path.c_str(), std::ios::binary);
@@ -63,11 +52,10 @@ void DropboxUtil::File::send_file(file_transfer_request request) {
         throw std::runtime_error("Error opening file");
     }
 
-    struct timeval tv = {0, TIMEOUT_US};
-
-    if(setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) {
-        logger_->error("Error setting timeout");
-    }
+    struct timeval set_timeout_val = {0, TIMEOUT_US};
+    if(setsockopt(request.socket, SOL_SOCKET, SO_RCVTIMEO, &set_timeout_val, sizeof(set_timeout_val)) < 0) 
+        logger_->error("Error setting timeout {}", set_timeout_val.tv_usec);
+    
 
     filesystem::path path(request.in_file_path);
     if (!filesystem::exists(path))
@@ -85,19 +73,19 @@ void DropboxUtil::File::send_file(file_transfer_request request) {
     logger_->info("Divided in file transmission in {} packets. File size: {}", packets, file_length);
 
     //start handshake
-    sendto(sock, "SYN", 4, 0, (struct sockaddr *)&server_address, static_cast<socklen_t>(peer_length));
+    sendto(request.socket, "SYN", 4, 0, (struct sockaddr *)&request.server_address, request.peer_length);
     char syn_ack[8];
-    recvfrom(sock,syn_ack,sizeof(syn_ack),0,(struct sockaddr *) &from,(socklen_t *)&peer_length);
+    recvfrom(request.socket, syn_ack, sizeof(syn_ack), 0, (struct sockaddr *) &from, &request.peer_length);
     if(strcmp(syn_ack, "SYN+ACK") != 0) {
         logger_->error("Error receiving SYN+ACK to open connection");
         throw std::runtime_error("Handshake failure");
     }
-    sendto(sock, "ACK", 4, 0, (struct sockaddr *)&server_address, static_cast<socklen_t>(peer_length));
+    sendto(request.socket, "ACK", 4, 0, (struct sockaddr *)&request.server_address, request.peer_length);
 
     // send file name
-    sendto(sock, request.in_file_path.c_str(), request.in_file_path.size(), 0, (struct sockaddr *)&server_address,
-           static_cast<socklen_t>(peer_length));
-    recvfrom(sock, ack, sizeof(ack), 0,(struct sockaddr *) &from,(socklen_t *)&peer_length);
+    sendto(request.socket, request.in_file_path.c_str(), request.in_file_path.size(), 0,
+           (struct sockaddr *)&request.server_address, request.peer_length);
+    recvfrom(request.socket, ack, sizeof(ack), 0,(struct sockaddr *) &from, &request.peer_length);
     if(strcmp(ack, "ACK") != 0) {
         logger_->error("Error receiving ack of file path packet");
         throw std::runtime_error("Packet confirmation error");
@@ -112,9 +100,8 @@ void DropboxUtil::File::send_file(file_transfer_request request) {
 
     // send file modification time
     std::string mod_time = std::to_string(st.st_mtim.tv_sec);
-    sendto(sock, mod_time.c_str(), mod_time.size(), 0, (struct sockaddr *)&server_address,
-           static_cast<socklen_t>(peer_length));
-    recvfrom(sock, ack, sizeof(ack), 0,(struct sockaddr *) &from,(socklen_t *)&peer_length);
+    sendto(request.socket, mod_time.c_str(), mod_time.size(), 0, (struct sockaddr *)&request.server_address, request.peer_length);
+    recvfrom(request.socket, ack, sizeof(ack), 0,(struct sockaddr *) &from, &request.peer_length);
     if(strcmp(ack, "ACK") != 0) {
         logger_->error("Error receiving ack of file modification time");
         throw std::runtime_error("Packet confirmation error");
@@ -124,9 +111,9 @@ void DropboxUtil::File::send_file(file_transfer_request request) {
     filesystem::perms file_permissions = filesystem::status(path).permissions();
     logger_->info("File permissions:  {}", file_permissions);
     std::string file_perms_str = std::to_string(file_permissions);
-    sendto(sock, file_perms_str.c_str(), file_perms_str.size(), 0, (struct sockaddr *)&server_address,
-           static_cast<socklen_t>(peer_length));
-    recvfrom(sock, ack, sizeof(ack), 0,(struct sockaddr *) &from,(socklen_t *)&peer_length);
+    sendto(request.socket, file_perms_str.c_str(), file_perms_str.size(), 0, (struct sockaddr *)&request.server_address,
+           request.peer_length);
+    recvfrom(request.socket, ack, sizeof(ack), 0,(struct sockaddr *) &from, &request.peer_length);
     if(strcmp(ack, "ACK") != 0) {
         logger_->error("Error receiving ack of file permissions");
         throw std::runtime_error("Packet confirmation error");
@@ -141,9 +128,9 @@ void DropboxUtil::File::send_file(file_transfer_request request) {
         bool ack_error;
         int retransmissions = 0;
         do {
-            sendto(sock, buffer, static_cast<size_t>(input_file.gcount()), 0, (struct sockaddr *)&server_address,
-                   static_cast<socklen_t>(peer_length));
-            received_bytes = recvfrom(sock, ack, sizeof(ack), 0,(struct sockaddr *) &from,(socklen_t *)&peer_length);
+            sendto(request.socket, buffer, static_cast<size_t>(input_file.gcount()), 0, (struct sockaddr *)&request.server_address,
+                   request.peer_length);
+            received_bytes = recvfrom(request.socket, ack, sizeof(ack), 0,(struct sockaddr *) &from, &request.peer_length);
             ack[3] = '\0';
             ack_error = received_bytes <= 0 || strcmp(ack, "ACK") != 0 != 0;
             if(ack_error) {
@@ -162,64 +149,52 @@ void DropboxUtil::File::send_file(file_transfer_request request) {
     }
     logger_->debug("Sending end of file");
     buffer[0] = EOF_SYMBOL;
-    sendto(sock, buffer, 1, 0, (struct sockaddr *)&server_address, static_cast<socklen_t>(peer_length));
-    recvfrom(sock, ack, sizeof(ack), 0,(struct sockaddr *) &from,(socklen_t *)&peer_length);
+    sendto(request.socket, buffer, 1, 0, (struct sockaddr *)&request.server_address, request.peer_length);
+    recvfrom(request.socket, ack, sizeof(ack), 0,(struct sockaddr *) &from, &request.peer_length);
     input_file.close();
 
     //finish handshake
     char fin_ack[8];
-    sendto(sock, "FIN", 4, 0, (struct sockaddr *)&server_address, static_cast<socklen_t>(peer_length));
-    recvfrom(sock, fin_ack, sizeof(fin_ack), 0,(struct sockaddr *) &from,(socklen_t *)&peer_length);
+    sendto(request.socket, "FIN", 4, 0, (struct sockaddr *)&request.server_address, request.peer_length);
+    recvfrom(request.socket, fin_ack, sizeof(fin_ack), 0,(struct sockaddr *) &from, &request.peer_length);
     fin_ack[7] = '\0';
     if(strcmp(fin_ack,"FIN+ACK") != 0) {
         logger_->error("Error receiving FIN+ACK to close connection");
         throw std::runtime_error("Error finishing connection");
     }
-    sendto(sock, "ACK", 4, 0, (struct sockaddr *)&server_address, static_cast<socklen_t>(peer_length));
-
+    sendto(request.socket, "ACK", 4, 0, (struct sockaddr *)&request.server_address, request.peer_length);
     logger_->info("Successfully sent file");
+    
+    struct timeval unset_timeout_val = {0, 0};
+    if(setsockopt(request.socket, SOL_SOCKET, SO_RCVTIMEO, &unset_timeout_val, sizeof(unset_timeout_val)) == 0) 
+        logger_->debug("Disabled packet timeout successfully");
+    else
+        logger_->debug("Error disabling packet timeout");
 }
 
 void DropboxUtil::File::receive_file(file_transfer_request request) {
-    struct sockaddr_in server_addr {0}, client_addr{0};
-    SOCKET sock;
-    int64_t peer_length, received_bytes;
-
-    if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-        throw std::runtime_error("Error creating socket");
-    }
-
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(request.port);
-    server_addr.sin_addr.s_addr = INADDR_ANY;
-    peer_length = sizeof(server_addr);
-
-    if(bind(sock, (struct sockaddr *) &server_addr, static_cast<socklen_t>(peer_length))) {
-        throw std::runtime_error("Bind error");
-    }
-
-    logger_->info("Initialized socket");
-
+    struct sockaddr_in client_addr{0};
+    int64_t received_bytes;
     char buffer[BUFFER_SIZE+1];
 
     //start handshake
     char ack[4], syn[4];
-    recvfrom(sock, syn, sizeof(syn), 0,(struct sockaddr *) &client_addr,(socklen_t *)&peer_length);
+    recvfrom(request.socket, syn, sizeof(syn), 0, (struct sockaddr *) &client_addr, &request.peer_length);
     if(strcmp(syn,"SYN") != 0) {
         logger_->error("Error receiving SYN packet from client");
         throw std::runtime_error("Handshake error");
     }
 
-    sendto(sock, "SYN+ACK", 8, 0, (struct sockaddr *)&client_addr, static_cast<socklen_t>(peer_length));
-    recvfrom(sock, ack, sizeof(ack), 0,(struct sockaddr *) &client_addr,(socklen_t *)&peer_length);
+    sendto(request.socket, "SYN+ACK", 8, 0, (struct sockaddr *)&client_addr, request.peer_length);
+    recvfrom(request.socket, ack, sizeof(ack), 0, (struct sockaddr *) &client_addr, &request.peer_length);
     if(strcmp(ack,"ACK") != 0) {
         logger_->error("Error receiving ACK packet from client");
         throw std::runtime_error("Handshake error");
     }
 
 
-    received_bytes = recvfrom(sock, buffer, sizeof(buffer), 0,(struct sockaddr *) &client_addr,(socklen_t *)&peer_length);
-    sendto(sock, "ACK", 4, 0, (struct sockaddr *)&client_addr, static_cast<socklen_t>(peer_length));
+    received_bytes = recvfrom(request.socket, buffer, sizeof(buffer), 0, (struct sockaddr *) &client_addr, &request.peer_length);
+    sendto(request.socket, "ACK", 4, 0, (struct sockaddr *)&client_addr, request.peer_length);
     std::string out_path(buffer, static_cast<unsigned long>(received_bytes));
     logger_->info("Receiving file of name: {}", out_path);
     std::ofstream output_file;
@@ -229,31 +204,30 @@ void DropboxUtil::File::receive_file(file_transfer_request request) {
     }
 
     std::fill(buffer, buffer + sizeof(buffer), 0);
-    received_bytes = recvfrom(sock, buffer, sizeof(buffer), 0,(struct sockaddr *) &client_addr,(socklen_t *)&peer_length);
-    sendto(sock, "ACK", 4, 0, (struct sockaddr *)&client_addr, static_cast<socklen_t>(peer_length));
+    received_bytes = recvfrom(request.socket, buffer, sizeof(buffer), 0, (struct sockaddr *) &client_addr, &request.peer_length);
+    sendto(request.socket, "ACK", 4, 0, (struct sockaddr *)&client_addr, request.peer_length);
     std::string file_mod_time(buffer, static_cast<unsigned long>(received_bytes));
     filesystem::path path(out_path);
     logger_->info("File modification time: {}", file_mod_time);
 
     std::fill(buffer, buffer + sizeof(buffer), 0);
-    received_bytes = recvfrom(sock, buffer, sizeof(buffer), 0,(struct sockaddr *) &client_addr,(socklen_t *)&peer_length);
-    sendto(sock, "ACK", 4, 0, (struct sockaddr *)&client_addr, static_cast<socklen_t>(peer_length));
+    received_bytes = recvfrom(request.socket, buffer, sizeof(buffer), 0, (struct sockaddr *) &client_addr, &request.peer_length);
+    sendto(request.socket, "ACK", 4, 0, (struct sockaddr *)&client_addr, request.peer_length);
     std::string file_perm(buffer, static_cast<unsigned long>(received_bytes));
 
     filesystem::permissions(path, parse_file_permissions_from_string(file_perm));
 
     logger_->info("Received permissions of file: {} ", file_perm);
 
-    struct timeval tv = {0, TIMEOUT_US};
-
-    if(setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) {
-        logger_->error("Error setting timeout");
+    struct timeval set_timeout_val = {0, TIMEOUT_US};
+    if(setsockopt(request.socket, SOL_SOCKET, SO_RCVTIMEO, &set_timeout_val, sizeof(set_timeout_val)) < 0) {
+        logger_->error("Error setting timeout {}", set_timeout_val.tv_usec);
     }
 
     bool writable_packet;
     do {
         std::fill(buffer, buffer + sizeof(buffer), 0);
-        received_bytes = recvfrom(sock,buffer,sizeof(buffer),0,(struct sockaddr *) &client_addr,(socklen_t *)&peer_length);
+        received_bytes = recvfrom(request.socket, buffer, sizeof(buffer), 0, (struct sockaddr *) &client_addr, &request.peer_length);
         if(received_bytes < 0) {
             throw std::runtime_error("Error receiving packet from client");
         }
@@ -261,24 +235,30 @@ void DropboxUtil::File::receive_file(file_transfer_request request) {
         if(writable_packet)
             output_file.write(buffer, received_bytes > BUFFER_SIZE? BUFFER_SIZE : received_bytes);
         logger_->debug("Received packet. Bytes: {}", received_bytes);
-        sendto(sock, "ACK", 4, 0, (struct sockaddr *)&client_addr, static_cast<socklen_t>(peer_length));
+        sendto(request.socket, "ACK", 4, 0, (struct sockaddr *)&client_addr, request.peer_length);
     } while (writable_packet);
     output_file.close();
     filesystem::last_write_time(path, std::stol(file_mod_time));
 
     char fin[4];
-    recvfrom(sock,fin,sizeof(fin),0,(struct sockaddr *) &client_addr,(socklen_t *)&peer_length);
+    recvfrom(request.socket, fin, sizeof(fin), 0, (struct sockaddr *) &client_addr, &request.peer_length);
     if(strcmp(fin,"FIN") != 0) {
         logger_->error("Error receiving FIN from client");
         throw std::runtime_error("Error finishing connection");
     }
-    sendto(sock, "FIN+ACK", 8, 0, (struct sockaddr *)&client_addr, static_cast<socklen_t>(peer_length));
-    recvfrom(sock, ack, sizeof(ack),0,(struct sockaddr *) &client_addr,(socklen_t *)&peer_length);
+    sendto(request.socket, "FIN+ACK", 8, 0, (struct sockaddr *)&client_addr, request.peer_length);
+    recvfrom(request.socket, ack, sizeof(ack), 0, (struct sockaddr *) &client_addr, &request.peer_length);
     if(strcmp(ack,"ACK") != 0) {
         logger_->error("Error receiving ACK from client");
         throw std::runtime_error("Error finishing connection");
     }
     logger_->info("Transferred file successfully!");
+
+    struct timeval unset_timeout_val = {0, 0};
+    if(setsockopt(request.socket, SOL_SOCKET, SO_RCVTIMEO, &unset_timeout_val, sizeof(unset_timeout_val)) == 0)
+        logger_->debug("Disabled packet timeout successfully");
+    else
+        logger_->debug("Error disabling packet timeout");
 }
 
 DropboxUtil::File::File() {
@@ -286,6 +266,6 @@ DropboxUtil::File::File() {
      *  to write to a file, use spdlog::basic_logger_mt("File", "logs/log.txt")
      *  to write to stdout, use spdlog::stdout_color_mt("File")
      */
-    logger_ = spdlog::basic_logger_mt("File", "log.txt");
+    logger_ = spdlog::stdout_color_mt("File");
     logger_->set_level(spdlog::level::debug);
 }

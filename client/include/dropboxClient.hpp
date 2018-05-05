@@ -65,10 +65,10 @@ private:
     std::vector<file_info> user_files_;
 
     // other attributes
-    int32_t  port_;
+    int32_t port_;
     struct sockaddr_in server_addr_;
     SOCKET socket_;
-    int peer_length_;
+    socklen_t peer_length_;
     std::shared_ptr<spdlog::logger> logger_;
 };
 

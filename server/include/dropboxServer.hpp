@@ -65,14 +65,9 @@ private:
     int32_t port_;
     struct sockaddr_in server_addr_;
     SOCKET socket_;
-    int peer_length_;
+    socklen_t peer_length_;
     std::vector<client> clients_;
     std::shared_ptr<spdlog::logger> logger_;
 };
-
-
-
-//test functions
-void start_server();
 
 #endif // SISOP2_SERVER_INCLUDE_DROPBOXSERVER_H

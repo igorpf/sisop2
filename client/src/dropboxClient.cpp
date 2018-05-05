@@ -15,26 +15,22 @@
 
 
 void Client::login_server(const std::string& host, int32_t port) {
-    int peer_length;
-    SOCKET sock;
-
-    if((sock = socket(AF_INET, SOCK_DGRAM,0)) < 0) {
-        logger_->error("Error creating socket") ;
-        exit(DEFAULT_ERROR_CODE);
+    if((socket_ = socket(AF_INET, SOCK_DGRAM,0)) < 0) {
+        logger_->error("Error creating socket");
+        throw std::runtime_error("Error trying to login to server");
     }
 
     port_ = port;
     server_addr_.sin_family = AF_INET;
     server_addr_.sin_port = htons(static_cast<uint16_t>(port));
     server_addr_.sin_addr.s_addr = inet_addr(host.c_str());
-    peer_length = sizeof(server_addr_);
+    peer_length_ = sizeof(server_addr_);
     std::string command("connect ");
     command.append(user_id_)
             .append(" ")
             .append(std::to_string(device_id_));
 
-    sendto(sock, command.c_str(), command.size(), 0, (struct sockaddr *)&server_addr_,
-           static_cast<socklen_t>(peer_length));
+    sendto(socket_, command.c_str(), command.size(), 0, (struct sockaddr *)&server_addr_, peer_length_);
     logged_in_ = true;
 }
 
@@ -49,7 +45,15 @@ void Client::send_file(const std::string& filename)
     request.in_file_path = std::string("dropboxClient");
     request.ip = std::string(LOOPBACK_IP);
     request.port = DEFAULT_SERVER_PORT;
+    request.peer_length = peer_length_;
+    request.server_address = server_addr_;
+    request.socket = socket_;
+    
 
+    std::string command("upload ");
+    command.append(filename);
+
+    sendto(socket_, command.c_str(), command.size(), 0, (struct sockaddr *)&server_addr_, peer_length_);
     DropboxUtil::File file_util;
     file_util.send_file(request);
 }
