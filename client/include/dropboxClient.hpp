@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+#include <netinet/in.h>
+
 typedef struct client {
     bool logged_in;
     //TODO(jfguimaraes) Como identificar um novo dispositivo?
@@ -13,7 +15,6 @@ typedef struct client {
     std::string user_id;
     std::vector<file_info> user_files;
 } client;
-#include <netinet/in.h>
 
 class Client {
 public:
@@ -71,8 +72,5 @@ private:
     socklen_t peer_length_;
     std::shared_ptr<spdlog::logger> logger_;
 };
-
-//test functions
-void start_client();
 
 #endif // SISOP2_CLIENT_INCLUDE_DROPBOXCLIENT_H

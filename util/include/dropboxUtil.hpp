@@ -10,6 +10,8 @@
 #include <netinet/in.h>
 //TODO(jfguimaraes) Tornar Util uma biblioteca? Faria os includes ficarem mais limpos
 
+namespace filesystem = boost::filesystem;
+
 typedef int SOCKET;
 const int32_t BUFFER_SIZE = 64000; //approximately an ip packet size
 const int64_t TIMEOUT_US  = 50000; // to disable timeout, set 500000000000 as value
@@ -18,8 +20,6 @@ const int8_t DEFAULT_ERROR_CODE = 1;
 const int8_t EOF_SYMBOL = -1;
 const int16_t DEFAULT_SERVER_PORT = 9001;
 const std::string LOOPBACK_IP("127.0.0.1");
-
-namespace filesystem = boost::filesystem;
 
 typedef struct file_info {
     std::string name;

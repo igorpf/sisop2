@@ -34,11 +34,6 @@ void Client::login_server(const std::string& host, int32_t port) {
     logged_in_ = true;
 }
 
-
-void Client::sync_client() {
-
-}
-
 void Client::send_file(const std::string& filename)
 {
     file_transfer_request request;
@@ -48,7 +43,6 @@ void Client::send_file(const std::string& filename)
     request.peer_length = peer_length_;
     request.server_address = server_addr_;
     request.socket = socket_;
-    
 
     std::string command("upload ");
     command.append(filename);
@@ -58,22 +52,25 @@ void Client::send_file(const std::string& filename)
     file_util.send_file(request);
 }
 
-void Client::get_file(const std::string& filename)
-{
-    throw std::logic_error("Function not implemented");
-}
-
-void Client::delete_file(const std::string& filename)
-{
-    throw std::logic_error("Function not implemented");
-}
-
-void Client::close_session()
-{
-    throw std::logic_error("Function not implemented");
-}
-
 Client::Client(uint64_t device_id_, const std::string &user_id_) : device_id_(device_id_), user_id_(user_id_) {
     logger_ = spdlog::stdout_color_mt("Client");
     logger_->set_level(spdlog::level::debug);
+}
+
+// not implemented methods
+
+void Client::close_session() {
+    throw std::logic_error("Function not implemented");
+}
+
+void Client::sync_client() {
+    throw std::logic_error("Function not implemented");
+}
+
+void Client::get_file(const std::string& filename) {
+    throw std::logic_error("Function not implemented");
+}
+
+void Client::delete_file(const std::string& filename) {
+    throw std::logic_error("Function not implemented");
 }

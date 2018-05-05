@@ -12,7 +12,6 @@
 typedef struct {
     bool logged_in;
     //TODO(jfguimaraes) Como identificar um novo dispositivo?
-//    uint64_t devices[2];
     std::set<uint64_t> devices;
     std::string user_id;
     std::vector<file_info> user_files;
@@ -28,6 +27,9 @@ public:
      */
     void start(int32_t port = DEFAULT_SERVER_PORT);
 
+    /**
+     * Starts to listen for commands from the client
+     */
     void listen();
 
     /**

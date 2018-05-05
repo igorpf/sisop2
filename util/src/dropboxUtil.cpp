@@ -14,8 +14,7 @@
 #include <unistd.h>
 
 
-filesystem::perms DropboxUtil::File::parse_file_permissions_from_string(const std::string &perms)
-{
+filesystem::perms DropboxUtil::File::parse_file_permissions_from_string(const std::string &perms) {
     std::vector<filesystem::perms> perms_vec = {
         filesystem::owner_read,
         filesystem::owner_write,
@@ -53,9 +52,8 @@ void DropboxUtil::File::send_file(file_transfer_request request) {
     }
 
     struct timeval set_timeout_val = {0, TIMEOUT_US};
-    if(setsockopt(request.socket, SOL_SOCKET, SO_RCVTIMEO, &set_timeout_val, sizeof(set_timeout_val)) < 0) 
+    if(setsockopt(request.socket, SOL_SOCKET, SO_RCVTIMEO, &set_timeout_val, sizeof(set_timeout_val)) < 0)
         logger_->error("Error setting timeout {}", set_timeout_val.tv_usec);
-    
 
     filesystem::path path(request.in_file_path);
     if (!filesystem::exists(path))
@@ -164,9 +162,9 @@ void DropboxUtil::File::send_file(file_transfer_request request) {
     }
     sendto(request.socket, "ACK", 4, 0, (struct sockaddr *)&request.server_address, request.peer_length);
     logger_->info("Successfully sent file");
-    
+
     struct timeval unset_timeout_val = {0, 0};
-    if(setsockopt(request.socket, SOL_SOCKET, SO_RCVTIMEO, &unset_timeout_val, sizeof(unset_timeout_val)) == 0) 
+    if(setsockopt(request.socket, SOL_SOCKET, SO_RCVTIMEO, &unset_timeout_val, sizeof(unset_timeout_val)) == 0)
         logger_->debug("Disabled packet timeout successfully");
     else
         logger_->debug("Error disabling packet timeout");
@@ -191,7 +189,6 @@ void DropboxUtil::File::receive_file(file_transfer_request request) {
         logger_->error("Error receiving ACK packet from client");
         throw std::runtime_error("Handshake error");
     }
-
 
     received_bytes = recvfrom(request.socket, buffer, sizeof(buffer), 0, (struct sockaddr *) &client_addr, &request.peer_length);
     sendto(request.socket, "ACK", 4, 0, (struct sockaddr *)&client_addr, request.peer_length);

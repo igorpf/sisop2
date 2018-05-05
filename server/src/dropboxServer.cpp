@@ -31,7 +31,6 @@ std::string get_errno_with_message(const std::string &base_message = "") {
     return str_stream.str();
 }
 
-
 // Server methods
 bool Server::has_client_connected(const std::string &client_id) {
     auto client_iterator = std::find_if(clients_.begin(), clients_.end(),
@@ -40,7 +39,7 @@ bool Server::has_client_connected(const std::string &client_id) {
 }
 
 void Server::parse_command(const std::string &command_line) {
-    logger_->debug("Debugging command {}", command_line);
+    logger_->debug("Parsing command {}", command_line);
     auto tokens = split_tokens(command_line);
     auto command = tokens[0];
     if(command == "connect") {
@@ -52,7 +51,6 @@ void Server::parse_command(const std::string &command_line) {
         receive_file(tokens[1]);
     }
 }
-
 
 void Server::add_client(const std::string &user_id, uint64_t device_id) {
     if(!has_client_connected(user_id)) {
@@ -67,13 +65,7 @@ void Server::add_client(const std::string &user_id, uint64_t device_id) {
     client_iterator->devices.insert(device_id);
 }
 
-void Server::sync_server()
-{
-    throw std::logic_error("Function not implemented");
-}
-
-void Server::receive_file(const std::string& filename)
-{
+void Server::receive_file(const std::string& filename) {
     // TODO set filename from filename and don't transmit
     file_transfer_request request;
     request.ip = std::string(LOOPBACK_IP);
@@ -83,11 +75,6 @@ void Server::receive_file(const std::string& filename)
     request.peer_length = peer_length_;
     DropboxUtil::File file_util;
     file_util.receive_file(request);
-}
-
-void Server::send_file(const std::string& filename)
-{
-    throw std::logic_error("Function not implemented");
 }
 
 void Server::start(int32_t port) {
@@ -127,5 +114,15 @@ void Server::listen() {
 Server::Server() {
     logger_ = spdlog::stdout_color_mt("Server");
     logger_->set_level(spdlog::level::debug);
+}
+
+// not implemented methods
+
+void Server::sync_server() {
+    throw std::logic_error("Function not implemented");
+}
+
+void Server::send_file(const std::string& filename) {
+    throw std::logic_error("Function not implemented");
 }
 
