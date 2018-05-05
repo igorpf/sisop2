@@ -93,17 +93,18 @@ void start_server()
     file_util.receive_file(request);
 }
 
-void Server::start(uint16_t port) {
+void Server::start(int32_t port) {
     if ((socket_ = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
         throw std::runtime_error(get_errno_with_message("Error initializing socket"));
 
     memset((void *) &server_addr_, 0, sizeof(struct sockaddr_in));
     server_addr_.sin_family = AF_INET;
-    server_addr_.sin_port = htons(port);
+    server_addr_.sin_port = htons(static_cast<uint16_t>(port));
     server_addr_.sin_addr.s_addr = INADDR_ANY;
     peer_length_ = sizeof(server_addr_);
+    port_ = port;
 
-    if(bind(socket_, (struct sockaddr *) &server_addr_, peer_length_) == DEFAULT_ERROR_CODE)
+    if(bind(socket_, (struct sockaddr *) &server_addr_, static_cast<socklen_t>(peer_length_)) == DEFAULT_ERROR_CODE)
         throw std::runtime_error(get_errno_with_message("Bind error"));
     logger_->info("Initialized socket of number {} for server", socket_);
     has_started_ = true;

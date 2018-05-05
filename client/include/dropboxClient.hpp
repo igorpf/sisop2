@@ -25,7 +25,7 @@ public:
      * @param host Endereço do servidor
      * @param port Porta de acesso ao servidor
      */
-    void login_server(const std::string &host, int port);
+    void login_server(const std::string &host, int32_t port);
 
     /**
      * Sincroniza o diretório "sync_dir_<user_id>" com o servidor
@@ -65,7 +65,7 @@ private:
     std::vector<file_info> user_files_;
 
     // other attributes
-    uint16_t port_;
+    int32_t  port_;
     struct sockaddr_in server_addr_;
     SOCKET socket_;
     int peer_length_;

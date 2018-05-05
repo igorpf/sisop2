@@ -14,7 +14,7 @@
 #include <netdb.h>
 
 
-void Client::login_server(const std::string& host, int port) {
+void Client::login_server(const std::string& host, int32_t port) {
     int peer_length;
     SOCKET sock;
 
@@ -25,7 +25,7 @@ void Client::login_server(const std::string& host, int port) {
 
     port_ = port;
     server_addr_.sin_family = AF_INET;
-    server_addr_.sin_port = htons(port);
+    server_addr_.sin_port = htons(static_cast<uint16_t>(port));
     server_addr_.sin_addr.s_addr = inet_addr(host.c_str());
     peer_length = sizeof(server_addr_);
     std::string command("connect ");
@@ -33,7 +33,8 @@ void Client::login_server(const std::string& host, int port) {
             .append(" ")
             .append(std::to_string(device_id_));
 
-    sendto(sock, command.c_str(), command.size(), 0, (struct sockaddr *)&server_addr_, peer_length);
+    sendto(sock, command.c_str(), command.size(), 0, (struct sockaddr *)&server_addr_,
+           static_cast<socklen_t>(peer_length));
     logged_in_ = true;
 }
 

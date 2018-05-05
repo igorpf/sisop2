@@ -28,7 +28,7 @@ public:
      * Initializes server params and binds it to the given port
      * @param port Server port number (must be between 0 and 65535). Defaults to DEFAULT_SERVER_PORT
      */
-    void start(uint16_t port = DEFAULT_SERVER_PORT);
+    void start(int32_t port = DEFAULT_SERVER_PORT);
 
     void listen();
 
@@ -64,7 +64,7 @@ private:
      * True if the server has been successfully started, false otherwise
      * */
     bool has_started_;
-    uint16_t port_;
+    int32_t port_;
     struct sockaddr_in server_addr_;
     SOCKET socket_;
     int peer_length_;
