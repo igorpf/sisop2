@@ -149,7 +149,7 @@ void DropboxUtil::File::send_file(file_transfer_request request) {
             if(ack_error) {
                 logger_->error("Error receiving ACK, retransmitting packet of number {}", sent_packets);
                 retransmissions++;
-                if(retransmissions >= MAX_RETRANSMSSIONS) {
+                if(retransmissions >= MAX_RETRANSMISSIONS) {
                     logger_->error("Achieved maximum retransmissions of {}, aborting file transmission", retransmissions);
                     throw std::runtime_error("Maximum retransmissions achieved");
                 }
