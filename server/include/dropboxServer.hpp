@@ -3,11 +3,11 @@
 
 #include "../../util/include/dropboxUtil.hpp"
 
+#include <set>
 #include <string>
+#include <vector>
 
 #include <netinet/in.h>
-#include <vector>
-#include <set>
 
 typedef struct {
     bool logged_in;
@@ -20,6 +20,8 @@ typedef struct {
 class Server {
 public:
     Server();
+
+    virtual ~Server();
 
     /**
      * Initializes server params and binds it to the given port
@@ -63,13 +65,15 @@ private:
     /**
      * True if the server has been successfully started, false otherwise
      * */
+    static const std::string LOGGER_NAME;
+    std::shared_ptr<spdlog::logger> logger_;
+
     bool has_started_;
     int32_t port_;
     struct sockaddr_in server_addr_;
     SOCKET socket_;
     socklen_t peer_length_;
     std::vector<client> clients_;
-    std::shared_ptr<spdlog::logger> logger_;
 };
 
 #endif // SISOP2_SERVER_INCLUDE_DROPBOXSERVER_H

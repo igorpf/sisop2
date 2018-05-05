@@ -21,6 +21,8 @@ public:
 
     Client(uint64_t device_id_, const std::string &user_id_);
 
+    virtual ~Client();
+
     /**
      * Estabelece uma conexão entre o cliente e o servidor
      * @param host Endereço do servidor
@@ -66,11 +68,13 @@ private:
     std::vector<file_info> user_files_;
 
     // other attributes
+    static const std::string LOGGER_NAME;
+    std::shared_ptr<spdlog::logger> logger_;
+
     int32_t port_;
     struct sockaddr_in server_addr_;
     SOCKET socket_;
     socklen_t peer_length_;
-    std::shared_ptr<spdlog::logger> logger_;
 };
 
 #endif // SISOP2_CLIENT_INCLUDE_DROPBOXCLIENT_H

@@ -15,6 +15,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+const std::string Server::LOGGER_NAME = "Server";
+
 // Utility functions
 std::vector<std::string> split_tokens(const std::string &str) {
     std::stringstream stream(str);
@@ -112,8 +114,12 @@ void Server::listen() {
 }
 
 Server::Server() {
-    logger_ = spdlog::stdout_color_mt("Server");
+    logger_ = spdlog::stdout_color_mt(LOGGER_NAME);
     logger_->set_level(spdlog::level::debug);
+}
+
+Server::~Server() {
+    spdlog::drop(LOGGER_NAME);
 }
 
 // not implemented methods

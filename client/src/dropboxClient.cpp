@@ -13,6 +13,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
+const std::string Client::LOGGER_NAME = "Client";
 
 void Client::login_server(const std::string& host, int32_t port) {
     if((socket_ = socket(AF_INET, SOCK_DGRAM,0)) < 0) {
@@ -53,8 +54,12 @@ void Client::send_file(const std::string& filename)
 }
 
 Client::Client(uint64_t device_id_, const std::string &user_id_) : device_id_(device_id_), user_id_(user_id_) {
-    logger_ = spdlog::stdout_color_mt("Client");
+    logger_ = spdlog::stdout_color_mt(LOGGER_NAME);
     logger_->set_level(spdlog::level::debug);
+}
+
+Client::~Client() {
+    spdlog::drop(LOGGER_NAME);
 }
 
 // not implemented methods

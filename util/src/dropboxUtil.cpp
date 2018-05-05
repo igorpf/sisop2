@@ -13,6 +13,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+const std::string DropboxUtil::File::LOGGER_NAME = "File";
 
 filesystem::perms DropboxUtil::File::parse_file_permissions_from_string(const std::string &perms) {
     std::vector<filesystem::perms> perms_vec = {
@@ -260,9 +261,13 @@ void DropboxUtil::File::receive_file(file_transfer_request request) {
 
 DropboxUtil::File::File() {
     /**
-     *  to write to a file, use spdlog::basic_logger_mt("File", "logs/log.txt")
-     *  to write to stdout, use spdlog::stdout_color_mt("File")
+     *  to write to a file, use spdlog::basic_logger_mt(<logger name>, "logs/log.txt")
+     *  to write to stdout, use spdlog::stdout_color_mt(<logger name>)
      */
-    logger_ = spdlog::stdout_color_mt("File");
+    logger_ = spdlog::stdout_color_mt(LOGGER_NAME);
     logger_->set_level(spdlog::level::debug);
+}
+
+DropboxUtil::File::~File() {
+    spdlog::drop(LOGGER_NAME);
 }
