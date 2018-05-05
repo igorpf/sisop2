@@ -33,13 +33,6 @@ typedef struct file_transfer_request {
     std::string out_file_path;
 } file_transfer_request;
 
-typedef struct {
-    file_transfer_request request;
-    int32_t sequence_number;
-    bool is_connected;
-    bool has_finished;
-} file_transfer_connection;
-
 template <typename Collection,typename UnaryOperator>
 Collection map(Collection col, UnaryOperator op) {
     std::transform(col.begin(),col.end(),col.begin(),op);
