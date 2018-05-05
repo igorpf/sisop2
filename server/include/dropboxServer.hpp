@@ -22,6 +22,7 @@ typedef struct {
 
 class Server {
 public:
+    Server();
 
     /**
      * Initializes server params and binds it to the given port
@@ -68,6 +69,7 @@ private:
     SOCKET socket_;
     int peer_length_;
     std::vector<client> clients_;
+    std::shared_ptr<spdlog::logger> logger_;
 };
 
 

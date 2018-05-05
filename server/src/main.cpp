@@ -1,8 +1,8 @@
 #include "../include/dropboxServer.hpp"
 
 #include <spdlog/spdlog.h>
+#include <iostream>
 
-const auto logger = spdlog::stdout_color_mt("server");
 
 int main(int argc, char* argv[])
 {
@@ -12,7 +12,7 @@ int main(int argc, char* argv[])
         server.listen();
         start_server();
     } catch (std::exception &exception) {
-        logger->error(exception.what());
+        std::cerr << exception.what() << std::endl;
     }
 
 

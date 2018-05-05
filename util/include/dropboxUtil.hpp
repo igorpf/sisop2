@@ -52,7 +52,7 @@ namespace DropboxUtil {
         filesystem::perms parse_file_permissions_from_string(const std::string &perms);
         File();
     private:
-        std::shared_ptr<spdlog::logger> logger;
+        std::shared_ptr<spdlog::logger> logger_;
     };
 }
 

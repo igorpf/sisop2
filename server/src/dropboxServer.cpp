@@ -34,9 +34,9 @@ std::string get_errno_with_message(const std::string &base_message = "") {
 
 // Server methods
 bool Server::has_client_connected(const std::string &client_id) {
-    auto cli_iterator = std::find_if(clients_.begin(), clients_.end(),
+    auto client_iterator = std::find_if(clients_.begin(), clients_.end(),
                                      [&](const client& c) -> bool { return client_id == c.user_id;});
-    return !(cli_iterator == clients_.end());
+    return !(client_iterator == clients_.end());
 }
 
 void Server::parse_command(const std::string &command_line) {
@@ -59,11 +59,11 @@ void Server::add_client(const std::string &user_id, uint64_t device_id) {
         new_client.user_id = user_id;
         new_client.logged_in;
         clients_.push_back(new_client);
-        std::cout << "Connected new client, total clients: " << clients_.size() << std::endl;
+        logger_->info( "Connected new client, total clients: {}",  clients_.size());
     }
-    auto cli_iterator = std::find_if(clients_.begin(), clients_.end(),
+    auto client_iterator = std::find_if(clients_.begin(), clients_.end(),
                                      [&](const client& c) -> bool { return user_id == c.user_id;});
-    cli_iterator->devices.insert(device_id);
+    client_iterator->devices.insert(device_id);
 }
 
 void Server::sync_server()
@@ -105,25 +105,28 @@ void Server::start(uint16_t port) {
 
     if(bind(socket_, (struct sockaddr *) &server_addr_, peer_length_) == DEFAULT_ERROR_CODE)
         throw std::runtime_error(get_errno_with_message("Bind error"));
-    std::cout << "Initialized socket of number " << socket_ << " for server" << std::endl;
+    logger_->info("Initialized socket of number {} for server", socket_);
     has_started_ = true;
 }
 
 void Server::listen() {
     if(!has_started_)
         throw std::logic_error("The server must be initialized to begin listening");
-    std::cout << "Server is listening on port " << port_ << std::endl;
+    logger_->info("Server is listening on port {}", port_);
     bool continue_listening;
     char buffer[BUFFER_SIZE];
-    struct sockaddr_in client;
+    struct sockaddr_in client{};
     ssize_t received_bytes;
     do {
         received_bytes = recvfrom(socket_, buffer, sizeof(buffer), 0,(struct sockaddr *) &client, (socklen_t *)&peer_length_);
-        std::cout << "Received from client " << (inet_ntoa(client.sin_addr))
-                  << " port " << client.sin_port
-                  << " the message: " << buffer << std::endl;
+        logger_->debug("Received from client {} port {} the message: {}", inet_ntoa(client.sin_addr), client.sin_port, buffer);
         continue_listening = !(received_bytes == 1 && buffer[0] == -1);
         parse_command(buffer);
     } while(continue_listening);
+}
+
+Server::Server() {
+    logger_ = spdlog::stdout_color_mt("Server");
+    logger_->set_level(spdlog::level::debug);
 }
 

@@ -69,6 +69,7 @@ private:
     struct sockaddr_in server_addr_;
     SOCKET socket_;
     int peer_length_;
+    std::shared_ptr<spdlog::logger> logger_;
 };
 
 //test functions

@@ -19,7 +19,7 @@ void Client::login_server(const std::string& host, int port) {
     SOCKET sock;
 
     if((sock = socket(AF_INET, SOCK_DGRAM,0)) < 0) {
-        std::cerr << "Error creating socket" << std::endl ;
+        logger_->error("Error creating socket") ;
         exit(DEFAULT_ERROR_CODE);
     }
 
@@ -72,4 +72,7 @@ void Client::close_session()
     throw std::logic_error("Function not implemented");
 }
 
-Client::Client(uint64_t device_id_, const std::string &user_id_) : device_id_(device_id_), user_id_(user_id_) {}
+Client::Client(uint64_t device_id_, const std::string &user_id_) : device_id_(device_id_), user_id_(user_id_) {
+    logger_ = spdlog::stdout_color_mt("Client");
+    logger_->set_level(spdlog::level::debug);
+}
