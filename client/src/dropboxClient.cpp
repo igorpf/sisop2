@@ -40,14 +40,14 @@ void Client::login_server(const std::string& host, int32_t port) {
             .append(" ")
             .append(std::to_string(device_id_));
 
-    sendto(socket_, command.c_str(), command.size(), 0, static_cast<struct sockaddr*>(&server_addr_), peer_length_);
+    sendto(socket_, command.c_str(), command.size(), 0, (struct sockaddr*)&server_addr_, peer_length_);
     logged_in_ = true;
 }
 
 void Client::send_file(const std::string& filename)
 {
     util::file_transfer_request request;
-    request.in_file_path = "dropboxClient";
+    request.in_file_path = filename;
     request.ip = util::LOOPBACK_IP;
     request.port = util::DEFAULT_SERVER_PORT;
     request.peer_length = peer_length_;

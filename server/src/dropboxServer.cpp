@@ -2,9 +2,7 @@
 #include "../include/dropboxServer.hpp"
 
 #include <algorithm>
-#include <cstring>
 #include <iostream>
-#include <sstream>
 #include <stdexcept>
 #include <vector>
 
@@ -16,22 +14,6 @@
 #include <unistd.h>
 
 const std::string Server::LOGGER_NAME = "Server";
-
-// Utility functions
-std::vector<std::string> split_words_by_spaces(const std::string &phrase) {
-    std::stringstream stream(phrase);
-    std::string buffer;
-    std::vector<std::string> words;
-    while(stream >> buffer)
-        words.push_back(buffer);
-    return words;
-}
-
-std::string get_errno_with_message(const std::string &base_message = "") {
-    std::ostringstream str_stream;
-    str_stream << base_message << ", error code " << errno << std::endl;
-    return str_stream.str();
-}
 
 Server::Server() {
     logger_ = spdlog::stdout_color_mt(LOGGER_NAME);
@@ -50,7 +32,7 @@ bool Server::has_client_connected(const std::string &client_id) {
 
 void Server::parse_command(const std::string &command_line) {
     logger_->debug("Parsing command {}", command_line);
-    auto tokens = split_words_by_spaces(command_line);
+    auto tokens = util::split_words_by_spaces(command_line);
     auto command = tokens[0];
     if(command == "connect") {
         auto user_id = tokens[1], device_id = tokens[2];
@@ -90,7 +72,7 @@ void Server::receive_file(const std::string& filename) {
 
 void Server::start(int32_t port) {
     if ((socket_ = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
-        throw std::runtime_error(get_errno_with_message("Error initializing socket"));
+        throw std::runtime_error(util::get_errno_with_message("Error initializing socket"));
 
     memset((void *) &server_addr_, 0, sizeof(struct sockaddr_in));
     server_addr_.sin_family = AF_INET;
@@ -100,7 +82,7 @@ void Server::start(int32_t port) {
     port_ = port;
 
     if(bind(socket_, (struct sockaddr *) &server_addr_, peer_length_) == util::DEFAULT_ERROR_CODE)
-        throw std::runtime_error(get_errno_with_message("Bind error"));
+        throw std::runtime_error(util::get_errno_with_message("Bind error"));
     logger_->info("Initialized socket of number {} for server", socket_);
     has_started_ = true;
 }

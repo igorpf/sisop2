@@ -5,6 +5,7 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -12,6 +13,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+
 
 const std::string DropboxUtil::File::LOGGER_NAME = "File";
 
@@ -26,6 +28,21 @@ DropboxUtil::File::File() {
 
 DropboxUtil::File::~File() {
     spdlog::drop(LOGGER_NAME);
+}
+
+std::vector<std::string> DropboxUtil::split_words_by_spaces(const std::string &phrase) {
+    std::stringstream stream(phrase);
+    std::string buffer;
+    std::vector<std::string> words;
+    while(stream >> buffer)
+        words.push_back(buffer);
+    return words;
+}
+
+std::string DropboxUtil::get_errno_with_message(const std::string &base_message) {
+    std::ostringstream str_stream;
+    str_stream << base_message << ", error code " << errno << std::endl;
+    return str_stream.str();
 }
 
 filesystem::perms DropboxUtil::File::parse_file_permissions_from_string(const std::string &perms) {
