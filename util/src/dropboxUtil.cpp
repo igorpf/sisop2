@@ -42,7 +42,7 @@ filesystem::perms DropboxUtil::File::parse_file_permissions_from_string(const st
     };
     auto perms_int = static_cast<uint16_t>(std::stoi(perms));
 
-    perms_vec = map(perms_vec, [&](filesystem::perms p) -> filesystem::perms {
+    perms_vec = DropboxUtil::map(perms_vec, [&](filesystem::perms p) -> filesystem::perms {
         return p & perms_int? p : filesystem::no_perms;
     });
 

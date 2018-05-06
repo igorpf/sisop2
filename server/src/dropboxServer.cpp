@@ -77,13 +77,14 @@ void Server::add_client(const std::string &user_id, uint64_t device_id) {
 
 void Server::receive_file(const std::string& filename) {
     // TODO set filename from filename and don't transmit
-    file_transfer_request request;
-    request.ip = LOOPBACK_IP;
+    util::file_transfer_request request;
+    request.ip = util::LOOPBACK_IP;
     request.port = port_;
     request.socket = socket_;
     request.server_address = server_addr_;
     request.peer_length = peer_length_;
-    DropboxUtil::File file_util;
+
+    util::File file_util;
     file_util.receive_file(request);
 }
 
@@ -98,7 +99,7 @@ void Server::start(int32_t port) {
     peer_length_ = sizeof(server_addr_);
     port_ = port;
 
-    if(bind(socket_, (struct sockaddr *) &server_addr_, peer_length_) == DEFAULT_ERROR_CODE)
+    if(bind(socket_, (struct sockaddr *) &server_addr_, peer_length_) == util::DEFAULT_ERROR_CODE)
         throw std::runtime_error(get_errno_with_message("Bind error"));
     logger_->info("Initialized socket of number {} for server", socket_);
     has_started_ = true;
@@ -109,7 +110,7 @@ void Server::listen() {
         throw std::logic_error("The server must be initialized to begin listening");
     logger_->info("Server is listening on port {}", port_);
     bool continue_listening;
-    char buffer[BUFFER_SIZE];
+    char buffer[util::BUFFER_SIZE];
     struct sockaddr_in client{};
     ssize_t received_bytes;
     do {

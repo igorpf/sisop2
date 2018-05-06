@@ -46,10 +46,10 @@ void Client::login_server(const std::string& host, int32_t port) {
 
 void Client::send_file(const std::string& filename)
 {
-    file_transfer_request request;
+    util::file_transfer_request request;
     request.in_file_path = "dropboxClient";
-    request.ip = LOOPBACK_IP;
-    request.port = DEFAULT_SERVER_PORT;
+    request.ip = util::LOOPBACK_IP;
+    request.port = util::DEFAULT_SERVER_PORT;
     request.peer_length = peer_length_;
     request.server_address = server_addr_;
     request.socket = socket_;
@@ -58,7 +58,7 @@ void Client::send_file(const std::string& filename)
     command.append(filename);
 
     sendto(socket_, command.c_str(), command.size(), 0, (struct sockaddr *)&server_addr_, peer_length_);
-    DropboxUtil::File file_util;
+    util::File file_util;
     file_util.send_file(request);
 }
 

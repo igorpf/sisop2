@@ -9,13 +9,14 @@
 #include <netinet/in.h>
 #include <spdlog/spdlog.h>
 
+namespace util = DropboxUtil;
 
 typedef struct client {
     bool logged_in;
     //TODO(jfguimaraes) Como identificar um novo dispositivo?
     int64_t devices[2];
     std::string user_id;
-    std::vector<file_info> user_files;
+    std::vector<util::file_info> user_files;
 } client;
 
 class Client {
@@ -66,14 +67,14 @@ private:
     bool logged_in_;
     uint64_t device_id_;
     std::string user_id_;
-    std::vector<file_info> user_files_;
+    std::vector<util::file_info> user_files_;
 
     static const std::string LOGGER_NAME;
     std::shared_ptr<spdlog::logger> logger_;
 
     int32_t port_;
     struct sockaddr_in server_addr_;
-    SOCKET socket_;
+    util::SOCKET socket_;
     socklen_t peer_length_;
 };
 
