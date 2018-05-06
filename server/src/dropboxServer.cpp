@@ -58,7 +58,6 @@ void Server::add_client(const std::string &user_id, uint64_t device_id) {
 }
 
 void Server::receive_file(const std::string& filename) {
-    // TODO set filename from filename and don't transmit
     util::file_transfer_request request;
     request.ip = util::LOOPBACK_IP;
     request.port = port_;
@@ -89,7 +88,7 @@ void Server::start(int32_t port) {
 
 void Server::listen() {
     if(!has_started_)
-        throw std::logic_error("The server must be initialized to begin listening");
+        start();
     logger_->info("Server is listening on port {}", port_);
     bool continue_listening;
     char buffer[util::BUFFER_SIZE];
