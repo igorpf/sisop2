@@ -3,16 +3,17 @@
 
 #include "../../util/include/dropboxUtil.hpp"
 
-#include <set>
 #include <string>
 #include <vector>
 
 #include <netinet/in.h>
+#include <spdlog/spdlog.h>
+
 
 typedef struct {
     bool logged_in;
     //TODO(jfguimaraes) Como identificar um novo dispositivo?
-    std::set<uint64_t> devices;
+    std::vector<uint64_t> devices;
     std::string user_id;
     std::vector<file_info> user_files;
 } client;
@@ -62,9 +63,6 @@ private:
     // utility methods
     bool has_client_connected(const std::string &client_id);
 
-    /**
-     * True if the server has been successfully started, false otherwise
-     * */
     static const std::string LOGGER_NAME;
     std::shared_ptr<spdlog::logger> logger_;
 

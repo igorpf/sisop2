@@ -15,6 +15,15 @@
 
 const std::string Client::LOGGER_NAME = "Client";
 
+Client::Client(uint64_t device_id_, const std::string &user_id_) : device_id_(device_id_), user_id_(user_id_) {
+    logger_ = spdlog::stdout_color_mt(LOGGER_NAME);
+    logger_->set_level(spdlog::level::debug);
+}
+
+Client::~Client() {
+    spdlog::drop(LOGGER_NAME);
+}
+
 void Client::login_server(const std::string& host, int32_t port) {
     if((socket_ = socket(AF_INET, SOCK_DGRAM,0)) < 0) {
         logger_->error("Error creating socket");
@@ -31,15 +40,15 @@ void Client::login_server(const std::string& host, int32_t port) {
             .append(" ")
             .append(std::to_string(device_id_));
 
-    sendto(socket_, command.c_str(), command.size(), 0, (struct sockaddr *)&server_addr_, peer_length_);
+    sendto(socket_, command.c_str(), command.size(), 0, static_cast<struct sockaddr*>(&server_addr_), peer_length_);
     logged_in_ = true;
 }
 
 void Client::send_file(const std::string& filename)
 {
     file_transfer_request request;
-    request.in_file_path = std::string("dropboxClient");
-    request.ip = std::string(LOOPBACK_IP);
+    request.in_file_path = "dropboxClient";
+    request.ip = LOOPBACK_IP;
     request.port = DEFAULT_SERVER_PORT;
     request.peer_length = peer_length_;
     request.server_address = server_addr_;
@@ -52,17 +61,6 @@ void Client::send_file(const std::string& filename)
     DropboxUtil::File file_util;
     file_util.send_file(request);
 }
-
-Client::Client(uint64_t device_id_, const std::string &user_id_) : device_id_(device_id_), user_id_(user_id_) {
-    logger_ = spdlog::stdout_color_mt(LOGGER_NAME);
-    logger_->set_level(spdlog::level::debug);
-}
-
-Client::~Client() {
-    spdlog::drop(LOGGER_NAME);
-}
-
-// not implemented methods
 
 void Client::close_session() {
     throw std::logic_error("Function not implemented");

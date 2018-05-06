@@ -18,13 +18,13 @@
 const std::string Server::LOGGER_NAME = "Server";
 
 // Utility functions
-std::vector<std::string> split_tokens(const std::string &str) {
-    std::stringstream stream(str);
+std::vector<std::string> split_words_by_spaces(const std::string &phrase) {
+    std::stringstream stream(phrase);
     std::string buffer;
-    std::vector<std::string> tokens;
+    std::vector<std::string> words;
     while(stream >> buffer)
-        tokens.push_back(buffer);
-    return tokens;
+        words.push_back(buffer);
+    return words;
 }
 
 std::string get_errno_with_message(const std::string &base_message = "") {
@@ -33,16 +33,24 @@ std::string get_errno_with_message(const std::string &base_message = "") {
     return str_stream.str();
 }
 
-// Server methods
+Server::Server() {
+    logger_ = spdlog::stdout_color_mt(LOGGER_NAME);
+    logger_->set_level(spdlog::level::debug);
+}
+
+Server::~Server() {
+    spdlog::drop(LOGGER_NAME);
+}
+
 bool Server::has_client_connected(const std::string &client_id) {
     auto client_iterator = std::find_if(clients_.begin(), clients_.end(),
                                      [&](const client& c) -> bool { return client_id == c.user_id;});
-    return !(client_iterator == clients_.end());
+    return client_iterator != clients_.end();
 }
 
 void Server::parse_command(const std::string &command_line) {
     logger_->debug("Parsing command {}", command_line);
-    auto tokens = split_tokens(command_line);
+    auto tokens = split_words_by_spaces(command_line);
     auto command = tokens[0];
     if(command == "connect") {
         auto user_id = tokens[1], device_id = tokens[2];
@@ -58,20 +66,20 @@ void Server::add_client(const std::string &user_id, uint64_t device_id) {
     if(!has_client_connected(user_id)) {
         client new_client;
         new_client.user_id = user_id;
-        new_client.logged_in;
+        new_client.logged_in = true;
         clients_.push_back(new_client);
         logger_->info( "Connected new client, total clients: {}",  clients_.size());
     }
     auto client_iterator = std::find_if(clients_.begin(), clients_.end(),
                                      [&](const client& c) -> bool { return user_id == c.user_id;});
-    client_iterator->devices.insert(device_id);
+    client_iterator->devices.push_back(device_id);
 }
 
 void Server::receive_file(const std::string& filename) {
     // TODO set filename from filename and don't transmit
     file_transfer_request request;
-    request.ip = std::string(LOOPBACK_IP);
-    request.port = DEFAULT_SERVER_PORT;
+    request.ip = LOOPBACK_IP;
+    request.port = port_;
     request.socket = socket_;
     request.server_address = server_addr_;
     request.peer_length = peer_length_;
@@ -112,17 +120,6 @@ void Server::listen() {
         parse_command(buffer);
     } while(continue_listening);
 }
-
-Server::Server() {
-    logger_ = spdlog::stdout_color_mt(LOGGER_NAME);
-    logger_->set_level(spdlog::level::debug);
-}
-
-Server::~Server() {
-    spdlog::drop(LOGGER_NAME);
-}
-
-// not implemented methods
 
 void Server::sync_server() {
     throw std::logic_error("Function not implemented");

@@ -1,8 +1,6 @@
 #include "../include/dropboxServer.hpp"
 
-#include <spdlog/spdlog.h>
 #include <iostream>
-
 
 int main(int argc, char* argv[])
 {

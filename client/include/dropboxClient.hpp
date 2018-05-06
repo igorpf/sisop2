@@ -7,6 +7,8 @@
 #include <vector>
 
 #include <netinet/in.h>
+#include <spdlog/spdlog.h>
+
 
 typedef struct client {
     bool logged_in;
@@ -61,13 +63,11 @@ public:
     void close_session();
 
 private:
-    // attributes from specification
     bool logged_in_;
     uint64_t device_id_;
     std::string user_id_;
     std::vector<file_info> user_files_;
 
-    // other attributes
     static const std::string LOGGER_NAME;
     std::shared_ptr<spdlog::logger> logger_;
 

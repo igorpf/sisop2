@@ -45,12 +45,12 @@ Collection map(Collection col, UnaryOperator op) {
 namespace DropboxUtil {
     class File {
     public:
+        File();
+        virtual ~File();
+
         void send_file(file_transfer_request request);
         void receive_file(file_transfer_request request);
         filesystem::perms parse_file_permissions_from_string(const std::string &perms);
-        File();
-
-        virtual ~File();
 
     private:
         static const std::string LOGGER_NAME;
