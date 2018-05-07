@@ -59,7 +59,7 @@ void DropboxUtil::File::send_file(file_transfer_request request) {
             sent_packets = 0,
             received_bytes;
     char buffer[BUFFER_SIZE];
-    logger_->info("Divided in file transmission in {} packets. File size: {}", packets, file_length);
+    logger_->info("Divided file transmission in {} packets. File size: {}", packets, file_length);
 
     //start handshake
     sendto(request.socket, "SYN", 4, 0, (struct sockaddr *)&request.server_address, request.peer_length);
