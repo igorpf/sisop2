@@ -1,4 +1,5 @@
 #include "../include/dropboxUtil.hpp"
+#include "../include/File.hpp"
 
 #include <gtest/gtest.h>
 

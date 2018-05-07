@@ -1,5 +1,6 @@
-#include "../include/dropboxClient.hpp"
 #include "../../util/include/dropboxUtil.hpp"
+#include "../../util/include/File.hpp"
+#include "../include/dropboxClient.hpp"
 
 #include <gtest/gtest.h>
 

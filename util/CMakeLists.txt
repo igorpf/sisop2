@@ -13,7 +13,9 @@ find_package(spdlog CONFIG REQUIRED)
 # Add the library
 add_library(dropboxUtil
         include/dropboxUtil.hpp
-        src/dropboxUtil.cpp)
+        src/dropboxUtil.cpp
+        include/File.hpp
+        src/File.cpp)
 
 # Target libraries
 target_link_libraries(dropboxUtil PUBLIC Boost::system Boost::filesystem spdlog::spdlog pthread)

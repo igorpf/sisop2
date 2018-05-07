@@ -49,20 +49,6 @@ namespace DropboxUtil {
     // utility functions
     std::vector<std::string> split_words_by_spaces(const std::string &phrase);
     std::string get_errno_with_message(const std::string &base_message = "");
-
-    class File {
-    public:
-        File();
-        virtual ~File();
-
-        void send_file(file_transfer_request request);
-        void receive_file(file_transfer_request request);
-        filesystem::perms parse_file_permissions_from_string(const std::string &perms);
-
-    private:
-        static const std::string LOGGER_NAME;
-        std::shared_ptr<spdlog::logger> logger_;
-    };
 }
 
 #endif // SISOP2_UTIL_INCLUDE_DROPBOXUTIL_H

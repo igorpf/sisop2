@@ -14,6 +14,8 @@ find_package(Boost CONFIG REQUIRED system filesystem)
 add_executable(util_test
         ../include/dropboxUtil.hpp
         ../src/dropboxUtil.cpp
+        ../include/File.hpp
+        ../src/File.cpp
         util_test.cpp)
 
 # Target libraries

@@ -1,4 +1,5 @@
 #include "../../util/include/dropboxUtil.hpp"
+#include "../../util/include/File.hpp"
 #include "../include/dropboxServer.hpp"
 
 #include <algorithm>
