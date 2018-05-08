@@ -4,11 +4,12 @@
 
 int main(int argc, char* argv[])
 {
+    auto logger = spdlog::stdout_color_mt("ServerMain");
     try {
         Server server;
         server.listen();
     } catch (std::exception &exception) {
-        std::cerr << exception.what() << std::endl;
+        logger->error(exception.what());
     }
 
     return 0;
