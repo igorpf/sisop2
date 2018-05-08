@@ -49,6 +49,7 @@ namespace DropboxUtil {
     // utility functions
     std::vector<std::string> split_words_by_spaces(const std::string &phrase);
     std::string get_errno_with_message(const std::string &base_message = "");
+    int64_t get_random_number();
 }
 
 #endif // SISOP2_UTIL_INCLUDE_DROPBOXUTIL_H
