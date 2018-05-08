@@ -65,6 +65,7 @@ void Server::receive_file(const std::string& filename) {
     request.socket = socket_;
     request.server_address = server_addr_;
     request.peer_length = peer_length_;
+    request.in_file_path = filename;
 
     util::File file_util;
     file_util.receive_file(request);
