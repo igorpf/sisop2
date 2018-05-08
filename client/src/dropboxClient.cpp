@@ -16,7 +16,7 @@
 
 const std::string Client::LOGGER_NAME = "Client";
 
-Client::Client(uint64_t device_id_, const std::string &user_id_) : device_id_(device_id_), user_id_(user_id_) {
+Client::Client(uint64_t device_id, const std::string &user_id) : device_id_(device_id), user_id_(user_id) {
     logger_ = spdlog::stdout_color_mt(LOGGER_NAME);
     logger_->set_level(spdlog::level::debug);
 }

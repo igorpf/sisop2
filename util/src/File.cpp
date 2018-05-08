@@ -15,9 +15,11 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-const std::string DropboxUtil::File::LOGGER_NAME = "File";
+using namespace DropboxUtil;
 
-DropboxUtil::File::File() {
+const std::string File::LOGGER_NAME = "File";
+
+File::File() {
     /**
      *  to write to a file, use spdlog::basic_logger_mt(<logger name>, "logs/log.txt")
      *  to write to stdout, use spdlog::stdout_color_mt(<logger name>)
@@ -26,7 +28,7 @@ DropboxUtil::File::File() {
     logger_->set_level(spdlog::level::debug);
 }
 
-DropboxUtil::File::~File() {
+File::~File() {
     spdlog::drop(LOGGER_NAME);
 }
 
@@ -39,7 +41,7 @@ int64_t get_file_length(filesystem::path &path) {
         throw std::runtime_error("path does not point to a file");
 }
 
-void DropboxUtil::File::send_file(file_transfer_request request) {
+void File::send_file(file_transfer_request request) {
     struct sockaddr_in from{};
 
     std::ifstream input_file;
@@ -111,7 +113,7 @@ void DropboxUtil::File::send_file(file_transfer_request request) {
         logger_->debug("Error disabling packet timeout");
 }
 
-void DropboxUtil::File::receive_file(file_transfer_request request) {
+void File::receive_file(file_transfer_request request) {
     struct sockaddr_in client_addr{0};
     establish_handshake(request, client_addr);
 
@@ -171,7 +173,7 @@ void DropboxUtil::File::receive_file(file_transfer_request request) {
         logger_->debug("Error disabling packet timeout");
 }
 
-void DropboxUtil::File::send_finish_handshake(file_transfer_request request, struct sockaddr_in &from) {
+void File::send_finish_handshake(file_transfer_request request, struct sockaddr_in &from) {
     char fin_ack[8];
     sendto(request.socket, "FIN", 4, 0, (struct sockaddr *)&request.server_address, request.peer_length);
     recvfrom(request.socket, fin_ack, sizeof(fin_ack), 0,(struct sockaddr *) &from, &request.peer_length);
@@ -183,7 +185,7 @@ void DropboxUtil::File::send_finish_handshake(file_transfer_request request, str
     sendto(request.socket, "ACK", 4, 0, (struct sockaddr *)&request.server_address, request.peer_length);
 }
 
-void DropboxUtil::File::confirm_finish_handshake(file_transfer_request request, struct sockaddr_in &client_addr) {
+void File::confirm_finish_handshake(file_transfer_request request, struct sockaddr_in &client_addr) {
     char fin[4], ack[4];
     recvfrom(request.socket, fin, sizeof(fin), 0, (struct sockaddr *) &client_addr, &request.peer_length);
     if(strcmp(fin,"FIN") != 0) {
@@ -198,7 +200,7 @@ void DropboxUtil::File::confirm_finish_handshake(file_transfer_request request, 
     }
 }
 
-void DropboxUtil::File::send_file_metadata(file_transfer_request request, struct sockaddr_in &from,
+void File::send_file_metadata(file_transfer_request request, struct sockaddr_in &from,
                                            filesystem::path &path) {
     char ack[4];
 
@@ -229,7 +231,7 @@ void DropboxUtil::File::send_file_metadata(file_transfer_request request, struct
     }
 }
 
-void DropboxUtil::File::establish_handshake(file_transfer_request request, struct sockaddr_in &client_addr) {
+void File::establish_handshake(file_transfer_request request, struct sockaddr_in &client_addr) {
     char ack[4], syn[4];
     recvfrom(request.socket, syn, sizeof(syn), 0, (struct sockaddr *) &client_addr, &request.peer_length);
     if(strcmp(syn,"SYN") != 0) {
@@ -245,7 +247,7 @@ void DropboxUtil::File::establish_handshake(file_transfer_request request, struc
     }
 }
 
-void DropboxUtil::File::start_handshake(file_transfer_request request, struct sockaddr_in &from) {
+void File::start_handshake(file_transfer_request request, struct sockaddr_in &from) {
     sendto(request.socket, "SYN", 4, 0, (struct sockaddr *)&request.server_address, request.peer_length);
     char syn_ack[8];
     recvfrom(request.socket, syn_ack, sizeof(syn_ack), 0, (struct sockaddr *) &from, &request.peer_length);
@@ -257,7 +259,7 @@ void DropboxUtil::File::start_handshake(file_transfer_request request, struct so
 }
 
 
-filesystem::perms DropboxUtil::File::parse_file_permissions_from_string(const std::string &perms) {
+filesystem::perms File::parse_file_permissions_from_string(const std::string &perms) {
     std::vector<filesystem::perms> perms_vec = {
             filesystem::owner_read,
             filesystem::owner_write,
@@ -271,7 +273,7 @@ filesystem::perms DropboxUtil::File::parse_file_permissions_from_string(const st
     };
     auto perms_int = static_cast<uint16_t>(std::stoi(perms));
 
-    perms_vec = DropboxUtil::map(perms_vec, [&](filesystem::perms p) -> filesystem::perms {
+    perms_vec = map(perms_vec, [&](filesystem::perms p) -> filesystem::perms {
         return p & perms_int? p : filesystem::no_perms;
     });
 

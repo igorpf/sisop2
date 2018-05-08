@@ -22,7 +22,7 @@ typedef struct client {
 class Client {
 public:
 
-    Client(uint64_t device_id_, const std::string &user_id_);
+    Client(uint64_t device_id, const std::string &user_id);
 
     virtual ~Client();
 

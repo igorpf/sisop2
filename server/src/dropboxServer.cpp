@@ -92,17 +92,20 @@ void Server::listen() {
     if(!has_started_)
         start();
     logger_->info("Server is listening on port {}", port_);
-    bool continue_listening;
     char buffer[util::BUFFER_SIZE];
     struct sockaddr_in client{};
-    ssize_t received_bytes;
-    do {
-        std::fill(buffer, buffer + sizeof(buffer), 0);
-        received_bytes = recvfrom(socket_, buffer, sizeof(buffer), 0, (struct sockaddr *) &client, &peer_length_);
-        logger_->debug("Received from client {} port {} the message: {}", inet_ntoa(client.sin_addr), client.sin_port, buffer);
-        continue_listening = !(received_bytes == 1 && buffer[0] == -1);
-        parse_command(buffer);
-    } while(continue_listening);
+    while(true) {
+        try {
+            std::fill(buffer, buffer + sizeof(buffer), 0);
+            recvfrom(socket_, buffer, sizeof(buffer), 0, (struct sockaddr *) &client, &peer_length_);
+            logger_->debug("Received from client {} port {} the message: {}", inet_ntoa(client.sin_addr), client.sin_port, buffer);
+
+            parse_command(buffer);
+        } catch (std::exception &e) {
+            logger_->error("Error parsing command from client {}", e.what());
+            break;
+        }
+    }
 }
 
 void Server::sync_server() {
