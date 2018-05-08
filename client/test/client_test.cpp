@@ -8,32 +8,23 @@ namespace util = DropboxUtil;
 
 TEST(Client, InvalidPort)
 {
-    util::file_transfer_request request{};
-    request.in_file_path = "client_test";
-    request.port = -1;
-    request.ip = "127.0.0.1";
-    util::File file_util;
-    ASSERT_ANY_THROW(file_util.send_file(request));
+    Client client(1, "1");
+    client.login_server(util::LOOPBACK_IP, 0);
+    ASSERT_ANY_THROW(client.send_file("client_test"));
 }
 
 TEST(Client, SendInexistentFile)
 {
-    util::file_transfer_request request{};
-    request.in_file_path = "NON_EXISTING_FILE";
-    request.port = 9000;
-    request.ip = "127.0.0.1";
-    util::File file_util;
-    ASSERT_ANY_THROW(file_util.send_file(request));
+    util::file_transfer_request request{};Client client(1, "1");
+    client.login_server(util::LOOPBACK_IP, util::DEFAULT_SERVER_PORT);
+    ASSERT_ANY_THROW(client.send_file("INEXISTENT_FILE"));
 }
 
-TEST(Client, ServerNotOnline)
+TEST(Client, InvalidServer)
 {
-    util::file_transfer_request request{};
-    request.in_file_path = "client_test";
-    request.port = 9000;
-    request.ip = "127.0.0.1";
-    util::File file_util;
-    ASSERT_ANY_THROW(file_util.send_file(request));
+    Client client(1, "1");
+    client.login_server("not an ip", util::DEFAULT_SERVER_PORT);
+    ASSERT_ANY_THROW(client.send_file("client_test"));
 }
 
 int main(int argc, char **argv) {
