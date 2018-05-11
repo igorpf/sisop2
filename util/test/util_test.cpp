@@ -1,4 +1,5 @@
 #include "../include/dropboxUtil.hpp"
+#include "../include/File.hpp"
 
 #include <gtest/gtest.h>
 
@@ -7,7 +8,8 @@ TEST(FilePermissions, ReadOnlyFile)
     auto perms_int = static_cast<int16_t>(
         filesystem::owner_read | filesystem::group_read | filesystem::others_read
     );
-    filesystem::perms perms = parse_permissions_from_string(std::to_string(perms_int));
+    DropboxUtil::File file_util;
+    filesystem::perms perms = file_util.parse_file_permissions_from_string(std::to_string(perms_int));
     ASSERT_TRUE(perms & filesystem::owner_read);
     ASSERT_FALSE(perms & filesystem::owner_write);
     ASSERT_FALSE(perms & filesystem::owner_exe);
@@ -21,7 +23,8 @@ TEST(FilePermissions, ReadOnlyFile)
 
 TEST(FilePermissions, ExecutableFile)
 {
-    filesystem::perms perms = parse_permissions_from_string("509");
+    DropboxUtil::File fileUtil;
+    filesystem::perms perms = fileUtil.parse_file_permissions_from_string("509");
     ASSERT_TRUE(perms & filesystem::owner_read);
     ASSERT_TRUE(perms & filesystem::owner_write);
     ASSERT_TRUE(perms & filesystem::owner_exe);

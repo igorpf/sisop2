@@ -14,6 +14,8 @@ find_package(Boost CONFIG REQUIRED system filesystem)
 add_executable(server_test
         ../../util/include/dropboxUtil.hpp
         ../../util/src/dropboxUtil.cpp
+        ../../util/include/File.hpp
+        ../../util/src/File.cpp
         ../include/dropboxServer.hpp
         ../src/dropboxServer.cpp
         server_test.cpp)

@@ -14,6 +14,8 @@ find_package(spdlog CONFIG REQUIRED)
 add_executable(dropboxServer
         ../util/include/dropboxUtil.hpp
         ../util/src/dropboxUtil.cpp
+        ../util/include/File.hpp
+        ../util/src/File.cpp
         include/dropboxServer.hpp
         src/dropboxServer.cpp
         src/main.cpp)

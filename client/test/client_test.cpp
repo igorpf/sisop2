@@ -1,33 +1,61 @@
-#include "../include/dropboxClient.hpp"
 #include "../../util/include/dropboxUtil.hpp"
+#include "../../util/include/File.hpp"
+#include "../include/dropboxClient.hpp"
 
 #include <gtest/gtest.h>
 
+namespace util = DropboxUtil;
+
+/**
+ * Cria um arquivo temporário no construtor e o remove no destrutor
+ * Conteúdo do arquivo: nome do arquivo
+ */
+class TemporaryFile {
+public:
+    explicit TemporaryFile(const std::string& file_name) : file_name_(file_name) {
+        std::ofstream temp_file(file_name_);
+        temp_file << file_name_ << std::flush;
+    }
+
+    ~TemporaryFile() {
+        std::remove(file_name_.c_str());
+    }
+
+private:
+    std::string file_name_;
+};
+
 TEST(Client, InvalidPort)
 {
-    file_transfer_request request{};
-    request.in_file_path = "client_test";
-    request.port = -1;
-    request.ip = "127.0.0.1";
-    ASSERT_ANY_THROW(send_file(request));
+    Client client(1, "1");
+    client.login_server(util::LOOPBACK_IP, 0);
+    ASSERT_ANY_THROW(client.send_file("client_test"));
 }
 
 TEST(Client, SendInexistentFile)
 {
-    file_transfer_request request{};
-    request.in_file_path = "NON_EXISTING_FILE";
-    request.port = 9000;
-    request.ip = "127.0.0.1";
-    ASSERT_ANY_THROW(send_file(request));
+    util::file_transfer_request request{};
+    Client client(1, "1");
+    client.login_server(util::LOOPBACK_IP, util::DEFAULT_SERVER_PORT);
+    ASSERT_ANY_THROW(client.send_file("INEXISTENT_FILE"));
 }
 
-TEST(Client, ServerNotOnline)
+TEST(Client, InvalidServer)
 {
-    file_transfer_request request{};
-    request.in_file_path = "client_test";
-    request.port = 9000;
-    request.ip = "127.0.0.1";
-    ASSERT_ANY_THROW(send_file(request));
+    Client client(1, "1");
+    client.login_server("not an ip", util::DEFAULT_SERVER_PORT);
+    ASSERT_ANY_THROW(client.send_file("client_test"));
+}
+
+TEST(Client, ServerOffline)
+{
+    std::string temp_file_name = "Testfile_" + std::to_string(util::get_random_number());
+    TemporaryFile temp_file(temp_file_name);
+
+    util::file_transfer_request request{};
+    Client client(1, "1");
+    client.login_server(util::LOOPBACK_IP, util::DEFAULT_SERVER_PORT);
+    ASSERT_ANY_THROW(client.send_file(temp_file_name));
 }
 
 int main(int argc, char **argv) {
