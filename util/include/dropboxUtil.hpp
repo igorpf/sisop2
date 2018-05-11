@@ -38,11 +38,9 @@ namespace DropboxUtil {
     } file_info;
 
     typedef struct file_transfer_request {
-        int32_t port;
         struct sockaddr_in server_address;
         SOCKET socket;
         socklen_t peer_length;
-        std::string ip;
         std::string in_file_path;
     } file_transfer_request;
 

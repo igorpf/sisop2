@@ -60,8 +60,6 @@ void Server::add_client(const std::string &user_id, uint64_t device_id) {
 
 void Server::receive_file(const std::string& filename) {
     util::file_transfer_request request;
-    request.ip = util::LOOPBACK_IP;
-    request.port = port_;
     request.socket = socket_;
     request.server_address = server_addr_;
     request.peer_length = peer_length_;
