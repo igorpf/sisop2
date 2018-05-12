@@ -8,13 +8,9 @@
 #include <spdlog/spdlog.h>
 
 #include <netinet/in.h>
-//TODO(jfguimaraes) Tornar Util uma biblioteca? Faria os includes ficarem mais limpos
 
-typedef struct {
-    std::string name;
-    int64_t size;
-    time_t last_modification_time;
-} file_info;
+//TODO(jfguimaraes) Tornar Util uma biblioteca
+
 namespace filesystem = boost::filesystem;
 
 namespace DropboxUtil {
@@ -36,19 +32,18 @@ namespace DropboxUtil {
 
     //structs definition
     typedef int SOCKET;
-    typedef struct file_info {
+    struct file_info {
         std::string name;
         int64_t size;
         time_t last_modification_time;
-    } file_info;
+    };
 
-#endif // SISOP2_UTIL_INCLUDE_DROPBOXUTIL_HPP
-    typedef struct file_transfer_request {
+    struct file_transfer_request {
         struct sockaddr_in server_address;
         SOCKET socket;
         socklen_t peer_length;
         std::string in_file_path;
-    } file_transfer_request;
+    };
 
     // utility functions
     std::vector<std::string> split_words_by_spaces(const std::string &phrase);
@@ -56,4 +51,4 @@ namespace DropboxUtil {
     int64_t get_random_number();
 }
 
-#endif // SISOP2_UTIL_INCLUDE_DROPBOXUTIL_H
+#endif // SISOP2_UTIL_INCLUDE_DROPBOXUTIL_HPP

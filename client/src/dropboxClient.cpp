@@ -16,42 +16,47 @@
 
 #include "../include/command_parser.hpp"
 
-void start_client(int argc, char **argv) {
+const std::string Client::LOGGER_NAME = "Client";
+
+Client::Client()
+{
+    logger_ = spdlog::stdout_color_mt(LOGGER_NAME);
+    logger_->set_level(spdlog::level::debug);
+}
+
+Client::~Client()
+{
+    spdlog::drop(LOGGER_NAME);
+}
+
+void Client::start_client(int argc, char **argv)
+{
+    if (logged_in_)
+        return;
+
     CommandParser command_parser;
 
     command_parser.ParseInput(argc, argv);
     command_parser.ShowHelpMessage();
     command_parser.ValidateInput();
 
-    //TODO Implement login on server and spawning of background syncing thread
-    throw std::logic_error("function not implemented");
+    port_ = command_parser.GetPort();
+    hostname_ = command_parser.GetHostname();
+    user_id_ = command_parser.GetUserid();
+
+    login_server();
 }
 
-void login_server(const std::string& host, int port) {
-    throw std::logic_error("function not implemented");
-}
-
-const std::string Client::LOGGER_NAME = "Client";
-
-Client::Client(uint64_t device_id, const std::string &user_id) : device_id_(device_id), user_id_(user_id) {
-    logger_ = spdlog::stdout_color_mt(LOGGER_NAME);
-    logger_->set_level(spdlog::level::debug);
-}
-
-Client::~Client() {
-    spdlog::drop(LOGGER_NAME);
-}
-
-void Client::login_server(const std::string& host, int32_t port) {
+void Client::login_server()
+{
     if((socket_ = socket(AF_INET, SOCK_DGRAM,0)) < 0) {
         logger_->error("Error creating socket");
         throw std::runtime_error("Error trying to login to server");
     }
 
-    port_ = port;
     server_addr_.sin_family = AF_INET;
-    server_addr_.sin_port = htons(static_cast<uint16_t>(port));
-    server_addr_.sin_addr.s_addr = inet_addr(host.c_str());
+    server_addr_.sin_port = htons(static_cast<uint16_t>(port_));
+    server_addr_.sin_addr.s_addr = inet_addr(hostname_.c_str());
     peer_length_ = sizeof(server_addr_);
     std::string command("connect ");
     command.append(user_id_)
@@ -64,7 +69,6 @@ void Client::login_server(const std::string& host, int32_t port) {
 
 void Client::send_file(const std::string& filename)
 {
-    throw std::logic_error("function not implemented");
     util::file_transfer_request request;
     request.in_file_path = filename;
     request.peer_length = peer_length_;
@@ -79,32 +83,22 @@ void Client::send_file(const std::string& filename)
     file_util.send_file(request);
 }
 
-void Client::close_session() {
+void Client::close_session()
+{
     throw std::logic_error("Function not implemented");
 }
 
-void send_file(const std::string& filename)
+void Client::sync_client()
 {
-    throw std::logic_error("function not implemented");
-void Client::sync_client() {
     throw std::logic_error("Function not implemented");
 }
 
-void get_file(const std::string& filename)
+void Client::get_file(const std::string& filename)
 {
-    throw std::logic_error("function not implemented");
-void Client::get_file(const std::string& filename) {
     throw std::logic_error("Function not implemented");
 }
 
-void delete_file(const std::string& filename)
+void Client::delete_file(const std::string& filename)
 {
-    throw std::logic_error("function not implemented");
-}
-
-void close_session()
-{
-    throw std::logic_error("function not implemented");
-void Client::delete_file(const std::string& filename) {
     throw std::logic_error("Function not implemented");
 }

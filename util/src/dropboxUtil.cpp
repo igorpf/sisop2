@@ -20,6 +20,6 @@ std::string DropboxUtil::get_errno_with_message(const std::string &base_message)
 }
 
 int64_t DropboxUtil::get_random_number() {
-    std::call_once(rand_init, [](){std::srand(static_cast<uint32_t>(std::time(nullptr)));});
+    std::call_once(rand_init, [](){std::srand(static_cast<unsigned int>(std::time(nullptr)));});
     return std::rand();
 }

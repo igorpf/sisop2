@@ -283,4 +283,3 @@ filesystem::perms File::parse_file_permissions_from_string(const std::string &pe
     }
     return p;
 }
-

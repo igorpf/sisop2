@@ -1,7 +1,7 @@
 #include "../include/command_parser.hpp"
+#include "../include/dropboxClient.hpp"
 #include "../../util/include/dropboxUtil.hpp"
 #include "../../util/include/File.hpp"
-#include "../include/dropboxClient.hpp"
 
 #include <gtest/gtest.h>
 
@@ -26,16 +26,6 @@ private:
     std::string file_name_;
 };
 
-TEST(Client, InvalidPort)
-{
-    Client client(1, "1");
-    client.login_server(util::LOOPBACK_IP, 0);
-    ASSERT_ANY_THROW(client.send_file("client_test"));
-}
-
-TEST(Client, SendInexistentFile)
-#include "../include/dropboxClient.hpp"
-
 TEST(ParserTest, ParseSpecifiedArguments)
 {
     std::array<const char*, 4> argv = {"dropboxClient", "--userid=id1234", "--hostname=127.0.0.1", "--port=8080"};
@@ -50,30 +40,6 @@ TEST(ParserTest, ParsePositionalArguments)
 {
     std::array<const char*, 4> argv = {"dropboxClient", "id1234", "127.0.0.1", "8080"};
     int argc = argv.size();
-    util::file_transfer_request request{};
-    Client client(1, "1");
-    client.login_server(util::LOOPBACK_IP, util::DEFAULT_SERVER_PORT);
-    ASSERT_ANY_THROW(client.send_file("INEXISTENT_FILE"));
-}
-
-TEST(Client, InvalidServer)
-{
-    Client client(1, "1");
-    client.login_server("not an ip", util::DEFAULT_SERVER_PORT);
-    ASSERT_ANY_THROW(client.send_file("client_test"));
-}
-
-TEST(Client, ServerOffline)
-{
-    std::string temp_file_name = "Testfile_" + std::to_string(util::get_random_number());
-    TemporaryFile temp_file(temp_file_name);
-
-    util::file_transfer_request request{};
-    Client client(1, "1");
-    client.login_server(util::LOOPBACK_IP, util::DEFAULT_SERVER_PORT);
-    ASSERT_ANY_THROW(client.send_file(temp_file_name));
-    char *argv[] = {"dropboxClient", "id1234", "127.0.0.1", "8080", NULL};
-    int argc = sizeof(argv) / sizeof(char*) - 1;
 
     CommandParser command_parser;
 
@@ -204,10 +170,7 @@ TEST(ParserTest, GetUserid)
 
 TEST(ParserTest, GetUseridWithoutParsing)
 {
-    std::array<const char*, 4> argv = {"dropboxClient", "id1234", "127.0.0.1", "8080"};
-
     CommandParser command_parser;
-
     ASSERT_ANY_THROW(command_parser.GetUserid());
 }
 
@@ -226,10 +189,7 @@ TEST(ParserTest, GetHostname)
 
 TEST(ParserTest, GetHostnameWithoutParsing)
 {
-    std::array<const char*, 4> argv = {"dropboxClient", "id1234", "127.0.0.1", "8080"};
-
     CommandParser command_parser;
-
     ASSERT_ANY_THROW(command_parser.GetHostname());
 }
 
@@ -248,11 +208,35 @@ TEST(ParserTest, GetPort)
 
 TEST(ParserTest, GetPortWithoutParsing)
 {
-    std::array<const char*, 4> argv = {"dropboxClient", "id1234", "127.0.0.1", "8080"};
-
     CommandParser command_parser;
-
     ASSERT_ANY_THROW(command_parser.GetPort());
+}
+
+TEST(Client, SendInexistentFile)
+{
+    std::array<const char*, 4> argv = {"dropboxClient", "id1234", "127.0.0.1", "8080"};
+    int argc = argv.size();
+
+    Client client;
+
+    client.start_client(argc, const_cast<char**>(argv.data()));
+
+    ASSERT_ANY_THROW(client.send_file("INEXISTENT_FILE"));
+}
+
+TEST(Client, ServerOffline)
+{
+    std::string temp_file_name = "Testfile_" + std::to_string(util::get_random_number());
+    TemporaryFile temp_file(temp_file_name);
+
+    std::array<const char*, 4> argv = {"dropboxClient", "id1234", "127.0.0.1", "8080"};
+    int argc = argv.size();
+
+    Client client;
+
+    client.start_client(argc, const_cast<char**>(argv.data()));
+
+    ASSERT_ANY_THROW(client.send_file(temp_file_name));
 }
 
 int main(int argc, char **argv) {

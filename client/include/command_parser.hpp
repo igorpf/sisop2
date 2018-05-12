@@ -59,12 +59,12 @@ public:
     std::string GetUserid();
 
     /**
-     * Returns specified the hostname, throws if ParseInput wasn't called before
+     * Returns the specified hostname, throws if ParseInput wasn't called before
      */
     std::string GetHostname();
 
     /**
-     * Returns specified the port, throws if ParseInput wasn't called before
+     * Returns the specified port, throws if ParseInput wasn't called before
      */
     int64_t GetPort();
 

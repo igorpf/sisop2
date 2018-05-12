@@ -3,50 +3,23 @@
 
 #include <string>
 #include <vector>
-
-#include "../../util/include/dropboxUtil.hpp"
-
-typedef struct {
 #include <netinet/in.h>
 #include <spdlog/spdlog.h>
 
+#include "../../util/include/dropboxUtil.hpp"
+
 namespace util = DropboxUtil;
 
-typedef struct client {
-    bool logged_in;
-    //TODO(jfguimaraes) Como identificar um novo dispositivo?
-    int64_t devices[2];
-    std::string user_id;
-    std::vector<util::file_info> user_files;
-} client;
-
-/**
- * Initiates the client parsing the command line arguments, logging into the server
- * and spawning the background syncing thread, throws if one of the steps fails
- * @param argc Program's argument count
- * @param argv Program's argument vector
- */
-void start_client(int argc, char **argv);
-
-/**
- * Estabelece uma conexão entre o cliente e o servidor
- * @param host Endereço do servidor
- * @param port Porta de acesso ao servidor
- */
-void login_server(const std::string& host, int port);
 class Client {
 public:
-
-    Client(uint64_t device_id, const std::string &user_id);
-
-    virtual ~Client();
+    Client();
+    ~Client();
 
     /**
-     * Estabelece uma conexão entre o cliente e o servidor
-     * @param host Endereço do servidor
-     * @param port Porta de acesso ao servidor
+     * Inicializa o client fazendo o parse dos argumentos de linha de comando,
+     * fazendo o login no servidor com essas informações e gerando o device id
      */
-    void login_server(const std::string &host, int32_t port);
+    void start_client(int argc, char **argv);
 
     /**
      * Sincroniza o diretório "sync_dir_<user_id>" com o servidor
@@ -78,7 +51,6 @@ public:
      */
     void close_session();
 
-#endif // SISOP2_CLIENT_INCLUDE_DROPBOXCLIENT_HPP
 private:
     bool logged_in_;
     uint64_t device_id_;
@@ -88,10 +60,16 @@ private:
     static const std::string LOGGER_NAME;
     std::shared_ptr<spdlog::logger> logger_;
 
-    int32_t port_;
+    int64_t port_;
+    std::string hostname_;
     struct sockaddr_in server_addr_;
     util::SOCKET socket_;
     socklen_t peer_length_;
+
+    /**
+     * Estabelece uma conexão entre o cliente e o servidor
+     */
+    void login_server();
 };
 
-#endif // SISOP2_CLIENT_INCLUDE_DROPBOXCLIENT_H
+#endif // SISOP2_CLIENT_INCLUDE_DROPBOXCLIENT_HPP

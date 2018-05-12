@@ -4,12 +4,11 @@ project(client_test)
 
 # Download dependencies
 hunter_add_package(GTest)
-hunter_add_package(Boost COMPONENTS program_options system thread)
+hunter_add_package(Boost COMPONENTS program_options system filesystem)
 
 # Find dependencies
 find_package(GTest CONFIG REQUIRED)
-find_package(Boost CONFIG REQUIRED program_options system thread)
-find_package(Boost CONFIG REQUIRED system filesystem)
+find_package(Boost CONFIG REQUIRED program_options system filesystem)
 
 # Add the executable
 add_executable(client_test
@@ -24,5 +23,4 @@ add_executable(client_test
         client_test.cpp)
 
 # Target libraries
-target_link_libraries(client_test PUBLIC GTest::main)
-target_link_libraries(client_test PUBLIC Boost::program_options Boost::boost Boost::system Boost::thread Boost::filesystem)
+target_link_libraries(client_test PUBLIC GTest::main Boost::program_options Boost::boost Boost::system Boost::filesystem)

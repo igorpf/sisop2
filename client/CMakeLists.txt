@@ -3,11 +3,10 @@ cmake_minimum_required(VERSION 3.7)
 project(dropboxClient)
 
 # Download dependencies
-hunter_add_package(Boost COMPONENTS program_options system thread filesystem)
+hunter_add_package(Boost COMPONENTS program_options system filesystem)
 hunter_add_package(spdlog)
 
 # Find dependencies
-find_package(Boost CONFIG REQUIRED program_options system thread)
 find_package(Boost CONFIG REQUIRED program_options system filesystem)
 find_package(spdlog CONFIG REQUIRED)
 
@@ -24,8 +23,7 @@ add_executable(dropboxClient
         src/main.cpp)
 
 # Target libraries
-target_link_libraries(dropboxClient PUBLIC Boost::program_options Boost::boost Boost::system Boost::thread)
-target_link_libraries(dropboxClient PUBLIC Boost::program_options Boost::boost Boost::system Boost::thread Boost::filesystem spdlog::spdlog pthread)
+target_link_libraries(dropboxClient PUBLIC Boost::program_options Boost::boost Boost::system Boost::filesystem spdlog::spdlog pthread)
 
 # Add the test subdirectory
 add_subdirectory(test)
