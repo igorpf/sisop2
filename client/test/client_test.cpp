@@ -38,16 +38,18 @@ TEST(Client, SendInexistentFile)
 
 TEST(ParserTest, ParseSpecifiedArguments)
 {
-    char *argv[] = {"dropboxClient", "--userid=id1234", "--hostname=127.0.0.1", "--port=8080", NULL};
-    int argc = sizeof(argv) / sizeof(char*) - 1;
+    std::array<const char*, 4> argv = {"dropboxClient", "--userid=id1234", "--hostname=127.0.0.1", "--port=8080"};
+    int argc = argv.size();
 
     CommandParser command_parser;
 
-    ASSERT_NO_THROW(command_parser.ParseInput(argc,argv));
+    ASSERT_NO_THROW(command_parser.ParseInput(argc, const_cast<char**>(argv.data())));
 }
 
 TEST(ParserTest, ParsePositionalArguments)
 {
+    std::array<const char*, 4> argv = {"dropboxClient", "id1234", "127.0.0.1", "8080"};
+    int argc = argv.size();
     util::file_transfer_request request{};
     Client client(1, "1");
     client.login_server(util::LOOPBACK_IP, util::DEFAULT_SERVER_PORT);
@@ -75,34 +77,33 @@ TEST(Client, ServerOffline)
 
     CommandParser command_parser;
 
-    ASSERT_NO_THROW(command_parser.ParseInput(argc,argv));
+    ASSERT_NO_THROW(command_parser.ParseInput(argc, const_cast<char**>(argv.data())));
 }
 
 TEST(ParserTest, ParseIncompleteArguments)
 {
-    char *argv[] = {"dropboxClient", "id1234", "127.0.0.1", NULL};
-    int argc = sizeof(argv) / sizeof(char*) - 1;
+    std::array<const char*, 3> argv = {"dropboxClient", "id1234", "127.0.0.1"};
+    int argc = argv.size();
 
     CommandParser command_parser;
 
-    ASSERT_ANY_THROW(command_parser.ParseInput(argc,argv));
+    ASSERT_ANY_THROW(command_parser.ParseInput(argc, const_cast<char**>(argv.data())));
 }
 
 TEST(ParserTest, ParseAndValidateHelpMessage)
 {
-    char *argv[] = {"dropboxClient", "--help", NULL};
-    int argc = sizeof(argv) / sizeof(char*) - 1;
+    std::array<const char*, 2> argv = {"dropboxClient", "--help"};
+    int argc = argv.size();
 
     CommandParser command_parser;
 
-    ASSERT_NO_THROW(command_parser.ParseInput(argc,argv));
+    ASSERT_NO_THROW(command_parser.ParseInput(argc, const_cast<char**>(argv.data())));
     ASSERT_NO_THROW(command_parser.ValidateInput());
 }
 
 TEST(ParserTest, ValidateWithoutParsing)
 {
-    char *argv[] = {"dropboxClient", "id1234", "127.0.0.1", "8080", NULL};
-    int argc = sizeof(argv) / sizeof(char*) - 1;
+    std::array<const char*, 4> argv = {"dropboxClient", "id1234", "127.0.0.1", "8080"};
 
     CommandParser command_parser;
 
@@ -111,56 +112,56 @@ TEST(ParserTest, ValidateWithoutParsing)
 
 TEST(ParserTest, ValidateCorrectInfo)
 {
-    char *argv[] = {"dropboxClient", "id1234", "127.0.0.1", "8080", NULL};
-    int argc = sizeof(argv) / sizeof(char*) - 1;
+    std::array<const char*, 4> argv = {"dropboxClient", "id1234", "127.0.0.1", "8080"};
+    int argc = argv.size();
 
     CommandParser command_parser;
-    command_parser.ParseInput(argc,argv);
+    command_parser.ParseInput(argc, const_cast<char**>(argv.data()));
 
     ASSERT_NO_THROW(command_parser.ValidateInput());
 }
 
 TEST(ParserTest, ValidateShortUserid)
 {
-    char *argv[] = {"dropboxClient", "id", "127.0.0.1", "8080", NULL};
-    int argc = sizeof(argv) / sizeof(char*) - 1;
+    std::array<const char*, 4> argv = {"dropboxClient", "id", "127.0.0.1", "8080"};
+    int argc = argv.size();
 
     CommandParser command_parser;
-    command_parser.ParseInput(argc,argv);
+    command_parser.ParseInput(argc, const_cast<char**>(argv.data()));
 
     ASSERT_ANY_THROW(command_parser.ValidateInput());
 }
 
 TEST(ParserTest, ValidateInvalidHostname)
 {
-    char *argv[] = {"dropboxClient", "id1234", "127.0.0", "8080", NULL};
-    int argc = sizeof(argv) / sizeof(char*) - 1;
+    std::array<const char*, 4> argv = {"dropboxClient", "id1234", "127.0.0", "8080"};
+    int argc = argv.size();
 
     CommandParser command_parser;
-    command_parser.ParseInput(argc,argv);
+    command_parser.ParseInput(argc, const_cast<char**>(argv.data()));
 
     ASSERT_ANY_THROW(command_parser.ValidateInput());
 }
 
 TEST(ParserTest, ValidateInvalidPort)
 {
-    char *argv[] = {"dropboxClient", "id1234", "127.0.0.1", "70000", NULL};
-    int argc = sizeof(argv) / sizeof(char*) - 1;
+    std::array<const char*, 4> argv = {"dropboxClient", "id1234", "127.0.0.1", "70000"};
+    int argc = argv.size();
 
     CommandParser command_parser;
-    command_parser.ParseInput(argc,argv);
+    command_parser.ParseInput(argc, const_cast<char**>(argv.data()));
 
     ASSERT_ANY_THROW(command_parser.ValidateInput());
 }
 
 TEST(ParserTest, ShowHelpMessage)
 {
-    char *argv[] = {"dropboxClient", "--help", NULL};
-    int argc = sizeof(argv) / sizeof(char*) - 1;
+    std::array<const char*, 2> argv = {"dropboxClient", "--help"};
+    int argc = argv.size();
 
     CommandParser command_parser;
 
-    command_parser.ParseInput(argc,argv);
+    command_parser.ParseInput(argc, const_cast<char**>(argv.data()));
     command_parser.ValidateInput();
 
     ASSERT_TRUE(command_parser.ShowHelpMessage());
@@ -168,8 +169,7 @@ TEST(ParserTest, ShowHelpMessage)
 
 TEST(ParserTest, ShowHelpMessageWithoutParsing)
 {
-    char *argv[] = {"dropboxClient", "--help", NULL};
-    int argc = sizeof(argv) / sizeof(char*) - 1;
+    std::array<const char*, 2> argv = {"dropboxClient", "--help"};
 
     CommandParser command_parser;
 
@@ -178,12 +178,12 @@ TEST(ParserTest, ShowHelpMessageWithoutParsing)
 
 TEST(ParserTest, DontShowHelpMessage)
 {
-    char *argv[] = {"dropboxClient", "id1234", "127.0.0.1", "8080", NULL};
-    int argc = sizeof(argv) / sizeof(char*) - 1;
+    std::array<const char*, 4> argv = {"dropboxClient", "id1234", "127.0.0.1", "8080"};
+    int argc = argv.size();
 
     CommandParser command_parser;
 
-    command_parser.ParseInput(argc,argv);
+    command_parser.ParseInput(argc, const_cast<char**>(argv.data()));
     command_parser.ValidateInput();
 
     ASSERT_FALSE(command_parser.ShowHelpMessage());
@@ -191,12 +191,12 @@ TEST(ParserTest, DontShowHelpMessage)
 
 TEST(ParserTest, GetUserid)
 {
-    char *argv[] = {"dropboxClient", "id1234", "127.0.0.1", "8080", NULL};
-    int argc = sizeof(argv) / sizeof(char*) - 1;
+    std::array<const char*, 4> argv = {"dropboxClient", "id1234", "127.0.0.1", "8080"};
+    int argc = argv.size();
 
     CommandParser command_parser;
 
-    command_parser.ParseInput(argc,argv);
+    command_parser.ParseInput(argc, const_cast<char**>(argv.data()));
     command_parser.ValidateInput();
 
     ASSERT_NO_THROW(command_parser.GetUserid());
@@ -204,8 +204,7 @@ TEST(ParserTest, GetUserid)
 
 TEST(ParserTest, GetUseridWithoutParsing)
 {
-    char *argv[] = {"dropboxClient", "id1234", "127.0.0.1", "8080", NULL};
-    int argc = sizeof(argv) / sizeof(char*) - 1;
+    std::array<const char*, 4> argv = {"dropboxClient", "id1234", "127.0.0.1", "8080"};
 
     CommandParser command_parser;
 
@@ -214,12 +213,12 @@ TEST(ParserTest, GetUseridWithoutParsing)
 
 TEST(ParserTest, GetHostname)
 {
-    char *argv[] = {"dropboxClient", "id1234", "127.0.0.1", "8080", NULL};
-    int argc = sizeof(argv) / sizeof(char*) - 1;
+    std::array<const char*, 4> argv = {"dropboxClient", "id1234", "127.0.0.1", "8080"};
+    int argc = argv.size();
 
     CommandParser command_parser;
 
-    command_parser.ParseInput(argc,argv);
+    command_parser.ParseInput(argc, const_cast<char**>(argv.data()));
     command_parser.ValidateInput();
 
     ASSERT_NO_THROW(command_parser.GetHostname());
@@ -227,8 +226,7 @@ TEST(ParserTest, GetHostname)
 
 TEST(ParserTest, GetHostnameWithoutParsing)
 {
-    char *argv[] = {"dropboxClient", "id1234", "127.0.0.1", "8080", NULL};
-    int argc = sizeof(argv) / sizeof(char*) - 1;
+    std::array<const char*, 4> argv = {"dropboxClient", "id1234", "127.0.0.1", "8080"};
 
     CommandParser command_parser;
 
@@ -237,12 +235,12 @@ TEST(ParserTest, GetHostnameWithoutParsing)
 
 TEST(ParserTest, GetPort)
 {
-    char *argv[] = {"dropboxClient", "id1234", "127.0.0.1", "8080", NULL};
-    int argc = sizeof(argv) / sizeof(char*) - 1;
+    std::array<const char*, 4> argv = {"dropboxClient", "id1234", "127.0.0.1", "8080"};
+    int argc = argv.size();
 
     CommandParser command_parser;
 
-    command_parser.ParseInput(argc,argv);
+    command_parser.ParseInput(argc, const_cast<char**>(argv.data()));
     command_parser.ValidateInput();
 
     ASSERT_NO_THROW(command_parser.GetPort());
@@ -250,8 +248,7 @@ TEST(ParserTest, GetPort)
 
 TEST(ParserTest, GetPortWithoutParsing)
 {
-    char *argv[] = {"dropboxClient", "id1234", "127.0.0.1", "8080", NULL};
-    int argc = sizeof(argv) / sizeof(char*) - 1;
+    std::array<const char*, 4> argv = {"dropboxClient", "id1234", "127.0.0.1", "8080"};
 
     CommandParser command_parser;
 

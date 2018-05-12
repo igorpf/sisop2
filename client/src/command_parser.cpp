@@ -9,9 +9,9 @@
 CommandParser::CommandParser() {
     description_.add_options()
             ("help,h", "show help message")
-            ("userid,u", program_options::value<std::string>(), "user identifier")
-            ("hostname,h", program_options::value<std::string>(), "server hostname")
-            ("port,p", program_options::value<int64_t>(), "server port")
+            ("userid", program_options::value<std::string>(), "user identifier")
+            ("hostname", program_options::value<std::string>(), "server hostname")
+            ("port", program_options::value<int64_t>(), "server port")
             ;
 
     positional_description_.add("userid", 1);
@@ -33,7 +33,7 @@ void CommandParser::ParseInput(int argc, char **argv) {
                                  variables_map_.count("port") > 0;
 
     if (!help_specified && !client_info_specified)
-        throw std::runtime_error("missing parameters, use --help for usage info");
+        throw std::runtime_error("missing parameters, use --help or -h for usage info");
 }
 
 void CommandParser::ValidateInput() {
