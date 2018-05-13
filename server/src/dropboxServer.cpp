@@ -35,9 +35,9 @@ void Server::parse_command(const std::string &command_line) {
     logger_->debug("Parsing command {}", command_line);
     auto tokens = util::split_words_by_spaces(command_line);
     auto command = tokens[0];
-    if(command == "connect") {
+    if (command == "connect") {
         auto user_id = tokens[1], device_id = tokens[2];
-        add_client(user_id, static_cast<uint64_t>(std::stoi(device_id)));
+        add_client(user_id, device_id);
     } else if (command == "download") {
         send_file(tokens[1]);
     } else if (command == "upload") {
@@ -45,7 +45,7 @@ void Server::parse_command(const std::string &command_line) {
     }
 }
 
-void Server::add_client(const std::string &user_id, uint64_t device_id) {
+void Server::add_client(const std::string &user_id, const std::string& device_id) {
     if(!has_client_connected(user_id)) {
         client new_client;
         new_client.user_id = user_id;

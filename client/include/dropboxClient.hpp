@@ -64,7 +64,7 @@ public:
 
 private:
     bool logged_in_ = false;
-    uint64_t device_id_;
+    std::string device_id_;
     std::string user_id_;
     std::vector<util::file_info> user_files_;
     std::string local_directory_;

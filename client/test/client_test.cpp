@@ -48,14 +48,14 @@ public:
         last_command_ = "get_file";
     }
 
-    std::vector<std::string> list_server() override {
+    std::vector<std::vector<std::string>> list_server() override {
         last_command_ = "list_server";
-        std::vector<std::string> temp;
+        std::vector<std::vector<std::string>> temp;
         return temp;
     }
-    std::vector<std::string> list_client() override {
+    std::vector<std::vector<std::string>> list_client() override {
         last_command_ = "list_client";
-        std::vector<std::string> temp;
+        std::vector<std::vector<std::string>> temp;
         return temp;
     }
 

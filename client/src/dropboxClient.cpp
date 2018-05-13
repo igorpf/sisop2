@@ -10,6 +10,9 @@
 #include <pwd.h>
 
 #include <boost/filesystem.hpp>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
 
 #include "../../util/include/string_formatter.hpp"
 #include "../../util/include/table_printer.hpp"
@@ -49,6 +52,10 @@ void Client::start_client(int argc, char **argv)
     hostname_ = login_command_parser.GetHostname();
     user_id_ = login_command_parser.GetUserid();
 
+    boost::uuids::name_generator_sha1 id_generator(boost::uuids::ns::dns());
+    boost::uuids::uuid device_id = id_generator(user_id_);
+    device_id_ = to_string(device_id);
+
     login_server();
 }
 
@@ -63,10 +70,7 @@ void Client::login_server()
     server_addr_.sin_port = htons(static_cast<uint16_t>(port_));
     server_addr_.sin_addr.s_addr = inet_addr(hostname_.c_str());
     peer_length_ = sizeof(server_addr_);
-    std::string command("connect ");
-    command.append(user_id_)
-            .append(" ")
-            .append(std::to_string(device_id_));
+    std::string command(StringFormatter() << "connect " << user_id_ << " " << device_id_);
 
     sendto(socket_, command.c_str(), command.size(), 0, (struct sockaddr*)&server_addr_, peer_length_);
     logged_in_ = true;

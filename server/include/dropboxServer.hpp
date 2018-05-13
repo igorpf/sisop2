@@ -13,8 +13,7 @@ namespace util = DropboxUtil;
 
 typedef struct {
     bool logged_in;
-    //TODO(jfguimaraes) Como identificar um novo dispositivo?
-    std::vector<uint64_t> devices;
+    std::vector<std::string> devices;
     std::string user_id;
     std::vector<util::file_info> user_files;
 } client;
@@ -59,7 +58,7 @@ public:
 private:
     // command related methods
     void parse_command(const std::string &command_line);
-    void add_client(const std::string &client_id, uint64_t device_id);
+    void add_client(const std::string &client_id, const std::string& device_id);
 
     // utility methods
     bool has_client_connected(const std::string &client_id);
