@@ -15,8 +15,10 @@ add_executable(client_test
         ../../util/include/dropboxUtil.hpp
         ../../util/include/string_formatter.hpp
         ../../util/include/File.hpp
+        ../../util/include/table_printer.hpp
         ../../util/src/dropboxUtil.cpp
         ../../util/src/File.cpp
+        ../../util/src/table_printer.cpp
         ../include/login_command_parser.hpp
         ../include/shell_command_parser.hpp
         ../include/dropboxClient.hpp

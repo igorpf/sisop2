@@ -50,12 +50,12 @@ public:
     /**
      * Lista os arquivos do usuário no servidor
      */
-    std::vector<std::string> list_server() override;
+    std::vector<std::vector<std::string>> list_server() override;
 
     /**
      * Lista os arquivos do usuário na pasta local
      */
-    std::vector<std::string> list_client() override;
+    std::vector<std::vector<std::string>> list_client() override;
 
     /**
      * Fecha a sessão com o servidor

@@ -3,6 +3,7 @@
 #include <boost/algorithm/string.hpp>
 
 #include "../include/shell_command_parser.hpp"
+#include "../../util/include/table_printer.hpp"
 
 const std::string Shell::LOGGER_NAME = "Shell";
 
@@ -54,21 +55,48 @@ void Shell::loop(std::istream& input_stream)
 void Shell::execute_operation()
 {
     if (operation_ == "upload") {
-        std::cout << "Sending file " << file_path_ << " to server" << std::endl;
-        client_.send_file(file_path_);
+        operation_upload();
     } else if (operation_ == "download") {
-        std::cout << "Getting file " << file_path_ << " from server" << std::endl;
-        client_.get_file(file_path_);
+        operation_download();
     } else if (operation_ == "list_server") {
-        std::cout << "Listing files on server" << std::endl;
-        std::vector<std::string> server_files = client_.list_server();
-        // TODO(jfguimaraes) Define a printer for these functions
+        operation_list_server();
     } else if (operation_ == "list_client") {
-        std::cout << "Listing files on client" << std::endl;
-        std::vector<std::string> client_files = client_.list_client();
-        // TODO(jfguimaraes) Define a printer for these functions
+        operation_list_client();
     } else if (operation_ == "get_sync_dir") {
-        std::cout << "Creating sync_dir_userid folder" << std::endl;
-        client_.sync_client();
+        operation_sync_dir();
     }
+}
+
+void Shell::operation_upload()
+{
+    std::cout << "Sending file " << file_path_ << " to server" << std::endl;
+    client_.send_file(file_path_);
+}
+
+void Shell::operation_download()
+{
+    std::cout << "Getting file " << file_path_ << " from server" << std::endl;
+    client_.get_file(file_path_);
+}
+
+void Shell::operation_list_server()
+{
+    std::cout << "Listing files on server" << std::endl;
+    std::vector<std::vector<std::string>> server_files = client_.list_server();
+    TablePrinter table_printer(server_files);
+    table_printer.Print();
+}
+
+void Shell::operation_list_client()
+{
+    std::cout << "Listing files on client" << std::endl;
+    std::vector<std::vector<std::string>> client_files = client_.list_client();
+    TablePrinter table_printer(client_files);
+    table_printer.Print();
+}
+
+void Shell::operation_sync_dir()
+{
+    std::cout << "Creating sync_dir folder" << std::endl;
+    client_.sync_client();
 }

@@ -40,6 +40,12 @@ private:
      * Executes the operation inputted
      */
     void execute_operation();
+
+    void operation_upload();
+    void operation_download();
+    void operation_list_server();
+    void operation_list_client();
+    void operation_sync_dir();
 };
 
 #endif // SISOP2_CLIENT_INCLUDE_SHELL_HPP

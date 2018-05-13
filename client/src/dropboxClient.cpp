@@ -12,6 +12,7 @@
 #include <boost/filesystem.hpp>
 
 #include "../../util/include/string_formatter.hpp"
+#include "../../util/include/table_printer.hpp"
 #include "../../util/include/File.hpp"
 #include "../include/dropboxClient.hpp"
 
@@ -112,14 +113,26 @@ void Client::delete_file(const std::string& filename)
     throw std::logic_error("Function not implemented");
 }
 
-std::vector<std::string> Client::list_server()
+std::vector<std::vector<std::string>> Client::list_server()
 {
     throw std::logic_error("Function not implemented");
 }
 
-std::vector<std::string> Client::list_client()
+std::vector<std::vector<std::string>> Client::list_client()
 {
-    throw std::logic_error("Function not implemented");
+    std::vector<std::vector<std::string>> entries;
+    std::vector<std::string> header {"name", "size", "modification_time"};
+    entries.emplace_back(header);
+
+    for (const auto& file : user_files_) {
+        std::vector<std::string> info;
+        info.emplace_back(file.name);
+        info.emplace_back(std::to_string(file.size));
+        info.emplace_back(std::to_string(file.last_modification_time));
+        entries.emplace_back(info);
+    }
+
+    return entries;
 }
 
 void Client::close_session()
