@@ -1,8 +1,11 @@
 #include "../include/dropboxUtil.hpp"
-#include "../include/StringFormatter.hpp"
+#include "../include/string_formatter.hpp"
 #include "../include/File.hpp"
+#include "../include/table_printer.hpp"
 
 #include <gtest/gtest.h>
+
+/// File Permissions
 
 TEST(FilePermissions, ReadOnlyFile)
 {
@@ -37,6 +40,8 @@ TEST(FilePermissions, ExecutableFile)
     ASSERT_TRUE(perms & filesystem::others_exe);
 }
 
+/// String Formatter
+
 TEST(StringFormatter, StringFormatter)
 {
     std::string end_string;
@@ -49,6 +54,8 @@ TEST(StringFormatter, StringFormatter)
 
     ASSERT_EQ("a2557this is a string4829.87", end_string);
 }
+
+/// UtilityFunctions
 
 TEST(UtilityFunctions, SplitOnSpaces)
 {
@@ -80,6 +87,26 @@ TEST(UtilityFunctions, RandomNumber)
 
     ASSERT_NE(random_1, random_2);
     ASSERT_NE(random_1, random_3);
+}
+
+/// TablePrinter
+
+TEST(TablePrinter, RegularTable)
+{
+    std::vector<std::vector<std::string>> table = {{"test1", "test2", "test3"}, {"hello_world", "s", "string"}};
+    std::stringstream test_stream;
+
+    TablePrinter table_printer(table);
+    table_printer.Print(test_stream);
+
+    std::string line1;
+    std::string line2;
+
+    std::getline(test_stream, line1);
+    std::getline(test_stream, line2);
+
+    ASSERT_EQ("test1       test2  test3  ", line1);
+    ASSERT_EQ("hello_world s      string ", line2);
 }
 
 int main(int argc, char **argv) {

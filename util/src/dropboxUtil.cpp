@@ -1,5 +1,5 @@
 #include "../include/dropboxUtil.hpp"
-#include "../include/StringFormatter.hpp"
+#include "../include/string_formatter.hpp"
 
 #include <sstream>
 #include <cerrno>

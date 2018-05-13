@@ -1,5 +1,5 @@
 #include "../../util/include/dropboxUtil.hpp"
-#include "../../util/include/StringFormatter.hpp"
+#include "../../util/include/string_formatter.hpp"
 #include "../../util/include/File.hpp"
 
 #include "../include/login_command_parser.hpp"

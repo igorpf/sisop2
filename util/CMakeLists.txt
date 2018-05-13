@@ -13,10 +13,12 @@ find_package(spdlog CONFIG REQUIRED)
 # Add the library
 add_library(dropboxUtil
         include/dropboxUtil.hpp
-        include/StringFormatter.hpp
+        include/string_formatter.hpp
         include/File.hpp
+        include/table_printer.hpp
         src/dropboxUtil.cpp
-        src/File.cpp)
+        src/File.cpp
+        src/table_printer.cpp)
 
 # Target libraries
 target_link_libraries(dropboxUtil PUBLIC Boost::system Boost::filesystem spdlog::spdlog pthread)

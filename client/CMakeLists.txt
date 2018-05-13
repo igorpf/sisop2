@@ -13,6 +13,7 @@ find_package(spdlog CONFIG REQUIRED)
 # Add the executable
 add_executable(dropboxClient
         ../util/include/dropboxUtil.hpp
+        ../util/include/string_formatter.hpp
         ../util/include/File.hpp
         ../util/src/dropboxUtil.cpp
         ../util/src/File.cpp

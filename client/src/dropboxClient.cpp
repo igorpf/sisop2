@@ -11,7 +11,7 @@
 
 #include <boost/filesystem.hpp>
 
-#include "../../util/include/StringFormatter.hpp"
+#include "../../util/include/string_formatter.hpp"
 #include "../../util/include/File.hpp"
 #include "../include/dropboxClient.hpp"
 

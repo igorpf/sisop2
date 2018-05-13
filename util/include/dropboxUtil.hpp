@@ -14,9 +14,8 @@
 namespace filesystem = boost::filesystem;
 
 namespace DropboxUtil {
-
-    // constants
-    const int32_t BUFFER_SIZE = 64000; //approximately an ip packet size
+    /// Constants
+    const int32_t BUFFER_SIZE = 64000; // approximately an ip packet size
     const int64_t TIMEOUT_US  = 50000; // to disable timeout, set 500000000000 as value
     const int8_t MAX_RETRANSMISSIONS = 20;
     const int8_t DEFAULT_ERROR_CODE = 1;
@@ -30,8 +29,9 @@ namespace DropboxUtil {
         return col;
     }
 
-    //structs definition
+    /// Structs definition
     typedef int SOCKET;
+
     struct file_info {
         std::string name;
         int64_t size;
@@ -45,7 +45,7 @@ namespace DropboxUtil {
         std::string in_file_path;
     };
 
-    // utility functions
+    /// Utility functions
     std::vector<std::string> split_words_by_spaces(const std::string &phrase);
     std::string get_errno_with_message(const std::string &base_message = "");
     int64_t get_random_number();

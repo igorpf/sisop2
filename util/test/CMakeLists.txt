@@ -13,9 +13,12 @@ find_package(Boost CONFIG REQUIRED system filesystem)
 # Add the executable
 add_executable(util_test
         ../include/dropboxUtil.hpp
-        ../src/dropboxUtil.cpp
+        ../include/string_formatter.hpp
         ../include/File.hpp
+        ../include/table_printer.hpp
+        ../src/dropboxUtil.cpp
         ../src/File.cpp
+        ../src/table_printer.cpp
         util_test.cpp)
 
 # Target libraries

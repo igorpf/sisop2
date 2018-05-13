@@ -1,5 +1,5 @@
-#ifndef SISOP2_UTIL_STRINGFORMATTER_HPP
-#define SISOP2_UTIL_STRINGFORMATTER_HPP
+#ifndef SISOP2_UTIL_STRING_FORMATTER_HPP
+#define SISOP2_UTIL_STRING_FORMATTER_HPP
 
 #include <string>
 #include <sstream>
@@ -26,4 +26,4 @@ private:
     std::stringstream stream_;
 };
 
-#endif // SISOP2_UTIL_STRINGFORMATTER_HPP
+#endif // SISOP2_UTIL_STRING_FORMATTER_HPP

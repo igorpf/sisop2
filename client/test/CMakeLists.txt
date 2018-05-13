@@ -13,7 +13,7 @@ find_package(Boost CONFIG REQUIRED program_options system filesystem)
 # Add the executable
 add_executable(client_test
         ../../util/include/dropboxUtil.hpp
-        ../../util/include/StringFormatter.hpp
+        ../../util/include/string_formatter.hpp
         ../../util/include/File.hpp
         ../../util/src/dropboxUtil.cpp
         ../../util/src/File.cpp
