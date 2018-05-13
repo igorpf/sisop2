@@ -4,6 +4,8 @@
 #include <boost/filesystem.hpp>
 #include <spdlog/spdlog.h>
 
+#include "dropboxUtil.hpp"
+
 namespace filesystem = boost::filesystem;
 
 namespace DropboxUtil {

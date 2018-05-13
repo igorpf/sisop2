@@ -67,6 +67,7 @@ private:
     uint64_t device_id_;
     std::string user_id_;
     std::vector<util::file_info> user_files_;
+    std::string local_directory_;
 
     static const std::string LOGGER_NAME;
     std::shared_ptr<spdlog::logger> logger_;

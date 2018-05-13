@@ -1,18 +1,19 @@
-#include "../../util/include/dropboxUtil.hpp"
-#include "../../util/include/File.hpp"
-#include "../include/dropboxClient.hpp"
-
 #include <iostream>
 #include <cstring>
-#include <string>
 #include <stdexcept>
 
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <pwd.h>
+
+#include <boost/filesystem.hpp>
+
+#include "../../util/include/StringFormatter.hpp"
+#include "../../util/include/File.hpp"
+#include "../include/dropboxClient.hpp"
 
 #include "../include/login_command_parser.hpp"
 
@@ -72,6 +73,16 @@ void Client::login_server()
 
 void Client::sync_client()
 {
+    char* home_folder;
+
+    if ((home_folder = getenv("HOME")) == nullptr) {
+        home_folder = getpwuid(getuid())->pw_dir;
+    }
+
+    local_directory_ = StringFormatter() << home_folder << "/sync_dir_" << user_id_;
+    boost::filesystem::create_directory(local_directory_);
+
+    // TODO Sync files with the server
     throw std::logic_error("Function not implemented");
 }
 

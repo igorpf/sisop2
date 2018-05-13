@@ -1,4 +1,5 @@
 #include "../include/dropboxUtil.hpp"
+#include "../include/StringFormatter.hpp"
 #include "../include/File.hpp"
 
 #include <gtest/gtest.h>
@@ -34,6 +35,51 @@ TEST(FilePermissions, ExecutableFile)
     ASSERT_TRUE(perms & filesystem::others_read);
     ASSERT_FALSE(perms & filesystem::others_write);
     ASSERT_TRUE(perms & filesystem::others_exe);
+}
+
+TEST(StringFormatter, StringFormatter)
+{
+    std::string end_string;
+    int64_t int_number = 2557;
+    double double_number = 4829.87;
+    std::string full_string = "this is a string";
+    char one_char = 'a';
+
+    end_string = StringFormatter() << one_char << int_number << full_string << double_number;
+
+    ASSERT_EQ("a2557this is a string4829.87", end_string);
+}
+
+TEST(UtilityFunctions, SplitOnSpaces)
+{
+    std::string original_string = "string with spaces";
+
+    std::vector<std::string> words = DropboxUtil::split_words_by_spaces(original_string);
+
+    ASSERT_EQ("string", words[0]);
+    ASSERT_EQ("with", words[1]);
+    ASSERT_EQ("spaces", words[2]);
+}
+
+TEST(UtilityFunctions, ErrnoWithMessage)
+{
+    auto previous_errno = errno;
+    errno = 2;
+    std::string base_message = "Test message";
+    std::string full_message = DropboxUtil::get_errno_with_message(base_message);
+
+    EXPECT_EQ("Test message, error code 2", full_message);
+    errno = previous_errno;
+}
+
+TEST(UtilityFunctions, RandomNumber)
+{
+    auto random_1 = DropboxUtil::get_random_number();
+    auto random_2 = DropboxUtil::get_random_number();
+    auto random_3 = DropboxUtil::get_random_number();
+
+    ASSERT_NE(random_1, random_2);
+    ASSERT_NE(random_1, random_3);
 }
 
 int main(int argc, char **argv) {
