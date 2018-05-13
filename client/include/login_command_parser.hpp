@@ -1,5 +1,5 @@
-#ifndef SISOP2_CLIENT_INCLUDE_COMMAND_PARSER_HPP
-#define SISOP2_CLIENT_INCLUDE_COMMAND_PARSER_HPP
+#ifndef SISOP2_CLIENT_INCLUDE_LOGIN_COMMAND_PARSER_HPP
+#define SISOP2_CLIENT_INCLUDE_LOGIN_COMMAND_PARSER_HPP
 
 #include <string>
 
@@ -7,6 +7,7 @@
 
 namespace program_options = boost::program_options;
 
+// TODO(jfguimaraes) Traduzir aqui
 /**
  * Class for parsing and validating user input, making parameters available through get functions
  * and making it possible to show a helper message if the user specifies so
@@ -19,12 +20,12 @@ namespace program_options = boost::program_options;
  * can finish execution, otherwise returns false and execution may continue. After all these steps
  * the arguments will be available through get functions.
  */
-class CommandParser {
+class LoginCommandParser {
 public:
     /**
      * Initializes the arguments description
      */
-    CommandParser();
+    LoginCommandParser();
 
     /**
      * Verifies that the input is complete and on the right format
@@ -74,4 +75,4 @@ private:
     program_options::variables_map variables_map_;
 };
 
-#endif //SISOP2_CLIENT_INCLUDE_COMMAND_PARSER_HPP
+#endif // SISOP2_CLIENT_INCLUDE_LOGIN_COMMAND_PARSER_HPP

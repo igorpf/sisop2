@@ -1,7 +1,10 @@
 #include <iostream>
 #include <exception>
 
+#include <spdlog/spdlog.h>
+
 #include "../include/dropboxClient.hpp"
+#include "../include/shell.hpp"
 
 int main(int argc, char* argv[])
 {
@@ -10,7 +13,10 @@ int main(int argc, char* argv[])
     try {
         Client client;
         client.start_client(argc, argv);
-        client.send_file("dropboxClient");
+        client.sync_client();
+
+        Shell shell(client);
+        shell.loop();
     } catch (std::exception &exception) {
         logger->error(exception.what());
     }

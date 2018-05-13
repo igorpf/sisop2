@@ -13,13 +13,16 @@ find_package(Boost CONFIG REQUIRED program_options system filesystem)
 # Add the executable
 add_executable(client_test
         ../../util/include/dropboxUtil.hpp
-        ../../util/src/dropboxUtil.cpp
         ../../util/include/File.hpp
+        ../../util/src/dropboxUtil.cpp
         ../../util/src/File.cpp
+        ../include/login_command_parser.hpp
+        ../include/shell_command_parser.hpp
         ../include/dropboxClient.hpp
-        ../include/command_parser.hpp
+        ../src/login_command_parser.cpp
+        ../src/shell_command_parser.cpp
         ../src/dropboxClient.cpp
-        ../src/command_parser.cpp
+
         client_test.cpp)
 
 # Target libraries

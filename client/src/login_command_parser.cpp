@@ -1,4 +1,4 @@
-#include "../include/command_parser.hpp"
+#include "../include/login_command_parser.hpp"
 
 #include <iostream>
 #include <exception>
@@ -6,9 +6,9 @@
 #include <boost/asio.hpp>
 #include <boost/system/error_code.hpp>
 
-CommandParser::CommandParser() {
+LoginCommandParser::LoginCommandParser() {
     description_.add_options()
-            ("help,h", "show help message")
+            ("help,h", "shows help message")
             ("userid", program_options::value<std::string>(), "user identifier")
             ("hostname", program_options::value<std::string>(), "server hostname")
             ("port", program_options::value<int64_t>(), "server port")
@@ -19,13 +19,12 @@ CommandParser::CommandParser() {
     positional_description_.add("port", 1);
 }
 
-void CommandParser::ParseInput(int argc, char **argv) {
+void LoginCommandParser::ParseInput(int argc, char **argv) {
     program_options::store(program_options::command_line_parser(argc, argv)
                                    .options(description_)
                                    .positional(positional_description_)
                                    .run(),
                            variables_map_);
-    program_options::notify(variables_map_);
 
     bool help_specified = variables_map_.count("help") > 0;
     bool client_info_specified = variables_map_.count("userid") > 0 &&
@@ -36,7 +35,7 @@ void CommandParser::ParseInput(int argc, char **argv) {
         throw std::runtime_error("missing parameters, use --help or -h for usage info");
 }
 
-void CommandParser::ValidateInput() {
+void LoginCommandParser::ValidateInput() {
     if (variables_map_.empty())
         throw std::runtime_error("no arguments have been parsed");
 
@@ -61,7 +60,7 @@ void CommandParser::ValidateInput() {
         throw std::runtime_error("invalid port");
 }
 
-bool CommandParser::ShowHelpMessage() {
+bool LoginCommandParser::ShowHelpMessage() {
     if (variables_map_.empty())
         throw std::runtime_error("no arguments have been parsed");
 
@@ -74,21 +73,21 @@ bool CommandParser::ShowHelpMessage() {
     return true;
 }
 
-std::string CommandParser::GetUserid() {
+std::string LoginCommandParser::GetUserid() {
     if (variables_map_.count("userid") == 0)
         throw std::runtime_error("no userid available");
 
     return variables_map_["userid"].as<std::string>();
 }
 
-std::string CommandParser::GetHostname() {
+std::string LoginCommandParser::GetHostname() {
     if (variables_map_.count("hostname") == 0)
         throw std::runtime_error("no hostname available");
 
     return variables_map_["hostname"].as<std::string>();
 }
 
-int64_t CommandParser::GetPort() {
+int64_t LoginCommandParser::GetPort() {
     if (variables_map_.count("port") == 0)
         throw std::runtime_error("no port available");
 

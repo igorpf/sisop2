@@ -1,4 +1,4 @@
-#include "../include/command_parser.hpp"
+#include "../include/login_command_parser.hpp"
 #include "../include/dropboxClient.hpp"
 #include "../../util/include/dropboxUtil.hpp"
 #include "../../util/include/File.hpp"
@@ -31,7 +31,7 @@ TEST(ParserTest, ParseSpecifiedArguments)
     std::array<const char*, 4> argv = {"dropboxClient", "--userid=id1234", "--hostname=127.0.0.1", "--port=8080"};
     int argc = argv.size();
 
-    CommandParser command_parser;
+    LoginCommandParser command_parser;
 
     ASSERT_NO_THROW(command_parser.ParseInput(argc, const_cast<char**>(argv.data())));
 }
@@ -41,7 +41,7 @@ TEST(ParserTest, ParsePositionalArguments)
     std::array<const char*, 4> argv = {"dropboxClient", "id1234", "127.0.0.1", "8080"};
     int argc = argv.size();
 
-    CommandParser command_parser;
+    LoginCommandParser command_parser;
 
     ASSERT_NO_THROW(command_parser.ParseInput(argc, const_cast<char**>(argv.data())));
 }
@@ -51,7 +51,7 @@ TEST(ParserTest, ParseIncompleteArguments)
     std::array<const char*, 3> argv = {"dropboxClient", "id1234", "127.0.0.1"};
     int argc = argv.size();
 
-    CommandParser command_parser;
+    LoginCommandParser command_parser;
 
     ASSERT_ANY_THROW(command_parser.ParseInput(argc, const_cast<char**>(argv.data())));
 }
@@ -61,7 +61,7 @@ TEST(ParserTest, ParseAndValidateHelpMessage)
     std::array<const char*, 2> argv = {"dropboxClient", "--help"};
     int argc = argv.size();
 
-    CommandParser command_parser;
+    LoginCommandParser command_parser;
 
     ASSERT_NO_THROW(command_parser.ParseInput(argc, const_cast<char**>(argv.data())));
     ASSERT_NO_THROW(command_parser.ValidateInput());
@@ -71,7 +71,7 @@ TEST(ParserTest, ValidateWithoutParsing)
 {
     std::array<const char*, 4> argv = {"dropboxClient", "id1234", "127.0.0.1", "8080"};
 
-    CommandParser command_parser;
+    LoginCommandParser command_parser;
 
     ASSERT_ANY_THROW(command_parser.ValidateInput());
 }
@@ -81,7 +81,7 @@ TEST(ParserTest, ValidateCorrectInfo)
     std::array<const char*, 4> argv = {"dropboxClient", "id1234", "127.0.0.1", "8080"};
     int argc = argv.size();
 
-    CommandParser command_parser;
+    LoginCommandParser command_parser;
     command_parser.ParseInput(argc, const_cast<char**>(argv.data()));
 
     ASSERT_NO_THROW(command_parser.ValidateInput());
@@ -92,7 +92,7 @@ TEST(ParserTest, ValidateShortUserid)
     std::array<const char*, 4> argv = {"dropboxClient", "id", "127.0.0.1", "8080"};
     int argc = argv.size();
 
-    CommandParser command_parser;
+    LoginCommandParser command_parser;
     command_parser.ParseInput(argc, const_cast<char**>(argv.data()));
 
     ASSERT_ANY_THROW(command_parser.ValidateInput());
@@ -103,7 +103,7 @@ TEST(ParserTest, ValidateInvalidHostname)
     std::array<const char*, 4> argv = {"dropboxClient", "id1234", "127.0.0", "8080"};
     int argc = argv.size();
 
-    CommandParser command_parser;
+    LoginCommandParser command_parser;
     command_parser.ParseInput(argc, const_cast<char**>(argv.data()));
 
     ASSERT_ANY_THROW(command_parser.ValidateInput());
@@ -114,7 +114,7 @@ TEST(ParserTest, ValidateInvalidPort)
     std::array<const char*, 4> argv = {"dropboxClient", "id1234", "127.0.0.1", "70000"};
     int argc = argv.size();
 
-    CommandParser command_parser;
+    LoginCommandParser command_parser;
     command_parser.ParseInput(argc, const_cast<char**>(argv.data()));
 
     ASSERT_ANY_THROW(command_parser.ValidateInput());
@@ -125,7 +125,7 @@ TEST(ParserTest, ShowHelpMessage)
     std::array<const char*, 2> argv = {"dropboxClient", "--help"};
     int argc = argv.size();
 
-    CommandParser command_parser;
+    LoginCommandParser command_parser;
 
     command_parser.ParseInput(argc, const_cast<char**>(argv.data()));
     command_parser.ValidateInput();
@@ -137,7 +137,7 @@ TEST(ParserTest, ShowHelpMessageWithoutParsing)
 {
     std::array<const char*, 2> argv = {"dropboxClient", "--help"};
 
-    CommandParser command_parser;
+    LoginCommandParser command_parser;
 
     ASSERT_ANY_THROW(command_parser.ShowHelpMessage());
 }
@@ -147,7 +147,7 @@ TEST(ParserTest, DontShowHelpMessage)
     std::array<const char*, 4> argv = {"dropboxClient", "id1234", "127.0.0.1", "8080"};
     int argc = argv.size();
 
-    CommandParser command_parser;
+    LoginCommandParser command_parser;
 
     command_parser.ParseInput(argc, const_cast<char**>(argv.data()));
     command_parser.ValidateInput();
@@ -160,7 +160,7 @@ TEST(ParserTest, GetUserid)
     std::array<const char*, 4> argv = {"dropboxClient", "id1234", "127.0.0.1", "8080"};
     int argc = argv.size();
 
-    CommandParser command_parser;
+    LoginCommandParser command_parser;
 
     command_parser.ParseInput(argc, const_cast<char**>(argv.data()));
     command_parser.ValidateInput();
@@ -170,7 +170,7 @@ TEST(ParserTest, GetUserid)
 
 TEST(ParserTest, GetUseridWithoutParsing)
 {
-    CommandParser command_parser;
+    LoginCommandParser command_parser;
     ASSERT_ANY_THROW(command_parser.GetUserid());
 }
 
@@ -179,7 +179,7 @@ TEST(ParserTest, GetHostname)
     std::array<const char*, 4> argv = {"dropboxClient", "id1234", "127.0.0.1", "8080"};
     int argc = argv.size();
 
-    CommandParser command_parser;
+    LoginCommandParser command_parser;
 
     command_parser.ParseInput(argc, const_cast<char**>(argv.data()));
     command_parser.ValidateInput();
@@ -189,7 +189,7 @@ TEST(ParserTest, GetHostname)
 
 TEST(ParserTest, GetHostnameWithoutParsing)
 {
-    CommandParser command_parser;
+    LoginCommandParser command_parser;
     ASSERT_ANY_THROW(command_parser.GetHostname());
 }
 
@@ -198,7 +198,7 @@ TEST(ParserTest, GetPort)
     std::array<const char*, 4> argv = {"dropboxClient", "id1234", "127.0.0.1", "8080"};
     int argc = argv.size();
 
-    CommandParser command_parser;
+    LoginCommandParser command_parser;
 
     command_parser.ParseInput(argc, const_cast<char**>(argv.data()));
     command_parser.ValidateInput();
@@ -208,7 +208,7 @@ TEST(ParserTest, GetPort)
 
 TEST(ParserTest, GetPortWithoutParsing)
 {
-    CommandParser command_parser;
+    LoginCommandParser command_parser;
     ASSERT_ANY_THROW(command_parser.GetPort());
 }
 

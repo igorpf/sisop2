@@ -14,7 +14,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
-#include "../include/command_parser.hpp"
+#include "../include/login_command_parser.hpp"
 
 const std::string Client::LOGGER_NAME = "Client";
 
@@ -34,15 +34,18 @@ void Client::start_client(int argc, char **argv)
     if (logged_in_)
         return;
 
-    CommandParser command_parser;
+    LoginCommandParser login_command_parser;
 
-    command_parser.ParseInput(argc, argv);
-    command_parser.ShowHelpMessage();
-    command_parser.ValidateInput();
+    login_command_parser.ParseInput(argc, argv);
 
-    port_ = command_parser.GetPort();
-    hostname_ = command_parser.GetHostname();
-    user_id_ = command_parser.GetUserid();
+    if (login_command_parser.ShowHelpMessage())
+        exit(0);
+
+    login_command_parser.ValidateInput();
+
+    port_ = login_command_parser.GetPort();
+    hostname_ = login_command_parser.GetHostname();
+    user_id_ = login_command_parser.GetUserid();
 
     login_server();
 }
@@ -67,6 +70,11 @@ void Client::login_server()
     logged_in_ = true;
 }
 
+void Client::sync_client()
+{
+    throw std::logic_error("Function not implemented");
+}
+
 void Client::send_file(const std::string& filename)
 {
     util::file_transfer_request request;
@@ -83,22 +91,27 @@ void Client::send_file(const std::string& filename)
     file_util.send_file(request);
 }
 
-void Client::close_session()
-{
-    throw std::logic_error("Function not implemented");
-}
-
-void Client::sync_client()
-{
-    throw std::logic_error("Function not implemented");
-}
-
 void Client::get_file(const std::string& filename)
 {
     throw std::logic_error("Function not implemented");
 }
 
 void Client::delete_file(const std::string& filename)
+{
+    throw std::logic_error("Function not implemented");
+}
+
+std::vector<std::string> Client::list_server()
+{
+    throw std::logic_error("Function not implemented");
+}
+
+std::vector<std::string> Client::list_client()
+{
+    throw std::logic_error("Function not implemented");
+}
+
+void Client::close_session()
 {
     throw std::logic_error("Function not implemented");
 }

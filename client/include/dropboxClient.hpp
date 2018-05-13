@@ -7,13 +7,14 @@
 #include <spdlog/spdlog.h>
 
 #include "../../util/include/dropboxUtil.hpp"
+#include "iclient.hpp"
 
 namespace util = DropboxUtil;
 
-class Client {
+class Client : public IClient {
 public:
     Client();
-    ~Client();
+    ~Client() override;
 
     /**
      * Inicializa o client fazendo o parse dos argumentos de linha de comando,
@@ -24,35 +25,45 @@ public:
     /**
      * Sincroniza o diretório "sync_dir_<user_id>" com o servidor
      */
-    void sync_client();
+    void sync_client() override;
 
     /**
      * Envia um arquivo para o servidor (upload)
      * @param filename Nome do arquivo a ser enviado
      * TODO(jfguimaraes) O nome do arquivo é um caminho absoluto ou relativo?
      */
-    void send_file(const std::string &filename);
+    void send_file(const std::string &filename) override;
 
     /**
      * Obtém um arquivo do servidor (download)
      * @param filename Nome do arquivo a ser obtido
      * TODO(jfguimaraes) É possível otimizar copiando o arquivo do diretório sync_dir local?
      */
-    void get_file(const std::string &filename);
+    void get_file(const std::string &filename) override;
 
     /**
      * Exclui um arquivo de "sync_dir_<user_id>"
      * @param filename Nome do arquivo a ser excluído
      */
-    void delete_file(const std::string &filename);
+    void delete_file(const std::string &filename) override;
+
+    /**
+     * Lista os arquivos do usuário no servidor
+     */
+    std::vector<std::string> list_server() override;
+
+    /**
+     * Lista os arquivos do usuário na pasta local
+     */
+    std::vector<std::string> list_client() override;
 
     /**
      * Fecha a sessão com o servidor
      */
-    void close_session();
+    void close_session() override;
 
 private:
-    bool logged_in_;
+    bool logged_in_ = false;
     uint64_t device_id_;
     std::string user_id_;
     std::vector<util::file_info> user_files_;

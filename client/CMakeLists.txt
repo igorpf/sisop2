@@ -13,13 +13,18 @@ find_package(spdlog CONFIG REQUIRED)
 # Add the executable
 add_executable(dropboxClient
         ../util/include/dropboxUtil.hpp
-        ../util/src/dropboxUtil.cpp
         ../util/include/File.hpp
+        ../util/src/dropboxUtil.cpp
         ../util/src/File.cpp
+        include/iclient.hpp
+        include/login_command_parser.hpp
+        include/shell_command_parser.hpp
         include/dropboxClient.hpp
-        include/command_parser.hpp
+        include/shell.hpp
+        src/login_command_parser.cpp
+        src/shell_command_parser.cpp
         src/dropboxClient.cpp
-        src/command_parser.cpp
+        src/shell.cpp
         src/main.cpp)
 
 # Target libraries
