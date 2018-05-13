@@ -1,6 +1,5 @@
 #include "../include/shell.hpp"
 
-#include <iostream>
 #include <boost/algorithm/string.hpp>
 
 #include "../include/shell_command_parser.hpp"
@@ -12,7 +11,12 @@ Shell::Shell(IClient &client) : client_(client)
     logger_ = spdlog::stdout_color_mt(LOGGER_NAME);
 }
 
-void Shell::loop()
+Shell::~Shell()
+{
+    spdlog::drop(LOGGER_NAME);
+}
+
+void Shell::loop(std::istream& input_stream)
 {
     std::string input;
     std::vector<std::string> arguments;
@@ -21,7 +25,7 @@ void Shell::loop()
     do {
         try {
             std::cout << "> ";
-            std::getline(std::cin, input);
+            std::getline(input_stream, input);
             boost::split(arguments, input, boost::is_any_of(" "));
 
             command_parser.ParseInput(arguments);
@@ -43,6 +47,8 @@ void Shell::loop()
             logger_->error(e.what());
         }
     } while (operation_ != "exit");
+
+    client_.close_session();
 }
 
 void Shell::execute_operation()

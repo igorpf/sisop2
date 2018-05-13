@@ -45,7 +45,7 @@ public:
      * Exclui um arquivo de "sync_dir_<user_id>"
      * @param filename Nome do arquivo a ser excluído
      */
-    void delete_file(const std::string &filename) override;
+    void delete_file(const std::string &filename);
 
     /**
      * Lista os arquivos do usuário no servidor

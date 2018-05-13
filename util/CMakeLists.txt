@@ -13,8 +13,9 @@ find_package(spdlog CONFIG REQUIRED)
 # Add the library
 add_library(dropboxUtil
         include/dropboxUtil.hpp
-        src/dropboxUtil.cpp
+        include/StringFormatter.hpp
         include/File.hpp
+        src/dropboxUtil.cpp
         src/File.cpp)
 
 # Target libraries

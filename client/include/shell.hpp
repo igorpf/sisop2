@@ -1,6 +1,7 @@
 #ifndef SISOP2_CLIENT_INCLUDE_SHELL_HPP
 #define SISOP2_CLIENT_INCLUDE_SHELL_HPP
 
+#include <iostream>
 #include <spdlog/spdlog.h>
 
 #include "iclient.hpp"
@@ -17,11 +18,15 @@ public:
      */
     explicit Shell(IClient& client);
 
+    ~Shell();
+
     /**
      * Função que executa o prompt e interpreta os comandos do usuário
      * Executa até receber o comando de saída
+     * @param input_stream Stream de entrada de dados, padrão std::cin
+     *                     Pode ser modificado para testes
      */
-    void loop();
+    void loop(std::istream& input_stream = std::cin);
 
 private:
     IClient& client_;

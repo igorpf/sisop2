@@ -16,7 +16,6 @@ public:
 
     virtual void send_file(const std::string &filename) = 0;
     virtual void get_file(const std::string &filename) = 0;
-    virtual void delete_file(const std::string &filename) = 0;
 
     virtual std::vector<std::string> list_server() = 0;
     virtual std::vector<std::string> list_client() = 0;
