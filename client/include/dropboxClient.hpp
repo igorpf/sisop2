@@ -1,56 +1,45 @@
-#ifndef SISOP2_CLIENT_INCLUDE_DROPBOXCLIENT_H
-#define SISOP2_CLIENT_INCLUDE_DROPBOXCLIENT_H
-
-#include "../../util/include/dropboxUtil.hpp"
+#ifndef SISOP2_CLIENT_INCLUDE_DROPBOXCLIENT_HPP
+#define SISOP2_CLIENT_INCLUDE_DROPBOXCLIENT_HPP
 
 #include <string>
 #include <vector>
-
 #include <netinet/in.h>
 #include <spdlog/spdlog.h>
 
+#include "../../util/include/dropboxUtil.hpp"
+#include "iclient.hpp"
+
 namespace util = DropboxUtil;
 
-typedef struct client {
-    bool logged_in;
-    //TODO(jfguimaraes) Como identificar um novo dispositivo?
-    int64_t devices[2];
-    std::string user_id;
-    std::vector<util::file_info> user_files;
-} client;
-
-class Client {
+class Client : public IClient {
 public:
-
-    Client(uint64_t device_id, const std::string &user_id);
-
-    virtual ~Client();
+    Client();
+    ~Client() override;
 
     /**
-     * Estabelece uma conexão entre o cliente e o servidor
-     * @param host Endereço do servidor
-     * @param port Porta de acesso ao servidor
+     * Inicializa o client fazendo o parse dos argumentos de linha de comando,
+     * fazendo o login no servidor com essas informações e gerando o device id
      */
-    void login_server(const std::string &host, int32_t port);
+    void start_client(int argc, char **argv);
 
     /**
      * Sincroniza o diretório "sync_dir_<user_id>" com o servidor
      */
-    void sync_client();
+    void sync_client() override;
 
     /**
      * Envia um arquivo para o servidor (upload)
      * @param filename Nome do arquivo a ser enviado
      * TODO(jfguimaraes) O nome do arquivo é um caminho absoluto ou relativo?
      */
-    void send_file(const std::string &filename);
+    void send_file(const std::string &filename) override;
 
     /**
      * Obtém um arquivo do servidor (download)
      * @param filename Nome do arquivo a ser obtido
      * TODO(jfguimaraes) É possível otimizar copiando o arquivo do diretório sync_dir local?
      */
-    void get_file(const std::string &filename);
+    void get_file(const std::string &filename) override;
 
     /**
      * Exclui um arquivo de "sync_dir_<user_id>"
@@ -59,23 +48,40 @@ public:
     void delete_file(const std::string &filename);
 
     /**
+     * Lista os arquivos do usuário no servidor
+     */
+    std::vector<std::vector<std::string>> list_server() override;
+
+    /**
+     * Lista os arquivos do usuário na pasta local
+     */
+    std::vector<std::vector<std::string>> list_client() override;
+
+    /**
      * Fecha a sessão com o servidor
      */
-    void close_session();
+    void close_session() override;
 
 private:
-    bool logged_in_;
-    uint64_t device_id_;
+    bool logged_in_ = false;
+    std::string device_id_;
     std::string user_id_;
     std::vector<util::file_info> user_files_;
+    std::string local_directory_;
 
     static const std::string LOGGER_NAME;
     std::shared_ptr<spdlog::logger> logger_;
 
-    int32_t port_;
+    int64_t port_;
+    std::string hostname_;
     struct sockaddr_in server_addr_;
     util::SOCKET socket_;
     socklen_t peer_length_;
+
+    /**
+     * Estabelece uma conexão entre o cliente e o servidor
+     */
+    void login_server();
 };
 
-#endif // SISOP2_CLIENT_INCLUDE_DROPBOXCLIENT_H
+#endif // SISOP2_CLIENT_INCLUDE_DROPBOXCLIENT_HPP

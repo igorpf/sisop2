@@ -1,5 +1,5 @@
-#ifndef SISOP2_UTIL_INCLUDE_DROPBOXUTIL_H
-#define SISOP2_UTIL_INCLUDE_DROPBOXUTIL_H
+#ifndef SISOP2_UTIL_INCLUDE_DROPBOXUTIL_HPP
+#define SISOP2_UTIL_INCLUDE_DROPBOXUTIL_HPP
 
 #include <ctime>
 #include <string>
@@ -8,14 +8,14 @@
 #include <spdlog/spdlog.h>
 
 #include <netinet/in.h>
-//TODO(jfguimaraes) Tornar Util uma biblioteca? Faria os includes ficarem mais limpos
+
+//TODO(jfguimaraes) Tornar Util uma biblioteca
 
 namespace filesystem = boost::filesystem;
 
 namespace DropboxUtil {
-
-    // constants
-    const int32_t BUFFER_SIZE = 64000; //approximately an ip packet size
+    /// Constants
+    const int32_t BUFFER_SIZE = 64000; // approximately an ip packet size
     const int64_t TIMEOUT_US  = 50000; // to disable timeout, set 500000000000 as value
     const int8_t MAX_RETRANSMISSIONS = 20;
     const int8_t DEFAULT_ERROR_CODE = 1;
@@ -29,25 +29,26 @@ namespace DropboxUtil {
         return col;
     }
 
-    //structs definition
+    /// Structs definition
     typedef int SOCKET;
-    typedef struct file_info {
+
+    struct file_info {
         std::string name;
         int64_t size;
         time_t last_modification_time;
-    } file_info;
+    };
 
-    typedef struct file_transfer_request {
+    struct file_transfer_request {
         struct sockaddr_in server_address;
         SOCKET socket;
         socklen_t peer_length;
         std::string in_file_path;
-    } file_transfer_request;
+    };
 
-    // utility functions
+    /// Utility functions
     std::vector<std::string> split_words_by_spaces(const std::string &phrase);
     std::string get_errno_with_message(const std::string &base_message = "");
     int64_t get_random_number();
 }
 
-#endif // SISOP2_UTIL_INCLUDE_DROPBOXUTIL_H
+#endif // SISOP2_UTIL_INCLUDE_DROPBOXUTIL_HPP
