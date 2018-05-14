@@ -3,6 +3,7 @@
 #include <boost/algorithm/string.hpp>
 
 #include "../include/shell_command_parser.hpp"
+#include "../../util/include/string_formatter.hpp"
 #include "../../util/include/table_printer.hpp"
 
 const std::string Shell::LOGGER_NAME = "Shell";
@@ -29,6 +30,9 @@ void Shell::loop(std::istream& input_stream)
             std::getline(input_stream, input);
             boost::split(arguments, input, boost::is_any_of(" "));
 
+            if (input.empty())
+                continue;
+
             command_parser.ParseInput(arguments);
             command_parser.ValidateInput();
 
@@ -54,6 +58,7 @@ void Shell::loop(std::istream& input_stream)
 
 void Shell::execute_operation()
 {
+    // TODO Use a map to map the strings to the functions
     if (operation_ == "upload") {
         operation_upload();
     } else if (operation_ == "download") {
@@ -69,19 +74,19 @@ void Shell::execute_operation()
 
 void Shell::operation_upload()
 {
-    std::cout << "Sending file " << file_path_ << " to server" << std::endl;
+    logger_->info("Sending file " + file_path_ + " to server");
     client_.send_file(file_path_);
 }
 
 void Shell::operation_download()
 {
-    std::cout << "Getting file " << file_path_ << " from server" << std::endl;
+    logger_->info("Getting file " + file_path_ + " from server");
     client_.get_file(file_path_);
 }
 
 void Shell::operation_list_server()
 {
-    std::cout << "Listing files on server" << std::endl;
+    logger_->info("Listing files on server");
     std::vector<std::vector<std::string>> server_files = client_.list_server();
     TablePrinter table_printer(server_files);
     table_printer.Print();
@@ -89,7 +94,7 @@ void Shell::operation_list_server()
 
 void Shell::operation_list_client()
 {
-    std::cout << "Listing files on client" << std::endl;
+    logger_->info("Listing files on client");
     std::vector<std::vector<std::string>> client_files = client_.list_client();
     TablePrinter table_printer(client_files);
     table_printer.Print();
@@ -97,6 +102,6 @@ void Shell::operation_list_client()
 
 void Shell::operation_sync_dir()
 {
-    std::cout << "Creating sync_dir folder" << std::endl;
+    logger_->info("Creating sync_dir folder");
     client_.sync_client();
 }
