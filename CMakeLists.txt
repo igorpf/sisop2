@@ -1,5 +1,5 @@
 # Include hunter package manager and set project name
-cmake_minimum_required(VERSION 3.7)
+cmake_minimum_required(VERSION 3.5)
 include("cmake/HunterGate.cmake")
 HunterGate(
         URL "https://github.com/ruslo/hunter/archive/v0.20.31.tar.gz"
