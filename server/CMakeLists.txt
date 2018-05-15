@@ -24,4 +24,4 @@ add_executable(dropboxServer
 target_link_libraries(dropboxServer PUBLIC Boost::system Boost::filesystem spdlog::spdlog pthread)
 
 # Add the test subdirectory
-add_subdirectory(test)
+#add_subdirectory(test)

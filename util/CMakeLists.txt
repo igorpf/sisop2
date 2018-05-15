@@ -21,7 +21,7 @@ add_library(dropboxUtil
         src/table_printer.cpp)
 
 # Target libraries
-target_link_libraries(dropboxUtil PUBLIC Boost::system Boost::filesystem spdlog::spdlog pthread)
+target_link_libraries(dropboxUtil PUBLIC Boost::system Boost::filesystem spdlog::spdlog pthread -lstdc++fs -std=c++11 -lpthread)
 
 # Add the test subdirectory
-add_subdirectory(test)
+#add_subdirectory(test)
