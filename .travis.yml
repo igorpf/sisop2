@@ -2,7 +2,7 @@
 language: cpp
 sudo: required
 
-# Matrix with linux configuration using gcc 5
+# Matrix with linux configuration using gcc 7, should we support macOS?
 matrix:
   include:
   - os: linux
@@ -11,23 +11,18 @@ matrix:
         sources:
         - ubuntu-toolchain-r-test
         packages:
-        - gcc-5
-        - g++-5
+        - g++-7
     env:
-    - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
+    - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
 
 before_install:
 - eval "${MATRIX_EVAL}"
-- sudo unlink /usr/bin/gcc && sudo ln -s /usr/bin/gcc-5 /usr/bin/gcc
-- sudo unlink /usr/bin/g++ && sudo ln -s /usr/bin/g++-5 /usr/bin/g++
-- gcc --version
-- g++ --version
 
 # Install a recent version of CMake
 install:
 - |
   if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then
-    CMAKE_URL="https://cmake.org/files/v3.5/cmake-3.5.0-Linux-x86_64.tar.gz"
+    CMAKE_URL="https://cmake.org/files/v3.11/cmake-3.11.0-Linux-x86_64.tar.gz"
     mkdir cmake && travis_retry wget --no-check-certificate --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C cmake
     export PATH=${DEPS_DIR}/cmake/bin:${PATH}
   else
