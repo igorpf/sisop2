@@ -2,6 +2,7 @@
 #define SISOP2_SERVER_INCLUDE_DROPBOXSERVER_HPP
 
 #include "../../util/include/dropboxUtil.hpp"
+#include "../../util/include/LoggerFactory.hpp"
 
 #include <string>
 #include <vector>

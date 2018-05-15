@@ -19,6 +19,8 @@ add_executable(util_test
         ../src/dropboxUtil.cpp
         ../src/File.cpp
         ../src/table_printer.cpp
+        ../src/LoggerFactory.cpp
+        ../include/LoggerFactory.hpp
         util_test.cpp)
 
 # Target libraries

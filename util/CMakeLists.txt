@@ -18,7 +18,12 @@ add_library(dropboxUtil
         include/table_printer.hpp
         src/dropboxUtil.cpp
         src/File.cpp
-        src/table_printer.cpp)
+        src/table_printer.cpp
+        src/LoggerFactory.cpp
+        include/LoggerFactory.hpp
+        src/File.cpp)
+
+set(CMAKE_CXX_FLAGS "-std=c++11")
 
 # Target libraries
 target_link_libraries(dropboxUtil PUBLIC Boost::system Boost::filesystem spdlog::spdlog pthread -static-libstdc++)
