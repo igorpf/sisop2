@@ -2,7 +2,7 @@
 language: cpp
 sudo: required
 
-# Matrix with linux configuration using gcc 7, should we support macOS?
+# Matrix with linux configuration using gcc 5
 matrix:
   include:
   - os: linux
@@ -11,6 +11,7 @@ matrix:
         sources:
         - ubuntu-toolchain-r-test
         packages:
+        - gcc-5
         - g++-5
     env:
     - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
