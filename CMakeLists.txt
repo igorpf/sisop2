@@ -7,7 +7,6 @@ HunterGate(
 )
 project(dropbox)
 
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -lstdc++fs -std=c++11 -lpthread")
 # Add the subprojects
 add_subdirectory(util)
 add_subdirectory(client)

@@ -31,7 +31,10 @@ add_executable(dropboxClient
         src/main.cpp)
 
 # Target libraries
-target_link_libraries(dropboxClient PUBLIC Boost::program_options Boost::boost Boost::system Boost::filesystem spdlog::spdlog pthread)
+target_link_libraries(dropboxClient PUBLIC Boost::program_options Boost::boost Boost::system Boost::filesystem spdlog::spdlog pthread -static-libstdc++)
+
+# Compile options
+target_compile_options(dropboxClient PUBLIC -std=c++11 -lpthread)
 
 # Add the test subdirectory
 add_subdirectory(test)
