@@ -55,7 +55,7 @@ TEST(StringFormatter, StringFormatter)
     ASSERT_EQ("a2557this is a string4829.87", end_string);
 }
 
-/// UtilityFunctions
+/// Utility Functions
 
 TEST(UtilityFunctions, SplitOnSpaces)
 {
@@ -87,6 +87,20 @@ TEST(UtilityFunctions, RandomNumber)
 
     ASSERT_NE(random_1, random_2);
     ASSERT_NE(random_1, random_3);
+}
+
+/// File list parsing
+
+TEST(FileListParsing, FileListParsing)
+{
+    std::vector<std::vector<std::string>> expected_list = {{"name", "size", "modification_time"},
+            {"name1", "size1", "timestamp1"}, {"name2", "size2", "timestamp2"}};
+
+    std::string data {"name1;size1;timestamp1&name2;size2;timestamp2"};
+
+    std::vector<std::vector<std::string>> parsed_list = DropboxUtil::parse_file_list_string(data);
+
+    ASSERT_EQ(parsed_list, expected_list);
 }
 
 /// TablePrinter

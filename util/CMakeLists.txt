@@ -16,6 +16,7 @@ add_library(dropboxUtil
         include/string_formatter.hpp
         include/File.hpp
         include/table_printer.hpp
+        include/lock_guard.hpp
         src/dropboxUtil.cpp
         src/File.cpp
         src/table_printer.cpp)

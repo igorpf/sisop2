@@ -14,7 +14,7 @@
 namespace filesystem = boost::filesystem;
 
 namespace DropboxUtil {
-    /// Constants
+    /// Constantes
     const int32_t BUFFER_SIZE = 64000; // approximately an ip packet size
     const int64_t TIMEOUT_US  = 50000; // to disable timeout, set 500000000000 as value
     const int8_t MAX_RETRANSMISSIONS = 20;
@@ -30,7 +30,7 @@ namespace DropboxUtil {
         return col;
     }
 
-    /// Structs definition
+    /// Definições de estruturas de dados
     typedef int SOCKET;
 
     struct file_info {
@@ -46,11 +46,16 @@ namespace DropboxUtil {
         std::string in_file_path;
     };
 
+    /// Funções de utilidade geral
+    std::vector<std::string> split_words_by_spaces(const std::string &phrase);
     /// Utility functions
     std::vector<std::string> split_words_by_token(const std::string &phrase,
                                                   const std::string &token = COMMAND_SEPARATOR_TOKEN);
     std::string get_errno_with_message(const std::string &base_message = "");
     int64_t get_random_number();
+
+    /// Parse de string de lista de arquivos
+    std::vector<std::vector<std::string>> parse_file_list_string(const std::string& received_data);
 }
 
 #endif // SISOP2_UTIL_INCLUDE_DROPBOXUTIL_HPP

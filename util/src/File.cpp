@@ -173,6 +173,114 @@ void File::receive_file(file_transfer_request request) {
         logger_->debug("Error disabling packet timeout");
 }
 
+void File::send_list_files(DropboxUtil::file_transfer_request request, const std::string& data) {
+    struct sockaddr_in from{};
+
+    struct timeval set_timeout_val = {0, TIMEOUT_US};
+    if(setsockopt(request.socket, SOL_SOCKET, SO_RCVTIMEO, &set_timeout_val, sizeof(set_timeout_val)) < 0)
+        logger_->error("Error setting timeout {}", set_timeout_val.tv_usec);
+
+    int64_t packets = static_cast<int64_t>(std::ceil(data.size() / ((float) BUFFER_SIZE))),
+            sent_packets = 0,
+            received_bytes;
+    char buffer[BUFFER_SIZE] {0};
+    logger_->info("Divided list_file transmission in {} packets.", packets);
+
+    start_handshake(request, from);
+
+    unsigned long data_position = 0;
+
+    char ack[4];
+    while(packets--) {
+        std::fill(buffer, buffer + sizeof(buffer), 0);
+        std::fill(ack, buffer + sizeof(ack), 0);
+        std::string packet = data.substr(data_position, BUFFER_SIZE);
+        data_position = packet.size();
+        strncpy(buffer, packet.c_str(), data_position);
+        logger_->debug("Sending buffer size of: {}", data_position);
+
+        bool ack_error;
+        int retransmissions = 0;
+        do {
+            sendto(request.socket, buffer, static_cast<size_t>(data_position), 0, (struct sockaddr *)&request.server_address,
+                   request.peer_length);
+            received_bytes = recvfrom(request.socket, ack, sizeof(ack), 0,(struct sockaddr *) &from, &request.peer_length);
+            ack[3] = '\0';
+            ack_error = received_bytes <= 0 || strcmp(ack, "ACK") != 0 != 0;
+            if(ack_error) {
+                logger_->error("Error receiving ACK, retransmitting packet of number {}", sent_packets);
+                retransmissions++;
+                if(retransmissions >= MAX_RETRANSMISSIONS) {
+                    logger_->error("Achieved maximum retransmissions of {}, aborting file transmission", retransmissions);
+                    throw std::runtime_error("Maximum retransmissions achieved");
+                }
+            }
+            else
+                sent_packets++;
+        } while(ack_error);
+
+        logger_->debug("ACK received");
+    }
+
+    logger_->debug("Sending end of file");
+    buffer[0] = EOF_SYMBOL;
+    sendto(request.socket, buffer, 1, 0, (struct sockaddr *)&request.server_address, request.peer_length);
+    recvfrom(request.socket, ack, sizeof(ack), 0,(struct sockaddr *) &from, &request.peer_length);
+
+    //finish handshake
+    send_finish_handshake(request, from);
+    logger_->info("Successfully sent file_list");
+
+    struct timeval unset_timeout_val = {0, 0};
+    if(setsockopt(request.socket, SOL_SOCKET, SO_RCVTIMEO, &unset_timeout_val, sizeof(unset_timeout_val)) == 0)
+        logger_->debug("Disabled packet timeout successfully");
+    else
+        logger_->debug("Error disabling packet timeout");
+}
+
+std::vector<std::vector<std::string>> File::receive_list_files(DropboxUtil::file_transfer_request request) {
+    struct sockaddr_in client_addr{0};
+    establish_handshake(request, client_addr);
+
+    char buffer[BUFFER_SIZE] = {0}, ack[4];
+    int64_t received_bytes;
+
+    struct timeval set_timeout_val = {0, TIMEOUT_US};
+    if(setsockopt(request.socket, SOL_SOCKET, SO_RCVTIMEO, &set_timeout_val, sizeof(set_timeout_val)) < 0) {
+        logger_->error("Error setting timeout {}", set_timeout_val.tv_usec);
+    }
+
+    bool writable_packet;
+    std::stringstream received_data_stream;
+    std::string received_data;
+
+    do {
+        std::fill(buffer, buffer + sizeof(buffer), 0);
+        received_bytes = recvfrom(request.socket, buffer, sizeof(buffer), 0, (struct sockaddr *) &client_addr, &request.peer_length);
+        if(received_bytes < 0) {
+            // TODO Retry?
+            throw std::runtime_error("Error receiving packet from client");
+        }
+        writable_packet = received_bytes > 1 || (received_bytes == 1 && buffer[0] != EOF_SYMBOL);
+        if(writable_packet)
+            received_data_stream << buffer;
+        logger_->debug("Received packet. Bytes: {}", received_bytes);
+        sendto(request.socket, "ACK", 4, 0, (struct sockaddr *)&client_addr, request.peer_length);
+    } while (writable_packet);
+
+    confirm_finish_handshake(request, client_addr);
+    received_data = received_data_stream.str();
+    logger_->info("Transferred list of files successfully!");
+
+    struct timeval unset_timeout_val = {0, 0};
+    if(setsockopt(request.socket, SOL_SOCKET, SO_RCVTIMEO, &unset_timeout_val, sizeof(unset_timeout_val)) == 0)
+        logger_->debug("Disabled packet timeout successfully");
+    else
+        logger_->debug("Error disabling packet timeout");
+
+    return DropboxUtil::parse_file_list_string(received_data);
+}
+
 void File::send_finish_handshake(file_transfer_request request, struct sockaddr_in &from) {
     char fin_ack[8];
     sendto(request.socket, "FIN", 4, 0, (struct sockaddr *)&request.server_address, request.peer_length);

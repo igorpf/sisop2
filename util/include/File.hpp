@@ -9,6 +9,7 @@
 namespace filesystem = boost::filesystem;
 
 namespace DropboxUtil {
+    // TODO Acho que devia se chamar algo como TransferHelper
     class File {
     public:
         File();
@@ -16,6 +17,9 @@ namespace DropboxUtil {
 
         void send_file(file_transfer_request request);
         void receive_file(file_transfer_request request);
+
+        void send_list_files(file_transfer_request request, const std::string& data);
+        std::vector<std::vector<std::string>> receive_list_files(file_transfer_request request);
         filesystem::perms parse_file_permissions_from_string(const std::string &perms);
 
     private:

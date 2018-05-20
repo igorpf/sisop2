@@ -79,17 +79,19 @@ void Client::login_server()
 
 void Client::sync_client()
 {
-    char* home_folder;
+    if (local_directory_.empty()) {
+        char *home_folder;
 
-    if ((home_folder = getenv("HOME")) == nullptr) {
-        home_folder = getpwuid(getuid())->pw_dir;
+        if ((home_folder = getenv("HOME")) == nullptr) {
+            home_folder = getpwuid(getuid())->pw_dir;
+        }
+
+        local_directory_ = StringFormatter() << home_folder << "/sync_dir_" << user_id_;
+        boost::filesystem::create_directory(local_directory_);
     }
 
-    local_directory_ = StringFormatter() << home_folder << "/sync_dir_" << user_id_;
-    boost::filesystem::create_directory(local_directory_);
-
     // TODO Sync files with the server
-    throw std::logic_error("Function not implemented");
+    // throw std::logic_error("Function not implemented");
 }
 
 void Client::send_file(const std::string& filename)
@@ -103,23 +105,47 @@ void Client::send_file(const std::string& filename)
     std::string command(StringFormatter() << "upload" << util::COMMAND_SEPARATOR_TOKEN << filename);
 
     sendto(socket_, command.c_str(), command.size(), 0, (struct sockaddr *)&server_addr_, peer_length_);
+
     util::File file_util;
     file_util.send_file(request);
 }
 
 void Client::get_file(const std::string& filename)
 {
-    throw std::logic_error("Function not implemented");
+    util::file_transfer_request request;
+    request.in_file_path = StringFormatter() << local_directory_ << "/" << filename;
+    request.peer_length = peer_length_;
+    request.server_address = server_addr_;
+    request.socket = socket_;
+
+    std::string command(StringFormatter() << "download " << filename << " " << user_id_);
+
+    sendto(socket_, command.c_str(), command.size(), 0, (struct sockaddr *)&server_addr_, peer_length_);
+
+    util::File file_util;
+    file_util.receive_file(request);
 }
 
 void Client::delete_file(const std::string& filename)
 {
-    throw std::logic_error("Function not implemented");
+    // TODO Server should answer if it succeeded
+    std::string command(StringFormatter() << "delete " << filename << " " << user_id_);
+    sendto(socket_, command.c_str(), command.size(), 0, (struct sockaddr *)&server_addr_, peer_length_);
 }
 
 std::vector<std::vector<std::string>> Client::list_server()
 {
-    throw std::logic_error("Function not implemented");
+    util::file_transfer_request request;
+    request.peer_length = peer_length_;
+    request.server_address = server_addr_;
+    request.socket = socket_;
+
+    std::string command(StringFormatter() << "list_server " << user_id_);
+
+    sendto(socket_, command.c_str(), command.size(), 0, (struct sockaddr *)&server_addr_, peer_length_);
+
+    util::File file_util;
+    return file_util.receive_list_files(request);
 }
 
 std::vector<std::vector<std::string>> Client::list_client()
