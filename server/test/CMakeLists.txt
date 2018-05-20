@@ -1,5 +1,5 @@
 # Required header
-cmake_minimum_required(VERSION 3.7)
+cmake_minimum_required(VERSION 3.5)
 project(server_test)
 
 # Download dependencies
@@ -21,4 +21,7 @@ add_executable(server_test
         server_test.cpp)
 
 # Target libraries
-target_link_libraries(server_test PUBLIC GTest::main Boost::system Boost::filesystem)
+target_link_libraries(server_test PUBLIC GTest::main Boost::system Boost::filesystem -static-libstdc++)
+
+# Compile options
+target_compile_options(server_test PUBLIC -std=c++11 -lpthread)

@@ -1,5 +1,5 @@
 # Required header
-cmake_minimum_required(VERSION 3.7)
+cmake_minimum_required(VERSION 3.5)
 project(util_test)
 
 # Download dependencies
@@ -22,4 +22,7 @@ add_executable(util_test
         util_test.cpp)
 
 # Target libraries
-target_link_libraries(util_test PUBLIC GTest::main Boost::system Boost::filesystem)
+target_link_libraries(util_test PUBLIC GTest::main Boost::system Boost::filesystem -static-libstdc++)
+
+# Compile options
+target_compile_options(util_test PUBLIC -std=c++11 -lpthread)

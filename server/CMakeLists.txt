@@ -1,5 +1,5 @@
 # Required header
-cmake_minimum_required(VERSION 3.7)
+cmake_minimum_required(VERSION 3.5)
 project(dropboxServer)
 
 # Download dependencies
@@ -21,7 +21,10 @@ add_executable(dropboxServer
         src/main.cpp)
 
 # Target libraries
-target_link_libraries(dropboxServer PUBLIC Boost::system Boost::filesystem spdlog::spdlog pthread)
+target_link_libraries(dropboxServer PUBLIC Boost::system Boost::filesystem spdlog::spdlog pthread -static-libstdc++)
+
+# Compile options
+target_compile_options(dropboxServer PUBLIC -std=c++11 -lpthread)
 
 # Add the test subdirectory
 add_subdirectory(test)

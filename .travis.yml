@@ -2,7 +2,7 @@
 language: cpp
 sudo: required
 
-# Matrix with linux configuration using gcc 7, should we support macOS?
+# Matrix with linux configuration using gcc 5 as this is the version on the production machines
 matrix:
   include:
   - os: linux
@@ -11,24 +11,21 @@ matrix:
         sources:
         - ubuntu-toolchain-r-test
         packages:
-        - g++-7
+        - g++-5
     env:
-    - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
+    - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
 
 before_install:
 - eval "${MATRIX_EVAL}"
+- sudo unlink /usr/bin/gcc && sudo ln -s /usr/bin/gcc-5 /usr/bin/gcc
 
-# Install a recent version of CMake
+# Install CMake version 3.5 as this is the version on the production machines
 install:
-- |
-  if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then
-    CMAKE_URL="https://cmake.org/files/v3.11/cmake-3.11.0-Linux-x86_64.tar.gz"
-    mkdir cmake && travis_retry wget --no-check-certificate --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C cmake
-    export PATH=${DEPS_DIR}/cmake/bin:${PATH}
-  else
-    brew upgrade cmake || brew install cmake
-  fi
-- cmake --version
+- sudo rm -rf /usr/local/cmake*
+- CMAKE_INSTALLER=install-cmake.sh
+- curl -sSL https://cmake.org/files/v3.5/cmake-3.5.2-Linux-x86_64.sh -o ${CMAKE_INSTALLER}
+- chmod +x ${CMAKE_INSTALLER}
+- sudo ./${CMAKE_INSTALLER} --prefix=/usr/local --skip-license
 
 # Run CMake configuration and build
 before_script:
