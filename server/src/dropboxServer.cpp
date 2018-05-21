@@ -18,6 +18,9 @@
 
 #include <boost/filesystem.hpp>
 
+namespace util = DropboxUtil;
+namespace fs = boost::filesystem;
+
 const std::string Server::LOGGER_NAME = "Server";
 
 Server::Server() {
@@ -38,7 +41,7 @@ void Server::start() {
     }
 
     local_directory_ = StringFormatter() << home_folder << "/dropbox_server";
-    boost::filesystem::create_directory(local_directory_);
+    fs::create_directory(local_directory_);
 
     load_info_from_disk();
 
@@ -60,7 +63,32 @@ void Server::start() {
 }
 
 void Server::load_info_from_disk() {
-    // TODO Carregar as informações já disponíveis em disco (usernames e file_infos)
+    for (const fs::directory_entry& entry : fs::directory_iterator(local_directory_)) {
+        if (!fs::is_directory(entry.path())) {
+            throw std::runtime_error("Unexpected file on server root folder");
+        }
+
+        std::string user_id = entry.path().filename().string();
+        add_client(user_id, "");
+
+        auto client_iterator = get_client_info(user_id);
+
+        for (const fs::directory_entry& file : fs::directory_iterator(entry.path())) {
+            if (fs::is_directory(file.path())) {
+                throw std::runtime_error(StringFormatter() << "Unexpected subfolder on user " << user_id << " folder");
+            }
+
+            std::string user_file = file.path().string();
+            std::string filename_without_path = file.path().filename().string();
+
+            util::file_info user_file_info;
+            user_file_info.name = filename_without_path;
+            user_file_info.size = fs::file_size(user_file);
+            user_file_info.last_modification_time = fs::last_write_time(user_file);
+
+            client_iterator->user_files.emplace_back(user_file_info);
+        }
+    }
 }
 
 void Server::listen() {
@@ -75,7 +103,7 @@ void Server::listen() {
             logger_->debug("Received from client {} port {} the message: {}",
                            inet_ntoa(current_client_.sin_addr), current_client_.sin_port, buffer);
             parse_command(buffer);
-        } catch (std::exception &e) {
+        } catch (std::exception& e) {
             logger_->error("Error parsing command from client {}", e.what());
         }
     }
@@ -87,7 +115,7 @@ void Server::receive_file(const std::string& filename, const std::string &user_i
     request.server_address = server_addr_;
     request.peer_length = peer_length_;
 
-    boost::filesystem::path filepath(filename);
+    fs::path filepath(filename);
     std::string filename_without_path = filepath.filename().string();
     std::string local_file_path = StringFormatter()
             << local_directory_ << "/"<< user_id << "/" << filename_without_path;
@@ -99,8 +127,8 @@ void Server::receive_file(const std::string& filename, const std::string &user_i
 
     util::file_info received_file_info;
     received_file_info.name = filename_without_path;
-    received_file_info.size = boost::filesystem::file_size(local_file_path);
-    received_file_info.last_modification_time = boost::filesystem::last_write_time(local_file_path);
+    received_file_info.size = fs::file_size(local_file_path);
+    received_file_info.last_modification_time = fs::last_write_time(local_file_path);
 
     auto client_iterator = get_client_info(user_id);
     client_iterator->user_files.emplace_back(received_file_info);
@@ -112,7 +140,7 @@ void Server::send_file(const std::string& filename, const std::string &user_id) 
     request.server_address = current_client_;
     request.peer_length = peer_length_;
 
-    boost::filesystem::path filepath(filename);
+    fs::path filepath(filename);
     std::string filename_without_path = filepath.filename().string();
 
     request.in_file_path = StringFormatter() << local_directory_ << "/" << user_id << "/" << filename_without_path;
@@ -147,8 +175,9 @@ void Server::sync_server() {
 }
 
 void Server::parse_command(const std::string &command_line) {
+    // TODO Validar parâmetros
     logger_->debug("Parsing command {}", command_line);
-    auto tokens = util::split_words_by_spaces(command_line);
+    auto tokens = util::split_words_by_token(command_line);
     auto command = tokens[0];
     if (command == "connect") {
         auto user_id = tokens[1], device_id = tokens[2];
@@ -162,22 +191,22 @@ void Server::parse_command(const std::string &command_line) {
     }
 }
 
-void Server::add_client(const std::string &user_id, const std::string& device_id) {
+void Server::add_client(const std::string& user_id, const std::string& device_id) {
     if (!has_client_connected(user_id)) {
         client_info new_client;
-        new_client.logged_in = true;
         new_client.user_id = user_id;
+        if (!device_id.empty())
+            new_client.user_devices.emplace_back(device_id);
         clients_.push_back(new_client);
 
         std::string client_path = StringFormatter() << local_directory_ << "/" << user_id;
-        boost::filesystem::create_directory(client_path);
+        fs::create_directory(client_path);
 
         logger_->info("Connected new client, total clients: {}",  clients_.size());
     }
 
     auto client_iterator = get_client_info(user_id);
-    client_iterator->user_devices.push_back(device_id);
-    client_iterator->logged_in = true;
+    client_iterator->user_devices.emplace_back(device_id);
 }
 
 bool Server::has_client_connected(const std::string &client_id) {

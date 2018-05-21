@@ -9,13 +9,10 @@
 #include <netinet/in.h>
 #include <spdlog/spdlog.h>
 
-namespace util = DropboxUtil;
-
 struct client_info {
-    bool logged_in;
     std::string user_id;
     std::vector<std::string> user_devices;
-    std::vector<util::file_info> user_files;
+    std::vector<DropboxUtil::file_info> user_files;
 };
 
 class Server {
@@ -67,7 +64,7 @@ private:
 
     // command related methods
     void parse_command(const std::string &command_line);
-    void add_client(const std::string &client_id, const std::string& device_id);
+    void add_client(const std::string& user_id, const std::string& device_id);
 
     // utility methods
     bool has_client_connected(const std::string &client_id);
@@ -80,7 +77,7 @@ private:
     int32_t port_;
     struct sockaddr_in server_addr_ {0};
     struct sockaddr_in current_client_ {0};
-    util::SOCKET socket_;
+    DropboxUtil::SOCKET socket_;
     socklen_t peer_length_;
     std::vector<client_info> clients_;
     std::string local_directory_;

@@ -47,8 +47,6 @@ namespace DropboxUtil {
     };
 
     /// Funções de utilidade geral
-    std::vector<std::string> split_words_by_spaces(const std::string &phrase);
-    /// Utility functions
     std::vector<std::string> split_words_by_token(const std::string &phrase,
                                                   const std::string &token = COMMAND_SEPARATOR_TOKEN);
     std::string get_errno_with_message(const std::string &base_message = "");

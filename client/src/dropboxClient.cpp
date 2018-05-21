@@ -102,7 +102,8 @@ void Client::send_file(const std::string& filename)
     request.server_address = server_addr_;
     request.socket = socket_;
 
-    std::string command(StringFormatter() << "upload" << util::COMMAND_SEPARATOR_TOKEN << filename);
+    std::string command(StringFormatter() << "upload" << util::COMMAND_SEPARATOR_TOKEN
+                                          << filename << util::COMMAND_SEPARATOR_TOKEN << user_id_);
 
     sendto(socket_, command.c_str(), command.size(), 0, (struct sockaddr *)&server_addr_, peer_length_);
 
@@ -118,7 +119,8 @@ void Client::get_file(const std::string& filename)
     request.server_address = server_addr_;
     request.socket = socket_;
 
-    std::string command(StringFormatter() << "download " << filename << " " << user_id_);
+    std::string command(StringFormatter() << "download" << util::COMMAND_SEPARATOR_TOKEN
+                                          << filename << util::COMMAND_SEPARATOR_TOKEN << user_id_);
 
     sendto(socket_, command.c_str(), command.size(), 0, (struct sockaddr *)&server_addr_, peer_length_);
 
@@ -129,7 +131,8 @@ void Client::get_file(const std::string& filename)
 void Client::delete_file(const std::string& filename)
 {
     // TODO Server should answer if it succeeded
-    std::string command(StringFormatter() << "delete " << filename << " " << user_id_);
+    std::string command(StringFormatter() << "delete" << util::COMMAND_SEPARATOR_TOKEN
+                                          << filename << util::COMMAND_SEPARATOR_TOKEN << user_id_);
     sendto(socket_, command.c_str(), command.size(), 0, (struct sockaddr *)&server_addr_, peer_length_);
 }
 
@@ -140,7 +143,7 @@ std::vector<std::vector<std::string>> Client::list_server()
     request.server_address = server_addr_;
     request.socket = socket_;
 
-    std::string command(StringFormatter() << "list_server " << user_id_);
+    std::string command(StringFormatter() << "list_server" << util::COMMAND_SEPARATOR_TOKEN << user_id_);
 
     sendto(socket_, command.c_str(), command.size(), 0, (struct sockaddr *)&server_addr_, peer_length_);
 
