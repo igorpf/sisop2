@@ -25,9 +25,6 @@ int64_t DropboxUtil::get_random_number() {
 
 std::vector<std::vector<std::string>> DropboxUtil::parse_file_list_string(const std::string &received_data) {
     std::vector<std::vector<std::string>> server_entries;
-
-    std::vector<std::string> header {"name", "size", "modification_time"};
-    server_entries.emplace_back(header);
     unsigned long last_position = 0;
     unsigned long separator_position = 0;
 

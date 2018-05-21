@@ -64,21 +64,19 @@ void Server::load_info_from_disk() {
 }
 
 void Server::listen() {
-    if(!has_started_)
+    if (!has_started_)
         start();
     logger_->info("Server is listening on port {}", port_);
     char buffer[util::BUFFER_SIZE];
-    struct sockaddr_in client{};
-    while(true) {
+    while (true) {
         try {
             std::fill(buffer, buffer + sizeof(buffer), 0);
-            recvfrom(socket_, buffer, sizeof(buffer), 0, (struct sockaddr *) &client, &peer_length_);
-            logger_->debug("Received from client {} port {} the message: {}", inet_ntoa(client.sin_addr), client.sin_port, buffer);
-
+            recvfrom(socket_, buffer, sizeof(buffer), 0, (struct sockaddr *) &current_client_, &peer_length_);
+            logger_->debug("Received from client {} port {} the message: {}",
+                           inet_ntoa(current_client_.sin_addr), current_client_.sin_port, buffer);
             parse_command(buffer);
         } catch (std::exception &e) {
             logger_->error("Error parsing command from client {}", e.what());
-            break;
         }
     }
 }
@@ -88,14 +86,19 @@ void Server::receive_file(const std::string& filename, const std::string &user_i
     request.socket = socket_;
     request.server_address = server_addr_;
     request.peer_length = peer_length_;
-    std::string local_file_path = StringFormatter() << local_directory_ << "/" << user_id << "/" << filename;
+
+    boost::filesystem::path filepath(filename);
+    std::string filename_without_path = filepath.filename().string();
+    std::string local_file_path = StringFormatter()
+            << local_directory_ << "/"<< user_id << "/" << filename_without_path;
+
     request.in_file_path = local_file_path;
 
     util::File file_util;
     file_util.receive_file(request);
 
     util::file_info received_file_info;
-    received_file_info.name = filename;
+    received_file_info.name = filename_without_path;
     received_file_info.size = boost::filesystem::file_size(local_file_path);
     received_file_info.last_modification_time = boost::filesystem::last_write_time(local_file_path);
 
@@ -106,9 +109,13 @@ void Server::receive_file(const std::string& filename, const std::string &user_i
 void Server::send_file(const std::string& filename, const std::string &user_id) {
     util::file_transfer_request request;
     request.socket = socket_;
-    request.server_address = server_addr_;
+    request.server_address = current_client_;
     request.peer_length = peer_length_;
-    request.in_file_path = StringFormatter() << local_directory_ << "/" << user_id << "/" << filename;
+
+    boost::filesystem::path filepath(filename);
+    std::string filename_without_path = filepath.filename().string();
+
+    request.in_file_path = StringFormatter() << local_directory_ << "/" << user_id << "/" << filename_without_path;
 
     util::File file_util;
     file_util.send_file(request);
@@ -116,7 +123,7 @@ void Server::send_file(const std::string& filename, const std::string &user_id) 
 
 void Server::list_server(const std::string &user_id) {
     auto client_iterator = get_client_info(user_id);
-    std::string user_file_list;
+    std::string user_file_list {"name;size;modification_time&"};
 
     for (const auto& file : client_iterator->user_files) {
         user_file_list.append(StringFormatter() << file.name << ';'<< file.size << ';'
@@ -128,7 +135,7 @@ void Server::list_server(const std::string &user_id) {
 
     util::file_transfer_request request;
     request.socket = socket_;
-    request.server_address = server_addr_;
+    request.server_address = current_client_;
     request.peer_length = peer_length_;
 
     util::File file_util;

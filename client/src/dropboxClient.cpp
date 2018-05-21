@@ -113,7 +113,7 @@ void Client::send_file(const std::string& filename)
 void Client::get_file(const std::string& filename)
 {
     util::file_transfer_request request;
-    request.in_file_path = StringFormatter() << local_directory_ << "/" << filename;
+    request.in_file_path = filename;
     request.peer_length = peer_length_;
     request.server_address = server_addr_;
     request.socket = socket_;

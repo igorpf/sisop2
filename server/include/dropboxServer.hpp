@@ -78,7 +78,8 @@ private:
 
     bool has_started_;
     int32_t port_;
-    struct sockaddr_in server_addr_;
+    struct sockaddr_in server_addr_ {0};
+    struct sockaddr_in current_client_ {0};
     util::SOCKET socket_;
     socklen_t peer_length_;
     std::vector<client_info> clients_;
