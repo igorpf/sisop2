@@ -161,7 +161,11 @@ std::vector<std::vector<std::string>> Client::list_client()
         std::vector<std::string> info;
         info.emplace_back(file.name);
         info.emplace_back(std::to_string(file.size));
-        info.emplace_back(std::to_string(file.last_modification_time));
+        std::time_t timestamp = file.last_modification_time;
+        std::tm *ptm = std::localtime(&timestamp);
+        char readable_timestamp[50];
+        std::strftime(readable_timestamp, 50, "%Y-%m-%d %H:%M:%S", ptm);
+        info.emplace_back(readable_timestamp);
         entries.emplace_back(info);
     }
 

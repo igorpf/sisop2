@@ -3,6 +3,7 @@
 
 #include <sstream>
 #include <cerrno>
+#include <ctime>
 
 #include <boost/algorithm/string.hpp>
 
@@ -43,7 +44,16 @@ std::vector<std::vector<std::string>> DropboxUtil::parse_file_list_string(const 
 
         // Última modificação no arquivo
         separator_position = received_data.find('&', last_position);
-        info.emplace_back(received_data.substr(last_position, separator_position - last_position));
+        std::string timestamp_data = received_data.substr(last_position, separator_position - last_position);
+        if (timestamp_data != "modification_time") {
+            std::time_t timestamp = std::stoi(timestamp_data);
+            std::tm *ptm = std::localtime(&timestamp);
+            char readable_timestamp[50];
+            std::strftime(readable_timestamp, 50, "%Y-%m-%d %H:%M:%S", ptm);
+            info.emplace_back(readable_timestamp);
+        } else {
+            info.emplace_back(timestamp_data);
+        }
         last_position = separator_position;
 
         if (last_position != std::string::npos)
