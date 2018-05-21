@@ -8,9 +8,9 @@
 
 std::once_flag rand_init;
 
-std::vector<std::string> DropboxUtil::split_words_by_spaces(const std::string &phrase) {
+std::vector<std::string> DropboxUtil::split_words_by_token(const std::string &phrase, const std::string &token) {
     std::vector<std::string> words;
-    boost::split(words, phrase, boost::is_any_of(" "));
+    boost::split(words, phrase, boost::is_any_of(token));
     return words;
 }
 
