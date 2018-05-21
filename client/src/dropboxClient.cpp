@@ -70,7 +70,8 @@ void Client::login_server()
     server_addr_.sin_port = htons(static_cast<uint16_t>(port_));
     server_addr_.sin_addr.s_addr = inet_addr(hostname_.c_str());
     peer_length_ = sizeof(server_addr_);
-    std::string command(StringFormatter() << "connect " << user_id_ << " " << device_id_);
+    std::string command(StringFormatter() << "connect" << util::COMMAND_SEPARATOR_TOKEN
+                                          << user_id_ << util::COMMAND_SEPARATOR_TOKEN << device_id_);
 
     sendto(socket_, command.c_str(), command.size(), 0, (struct sockaddr*)&server_addr_, peer_length_);
     logged_in_ = true;
@@ -99,8 +100,7 @@ void Client::send_file(const std::string& filename)
     request.server_address = server_addr_;
     request.socket = socket_;
 
-    std::string command("upload ");
-    command.append(filename);
+    std::string command(StringFormatter() << "upload" << util::COMMAND_SEPARATOR_TOKEN << filename);
 
     sendto(socket_, command.c_str(), command.size(), 0, (struct sockaddr *)&server_addr_, peer_length_);
     util::File file_util;

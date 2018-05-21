@@ -21,7 +21,8 @@ namespace DropboxUtil {
     const int8_t DEFAULT_ERROR_CODE = 1;
     const int8_t EOF_SYMBOL = -1;
     const int16_t DEFAULT_SERVER_PORT = 9001;
-    const std::string LOOPBACK_IP("127.0.0.1");
+    const std::string LOOPBACK_IP = "127.0.0.1";
+    const std::string COMMAND_SEPARATOR_TOKEN = ";";
 
     template <typename Collection, typename UnaryOperator>
     Collection map(Collection col, UnaryOperator op) {
@@ -46,7 +47,8 @@ namespace DropboxUtil {
     };
 
     /// Utility functions
-    std::vector<std::string> split_words_by_spaces(const std::string &phrase);
+    std::vector<std::string> split_words_by_token(const std::string &phrase,
+                                                  const std::string &token = COMMAND_SEPARATOR_TOKEN);
     std::string get_errno_with_message(const std::string &base_message = "");
     int64_t get_random_number();
 }

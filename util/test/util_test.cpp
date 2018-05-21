@@ -61,7 +61,7 @@ TEST(UtilityFunctions, SplitOnSpaces)
 {
     std::string original_string = "string with spaces";
 
-    std::vector<std::string> words = DropboxUtil::split_words_by_spaces(original_string);
+    std::vector<std::string> words = DropboxUtil::split_words_by_token(original_string, " ");
 
     ASSERT_EQ("string", words[0]);
     ASSERT_EQ("with", words[1]);

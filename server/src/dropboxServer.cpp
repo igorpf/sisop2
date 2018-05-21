@@ -33,7 +33,7 @@ bool Server::has_client_connected(const std::string &client_id) {
 
 void Server::parse_command(const std::string &command_line) {
     logger_->debug("Parsing command {}", command_line);
-    auto tokens = util::split_words_by_spaces(command_line);
+    auto tokens = util::split_words_by_token(command_line);
     auto command = tokens[0];
     if (command == "connect") {
         auto user_id = tokens[1], device_id = tokens[2];
