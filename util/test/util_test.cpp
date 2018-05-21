@@ -96,7 +96,7 @@ TEST(FileListParsing, FileListParsing)
     std::vector<std::vector<std::string>> expected_list = {{"name", "size", "modification_time"},
             {"name1", "size1", "timestamp1"}, {"name2", "size2", "timestamp2"}};
 
-    std::string data {"name1;size1;timestamp1&name2;size2;timestamp2"};
+    std::string data {"name;size;modification_time&name1;size1;timestamp1&name2;size2;timestamp2"};
 
     std::vector<std::vector<std::string>> parsed_list = DropboxUtil::parse_file_list_string(data);
 
