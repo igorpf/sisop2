@@ -29,8 +29,30 @@ std::vector<std::vector<std::string>> DropboxUtil::parse_file_list_string(const 
     unsigned long last_position = 0;
     unsigned long separator_position = 0;
 
+    // Parse do header
+    std::vector<std::string> header;
+
+    separator_position = received_data.find(';', last_position);
+    header.emplace_back(received_data.substr(last_position, separator_position - last_position));
+    last_position = separator_position + 1;
+
+    separator_position = received_data.find(';', last_position);
+    header.emplace_back(received_data.substr(last_position, separator_position - last_position));
+    last_position = separator_position + 1;
+
+    separator_position = received_data.find('&', last_position);
+    header.emplace_back(received_data.substr(last_position, separator_position - last_position));
+    last_position = separator_position;
+
+    if (last_position != std::string::npos)
+        last_position++;
+
+    server_entries.emplace_back(header);
+
+    // Parse dos arquivos
     while (last_position != std::string::npos) {
         std::vector<std::string> info;
+        std::string current_field;
 
         // Nome do arquivo
         separator_position = received_data.find(';', last_position);
@@ -39,21 +61,17 @@ std::vector<std::vector<std::string>> DropboxUtil::parse_file_list_string(const 
 
         // Tamanho do arquivo
         separator_position = received_data.find(';', last_position);
-        info.emplace_back(received_data.substr(last_position, separator_position - last_position));
+        info.emplace_back(StringFormatter()
+                                  << received_data.substr(last_position,separator_position - last_position) << " B");
         last_position = separator_position + 1;
 
         // Última modificação no arquivo
         separator_position = received_data.find('&', last_position);
-        std::string timestamp_data = received_data.substr(last_position, separator_position - last_position);
-        if (timestamp_data != "modification_time") {
-            std::time_t timestamp = std::stoi(timestamp_data);
-            std::tm *ptm = std::localtime(&timestamp);
-            char readable_timestamp[50];
-            std::strftime(readable_timestamp, 50, "%Y-%m-%d %H:%M:%S", ptm);
-            info.emplace_back(readable_timestamp);
-        } else {
-            info.emplace_back(timestamp_data);
-        }
+        std::time_t timestamp = std::stoi(received_data.substr(last_position, separator_position - last_position));
+        std::tm *ptm = std::localtime(&timestamp);
+        char readable_timestamp[50];
+        std::strftime(readable_timestamp, 50, "%Y-%m-%d %H:%M:%S", ptm);
+        info.emplace_back(readable_timestamp);
         last_position = separator_position;
 
         if (last_position != std::string::npos)

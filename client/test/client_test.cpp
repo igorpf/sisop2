@@ -469,6 +469,7 @@ TEST(ShellTest, MultipleCommands)
 }
 
 /// ClientTest
+// TODO(jfguimaraes) Testes para o cliente, list_client
 
 TEST(ClientTest, SendInexistentFile)
 {

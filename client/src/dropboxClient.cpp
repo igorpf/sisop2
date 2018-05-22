@@ -160,7 +160,7 @@ std::vector<std::vector<std::string>> Client::list_client()
     for (const auto& file : user_files_) {
         std::vector<std::string> info;
         info.emplace_back(file.name);
-        info.emplace_back(std::to_string(file.size));
+        info.emplace_back(std::to_string(file.size) + " B");
         std::time_t timestamp = file.last_modification_time;
         std::tm *ptm = std::localtime(&timestamp);
         char readable_timestamp[50];
