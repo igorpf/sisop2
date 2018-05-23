@@ -41,6 +41,28 @@ int64_t get_file_length(filesystem::path &path) {
         throw std::runtime_error("path does not point to a file");
 }
 
+void File::send_packet_with_retransmission(file_transfer_request request, struct sockaddr_in from, char* packet, size_t packet_size) {
+    bool ack_error;
+    do {
+        int64_t received_bytes,
+                retransmissions = 0;
+        char ack[4]{0};
+        sendto(request.socket, packet, packet_size, 0, (struct sockaddr *)&request.server_address,
+               request.peer_length);
+        received_bytes = recvfrom(request.socket, ack, sizeof(ack), 0,(struct sockaddr *) &from, &request.peer_length);
+        ack[3] = '\0';
+        ack_error = received_bytes <= 0 || strcmp(ack, "ACK") != 0;
+        if(ack_error) {
+            logger_->error("Error receiving ACK, retransmitting packet. Retransmissions {}", retransmissions);
+            retransmissions++;
+            if(retransmissions >= MAX_RETRANSMISSIONS) {
+                logger_->error("Achieved maximum retransmissions of {}, aborting file transmission", retransmissions);
+                throw std::runtime_error("Maximum retransmissions achieved");
+            }
+        }
+    } while(ack_error);
+}
+
 void File::send_file(file_transfer_request request) {
     struct sockaddr_in from{};
 
@@ -50,67 +72,37 @@ void File::send_file(file_transfer_request request) {
         logger_->error("Could not open file {}", request.in_file_path);
         throw std::runtime_error("Error opening file");
     }
-
-    struct timeval set_timeout_val = {0, TIMEOUT_US};
-    if(setsockopt(request.socket, SOL_SOCKET, SO_RCVTIMEO, &set_timeout_val, sizeof(set_timeout_val)) < 0)
-        logger_->error("Error setting timeout {}", set_timeout_val.tv_usec);
+    enable_socket_timeout(request);
 
     filesystem::path path(request.in_file_path);
-
     int64_t file_length = get_file_length(path),
             packets = static_cast<int64_t>(std::ceil(file_length / ((float) BUFFER_SIZE))),
             sent_packets = 0,
-            received_bytes;
+            file_read_bytes;
     char buffer[BUFFER_SIZE] = {0};
     logger_->info("Divided file transmission in {} packets. File size: {}", packets, file_length);
 
     start_handshake(request, from);
     send_file_metadata(request, from, path);
 
-    char ack[4];
     while(packets--) {
         std::fill(buffer, buffer + sizeof(buffer), 0);
-        std::fill(ack, buffer + sizeof(ack), 0);
         input_file.read(buffer, sizeof(buffer));
-        logger_->debug("Sending buffer size of: {}", input_file.gcount());
+        file_read_bytes = input_file.gcount();
+        logger_->debug("Sending buffer size of: {}, already sent packets: {}", file_read_bytes, sent_packets);
 
-        bool ack_error;
-        int retransmissions = 0;
-        do {
-            sendto(request.socket, buffer, static_cast<size_t>(input_file.gcount()), 0, (struct sockaddr *)&request.server_address,
-                   request.peer_length);
-            received_bytes = recvfrom(request.socket, ack, sizeof(ack), 0,(struct sockaddr *) &from, &request.peer_length);
-            ack[3] = '\0';
-            ack_error = received_bytes <= 0 || strcmp(ack, "ACK") != 0 != 0;
-            if(ack_error) {
-                logger_->error("Error receiving ACK, retransmitting packet of number {}", sent_packets);
-                retransmissions++;
-                if(retransmissions >= MAX_RETRANSMISSIONS) {
-                    logger_->error("Achieved maximum retransmissions of {}, aborting file transmission", retransmissions);
-                    throw std::runtime_error("Maximum retransmissions achieved");
-                }
-            }
-            else
-                sent_packets++;
-        } while(ack_error);
-
-        logger_->debug("ACK received");
+        send_packet_with_retransmission(request, from, buffer, static_cast<size_t>(file_read_bytes));
+        sent_packets++;
     }
+
     logger_->debug("Sending end of file");
     buffer[0] = EOF_SYMBOL;
-    sendto(request.socket, buffer, 1, 0, (struct sockaddr *)&request.server_address, request.peer_length);
-    recvfrom(request.socket, ack, sizeof(ack), 0,(struct sockaddr *) &from, &request.peer_length);
+    send_packet_with_retransmission(request, from, buffer, 1);
     input_file.close();
 
-    //finish handshake
     send_finish_handshake(request, from);
+    disable_socket_timeout(request);
     logger_->info("Successfully sent file");
-
-    struct timeval unset_timeout_val = {0, 0};
-    if(setsockopt(request.socket, SOL_SOCKET, SO_RCVTIMEO, &unset_timeout_val, sizeof(unset_timeout_val)) == 0)
-        logger_->debug("Disabled packet timeout successfully");
-    else
-        logger_->debug("Error disabling packet timeout");
 }
 
 void File::receive_file(file_transfer_request request) {
@@ -142,10 +134,7 @@ void File::receive_file(file_transfer_request request) {
 
     logger_->info("Received permissions of file: {} ", file_perm);
 
-    struct timeval set_timeout_val = {0, TIMEOUT_US};
-    if(setsockopt(request.socket, SOL_SOCKET, SO_RCVTIMEO, &set_timeout_val, sizeof(set_timeout_val)) < 0) {
-        logger_->error("Error setting timeout {}", set_timeout_val.tv_usec);
-    }
+    enable_socket_timeout(request);
 
     bool writable_packet;
     do {
@@ -166,11 +155,7 @@ void File::receive_file(file_transfer_request request) {
     confirm_finish_handshake(request, client_addr);
     logger_->info("Transferred file successfully!");
 
-    struct timeval unset_timeout_val = {0, 0};
-    if(setsockopt(request.socket, SOL_SOCKET, SO_RCVTIMEO, &unset_timeout_val, sizeof(unset_timeout_val)) == 0)
-        logger_->debug("Disabled packet timeout successfully");
-    else
-        logger_->debug("Error disabling packet timeout");
+    disable_socket_timeout(request);
 }
 
 void File::send_finish_handshake(file_transfer_request request, struct sockaddr_in &from) {
@@ -202,8 +187,6 @@ void File::confirm_finish_handshake(file_transfer_request request, struct sockad
 
 void File::send_file_metadata(file_transfer_request request, struct sockaddr_in &from,
                                            filesystem::path &path) {
-    char ack[4];
-
     struct stat st{};
     if(stat(request.in_file_path.c_str(), &st) != 0) {
         logger_->error("Error getting modification time of file {}", request.in_file_path);
@@ -212,23 +195,12 @@ void File::send_file_metadata(file_transfer_request request, struct sockaddr_in 
     logger_->info("Modification time of file: {}", st.st_mtim.tv_sec );
 
     std::string mod_time = std::to_string(st.st_mtim.tv_sec);
-    sendto(request.socket, mod_time.c_str(), mod_time.size(), 0, (struct sockaddr *)&request.server_address, request.peer_length);
-    recvfrom(request.socket, ack, sizeof(ack), 0,(struct sockaddr *) &from, &request.peer_length);
-    if(strcmp(ack, "ACK") != 0) {
-        logger_->error("Error receiving ack of file modification time");
-        throw std::runtime_error("Packet confirmation error");
-    }
+    send_packet_with_retransmission(request, from, const_cast<char *>(mod_time.c_str()), mod_time.size());
 
     filesystem::perms file_permissions = filesystem::status(path).permissions();
     logger_->info("File permissions:  {}", file_permissions);
     std::string file_perms_str = std::to_string(file_permissions);
-    sendto(request.socket, file_perms_str.c_str(), file_perms_str.size(), 0, (struct sockaddr *)&request.server_address,
-           request.peer_length);
-    recvfrom(request.socket, ack, sizeof(ack), 0,(struct sockaddr *) &from, &request.peer_length);
-    if(strcmp(ack, "ACK") != 0) {
-        logger_->error("Error receiving ack of file permissions");
-        throw std::runtime_error("Packet confirmation error");
-    }
+    send_packet_with_retransmission(request, from, const_cast<char *>(file_perms_str.c_str()), file_perms_str.size());
 }
 
 void File::establish_handshake(file_transfer_request request, struct sockaddr_in &client_addr) {
@@ -256,6 +228,21 @@ void File::start_handshake(file_transfer_request request, struct sockaddr_in &fr
         throw std::runtime_error("Handshake failure");
     }
     sendto(request.socket, "ACK", 4, 0, (struct sockaddr *)&request.server_address, request.peer_length);
+}
+
+
+void File::disable_socket_timeout(const file_transfer_request &request) {
+    struct timeval unset_timeout_val = {0, 0};
+    if(setsockopt(request.socket, SOL_SOCKET, SO_RCVTIMEO, &unset_timeout_val, sizeof(unset_timeout_val)) == 0)
+        logger_->debug("Disabled packet timeout successfully");
+    else
+        logger_->debug("Error disabling packet timeout");
+}
+
+void File::enable_socket_timeout(const file_transfer_request &request) {
+    struct timeval set_timeout_val = {0, TIMEOUT_US};
+    if(setsockopt(request.socket, SOL_SOCKET, SO_RCVTIMEO, &set_timeout_val, sizeof(set_timeout_val)) < 0)
+        logger_->error("Error setting timeout {}", set_timeout_val.tv_usec);
 }
 
 
