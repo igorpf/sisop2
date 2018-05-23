@@ -17,7 +17,7 @@ struct client_info {
 
 class Server {
 public:
-    // TODO Implementar função pra logoff do cliente ou parar de contar quantos clientes estão online (?)
+    // TODO Implementar função pra logoff do cliente que remove o dispositivo da lista (é isso que deve acontecer?)
     Server();
 
     virtual ~Server();
@@ -72,6 +72,8 @@ private:
 
     static const std::string LOGGER_NAME;
     std::shared_ptr<spdlog::logger> logger_;
+
+    const int64_t MAX_CLIENT_DEVICES = 2;
 
     bool has_started_;
     int32_t port_;

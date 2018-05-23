@@ -56,7 +56,7 @@ void Server::start() {
     peer_length_ = sizeof(server_addr_);
     port_ = util::DEFAULT_SERVER_PORT;
 
-    if(bind(socket_, (struct sockaddr *) &server_addr_, peer_length_) == util::DEFAULT_ERROR_CODE)
+    if (bind(socket_, (struct sockaddr *) &server_addr_, peer_length_) == util::DEFAULT_ERROR_CODE)
         throw std::runtime_error(util::get_errno_with_message("Bind error"));
     logger_->info("Initialized socket of number {} for server", socket_);
     has_started_ = true;
@@ -206,7 +206,15 @@ void Server::add_client(const std::string& user_id, const std::string& device_id
     }
 
     auto client_iterator = get_client_info(user_id);
-    client_iterator->user_devices.emplace_back(device_id);
+
+    // Verifica se o dispositivo não está na lista
+    if (std::find(client_iterator->user_devices.begin(), client_iterator->user_devices.end(), device_id)
+        == client_iterator->user_devices.end())
+        // Se não estiver, verifica se o cliente ainda pode adicionar dispositivos
+        if (client_iterator->user_devices.size() < MAX_CLIENT_DEVICES)
+            client_iterator->user_devices.emplace_back(device_id);
+        // TODO Adicionar mensagem de erro para demais dispositivos
+        // TODO Ignorar/responder com erro requests de demais dispositivos
 }
 
 bool Server::has_client_connected(const std::string &client_id) {

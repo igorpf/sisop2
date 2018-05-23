@@ -21,6 +21,8 @@
 
 #include "../include/login_command_parser.hpp"
 
+namespace fs = boost::filesystem;
+
 const std::string Client::LOGGER_NAME = "Client";
 
 Client::Client()
@@ -79,6 +81,7 @@ void Client::login_server()
 
 void Client::sync_client()
 {
+    // Inicializa o sync_dir
     if (local_directory_.empty()) {
         char *home_folder;
 
@@ -88,10 +91,30 @@ void Client::sync_client()
 
         local_directory_ = StringFormatter() << home_folder << "/sync_dir_" << user_id_;
         boost::filesystem::create_directory(local_directory_);
+
+        load_info_from_disk();
     }
 
     // TODO Sync files with the server
     // throw std::logic_error("Function not implemented");
+}
+
+void Client::load_info_from_disk() {
+    for (const fs::directory_entry& file : fs::directory_iterator(local_directory_)) {
+        if (fs::is_directory(file.path())) {
+            throw std::runtime_error(StringFormatter() << "Unexpected subfolder on user folder");
+        }
+
+        std::string filename = file.path().string();
+        std::string filename_without_path = file.path().filename().string();
+
+        util::file_info local_file_info;
+        local_file_info.name = filename_without_path;
+        local_file_info.size = fs::file_size(filename);
+        local_file_info.last_modification_time = fs::last_write_time(filename);
+
+        user_files_.emplace_back(local_file_info);
+    }
 }
 
 void Client::send_file(const std::string& filename)

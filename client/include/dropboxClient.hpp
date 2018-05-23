@@ -82,6 +82,12 @@ private:
      * Estabelece uma conexão entre o cliente e o servidor
      */
     void login_server();
+
+    /**
+     * Carrega informações de arquivos já disponíveis no disco
+     * Útil para quando o cliente é reiniciado
+     */
+    void load_info_from_disk();
 };
 
 #endif // SISOP2_CLIENT_INCLUDE_DROPBOXCLIENT_HPP
