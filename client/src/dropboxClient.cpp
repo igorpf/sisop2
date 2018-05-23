@@ -89,18 +89,20 @@ void Client::sync_client()
     boost::filesystem::create_directory(local_directory_);
 
     // TODO Sync files with the server
-    throw std::logic_error("Function not implemented");
+//    throw std::logic_error("Function not implemented");
 }
 
-void Client::send_file(const std::string& filename)
+void Client::send_file(const std::string& complete_file_path)
 {
     util::file_transfer_request request;
-    request.in_file_path = filename;
+    request.in_file_path = complete_file_path;
     request.peer_length = peer_length_;
     request.server_address = server_addr_;
     request.socket = socket_;
+    auto tokens = util::split_words_by_token(complete_file_path, "/");
+    std::string filename_only = tokens[tokens.size() - 1];
 
-    std::string command(StringFormatter() << "upload" << util::COMMAND_SEPARATOR_TOKEN << filename);
+    std::string command(StringFormatter() << "upload" << util::COMMAND_SEPARATOR_TOKEN << filename_only);
 
     sendto(socket_, command.c_str(), command.size(), 0, (struct sockaddr *)&server_addr_, peer_length_);
     util::File file_util;

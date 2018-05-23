@@ -29,10 +29,10 @@ public:
 
     /**
      * Envia um arquivo para o servidor (upload)
-     * @param filename Nome do arquivo a ser enviado
+     * @param complete_file_path Nome do arquivo a ser enviado
      * TODO(jfguimaraes) O nome do arquivo é um caminho absoluto ou relativo?
      */
-    void send_file(const std::string &filename) override;
+    void send_file(const std::string &complete_file_path) override;
 
     /**
      * Obtém um arquivo do servidor (download)
