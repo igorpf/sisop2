@@ -28,7 +28,6 @@ add_executable(dropboxClient
         src/shell_command_parser.cpp
         src/dropboxClient.cpp
         src/shell.cpp
-        ../util/src/inotify.cpp
         ../util/src/LoggerFactory.cpp
         ../util/include/LoggerFactory.hpp
         src/main.cpp)
