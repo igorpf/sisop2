@@ -82,6 +82,12 @@ private:
      * Estabelece uma conexão entre o cliente e o servidor
      */
     void login_server();
+
+    /**
+     * Sends command to server and expects an ACK message.
+     * Throws an exception if no message has been received or if it is not an ACK
+     */
+    void send_command_and_expect_confirmation(const std::string &command);
 };
 
 #endif // SISOP2_CLIENT_INCLUDE_DROPBOXCLIENT_HPP

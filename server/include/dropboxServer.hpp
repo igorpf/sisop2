@@ -59,6 +59,8 @@ private:
     // command related methods
     void parse_command(const std::string &command_line);
     void add_client(const std::string &client_id, const std::string& device_id);
+    void send_command_confirmation(struct sockaddr_in &client);
+    void send_command_error_message(struct sockaddr_in &client, const std::string &error_message);
 
     // utility methods
     bool has_client_connected(const std::string &client_id);

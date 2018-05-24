@@ -96,11 +96,15 @@ void Server::listen() {
         try {
             std::fill(buffer, buffer + sizeof(buffer), 0);
             recvfrom(socket_, buffer, sizeof(buffer), 0, (struct sockaddr *) &client, &peer_length_);
-            logger_->debug("Received from client {} port {} the message: {}", inet_ntoa(client.sin_addr), client.sin_port, buffer);
+            logger_->debug("Received from client {} port {} the message: {}", inet_ntoa(client.sin_addr), ntohs(client.sin_port), buffer);
 
             parse_command(buffer);
+            send_command_confirmation(client);
+        } catch (std::string &e) {
+            logger_->error("Error parsing command from client {}", e);
+            send_command_error_message(client, e);
         } catch (std::exception &e) {
-            logger_->error("Error parsing command from client {}", e.what());
+            logger_->error("Fatal error parsing command from client {}. Stopping transmission", e.what());
             break;
         }
     }
@@ -112,5 +116,13 @@ void Server::sync_server() {
 
 void Server::send_file(const std::string& filename) {
     throw std::logic_error("Function not implemented");
+}
+
+void Server::send_command_confirmation(struct sockaddr_in &client) {
+    sendto(socket_, "ACK", 4, 0, (struct sockaddr *)&client, peer_length_);
+}
+
+void Server::send_command_error_message(struct sockaddr_in &client, const std::string &error_message)  {
+    sendto(socket_, error_message.c_str(), error_message.size(), 0, (struct sockaddr *)&client, peer_length_);
 }
 
