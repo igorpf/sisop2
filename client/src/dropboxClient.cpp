@@ -73,7 +73,7 @@ void Client::login_server()
     std::string command(StringFormatter() << "connect" << util::COMMAND_SEPARATOR_TOKEN
                                           << user_id_ << util::COMMAND_SEPARATOR_TOKEN << device_id_);
 
-    sendto(socket_, command.c_str(), command.size(), 0, (struct sockaddr*)&server_addr_, peer_length_);
+    send_command_and_expect_confirmation(command);
     logged_in_ = true;
 }
 
@@ -103,8 +103,7 @@ void Client::send_file(const std::string& complete_file_path)
     std::string filename_only = tokens[tokens.size() - 1];
 
     std::string command(StringFormatter() << "upload" << util::COMMAND_SEPARATOR_TOKEN << filename_only);
-
-    sendto(socket_, command.c_str(), command.size(), 0, (struct sockaddr *)&server_addr_, peer_length_);
+    send_command_and_expect_confirmation(command);
     util::File file_util;
     file_util.send_file(request);
 }
@@ -144,4 +143,12 @@ std::vector<std::vector<std::string>> Client::list_client()
 void Client::close_session()
 {
     throw std::logic_error("Function not implemented");
+}
+
+void Client::send_command_and_expect_confirmation(const std::string &command) {
+    sendto(socket_, command.c_str(), command.size(), 0, (struct sockaddr *)&server_addr_, peer_length_);
+    char ack[4]{0};
+    recvfrom(socket_, ack, sizeof(ack), 0,(struct sockaddr *) &server_addr_, &peer_length_);
+    if (strcmp("ACK", ack) != 0)
+        throw std::runtime_error(StringFormatter() << "Sent command " << command << " but failed to receive ACK");
 }
