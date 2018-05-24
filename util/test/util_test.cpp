@@ -2,6 +2,7 @@
 #include "../include/string_formatter.hpp"
 #include "../include/File.hpp"
 #include "../include/table_printer.hpp"
+#include "../include/LoggerFactory.hpp"
 
 #include <gtest/gtest.h>
 
@@ -107,6 +108,15 @@ TEST(TablePrinter, RegularTable)
 
     ASSERT_EQ("test1       test2  test3  ", line1);
     ASSERT_EQ("hello_world s      string ", line2);
+}
+
+TEST(LoggerFactory, GivenLoggersWithSameNameShouldNotCrash)
+{
+    auto loggerName = "someLogger";
+    std::shared_ptr<spdlog::logger> firstLogger, sameNameLogger;
+    
+    ASSERT_NO_THROW(firstLogger = LoggerFactory::getLoggerForName(loggerName));
+    ASSERT_NO_THROW(sameNameLogger = LoggerFactory::getLoggerForName(loggerName));
 }
 
 int main(int argc, char **argv) {
