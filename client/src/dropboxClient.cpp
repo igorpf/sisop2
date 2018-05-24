@@ -146,9 +146,11 @@ void Client::close_session()
 }
 
 void Client::send_command_and_expect_confirmation(const std::string &command) {
+    logger_->debug("Sent command {} to server. Expecting ACK", command);
     sendto(socket_, command.c_str(), command.size(), 0, (struct sockaddr *)&server_addr_, peer_length_);
     char ack[4]{0};
     recvfrom(socket_, ack, sizeof(ack), 0,(struct sockaddr *) &server_addr_, &peer_length_);
     if (strcmp("ACK", ack) != 0)
         throw std::runtime_error(StringFormatter() << "Sent command " << command << " but failed to receive ACK");
+    logger_->debug("Received ACK from server");
 }

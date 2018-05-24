@@ -96,9 +96,8 @@ void Server::listen() {
             std::fill(buffer, buffer + sizeof(buffer), 0);
             recvfrom(socket_, buffer, sizeof(buffer), 0, (struct sockaddr *) &client, &peer_length_);
             logger_->debug("Received from client {} port {} the message: {}", inet_ntoa(client.sin_addr), ntohs(client.sin_port), buffer);
-
-            parse_command(buffer);
             send_command_confirmation(client);
+            parse_command(buffer);
         } catch (std::string &e) {
             logger_->error("Error parsing command from client {}", e);
             send_command_error_message(client, e);
