@@ -5,12 +5,13 @@
 #include "../include/shell_command_parser.hpp"
 #include "../../util/include/string_formatter.hpp"
 #include "../../util/include/table_printer.hpp"
+#include "../../util/include/LoggerFactory.hpp"
 
 const std::string Shell::LOGGER_NAME = "Shell";
 
 Shell::Shell(IClient &client) : client_(client)
 {
-    logger_ = spdlog::stdout_color_mt(LOGGER_NAME);
+    logger_ = LoggerFactory::getLoggerForName(LOGGER_NAME);
 }
 
 Shell::~Shell()
