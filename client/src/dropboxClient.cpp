@@ -20,13 +20,13 @@
 #include "../include/dropboxClient.hpp"
 
 #include "../include/login_command_parser.hpp"
+#include "../../util/include/LoggerFactory.hpp"
 
 const std::string Client::LOGGER_NAME = "Client";
 
 Client::Client()
 {
-    logger_ = spdlog::stdout_color_mt(LOGGER_NAME);
-    logger_->set_level(spdlog::level::debug);
+    logger_ = LoggerFactory::getLoggerForName(LOGGER_NAME);
 }
 
 Client::~Client()

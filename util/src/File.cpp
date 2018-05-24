@@ -1,5 +1,6 @@
 #include "../include/dropboxUtil.hpp"
 #include "../include/File.hpp"
+#include "../include/LoggerFactory.hpp"
 
 #include <cmath>
 #include <cstdlib>
@@ -20,12 +21,7 @@ using namespace DropboxUtil;
 const std::string File::LOGGER_NAME = "File";
 
 File::File() {
-    /**
-     *  to write to a file, use spdlog::basic_logger_mt(<logger name>, "logs/log.txt")
-     *  to write to stdout, use spdlog::stdout_color_mt(<logger name>)
-     */
-    logger_ = spdlog::stdout_color_mt(LOGGER_NAME);
-    logger_->set_level(spdlog::level::debug);
+    logger_ = LoggerFactory::getLoggerForName(LOGGER_NAME);
 }
 
 File::~File() {

@@ -17,8 +17,7 @@
 const std::string Server::LOGGER_NAME = "Server";
 
 Server::Server() {
-    logger_ = spdlog::stdout_color_mt(LOGGER_NAME);
-    logger_->set_level(spdlog::level::debug);
+    logger_ = LoggerFactory::getLoggerForName(LOGGER_NAME);
 }
 
 Server::~Server() {

@@ -18,7 +18,7 @@ add_executable(server_test
         ../../util/src/File.cpp
         ../include/dropboxServer.hpp
         ../src/dropboxServer.cpp
-        server_test.cpp)
+        server_test.cpp ../../util/src/LoggerFactory.cpp ../../util/include/LoggerFactory.hpp)
 
 # Target libraries
 target_link_libraries(server_test PUBLIC GTest::main Boost::system Boost::filesystem -static-libstdc++)

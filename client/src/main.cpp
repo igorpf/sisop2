@@ -5,10 +5,11 @@
 
 #include "../include/dropboxClient.hpp"
 #include "../include/shell.hpp"
+#include "../../util/include/LoggerFactory.hpp"
 
 int main(int argc, char* argv[])
 {
-    auto logger = spdlog::stdout_color_mt("ClientMain");
+    auto logger = LoggerFactory::getLoggerForName("ClientMain");
 
     try {
         Client client;
