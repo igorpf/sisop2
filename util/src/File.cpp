@@ -39,9 +39,9 @@ int64_t get_file_length(filesystem::path &path) {
 
 void File::send_packet_with_retransmission(file_transfer_request request, struct sockaddr_in from, char* packet, size_t packet_size) {
     bool ack_error;
+    int64_t received_bytes,
+            retransmissions = 0;
     do {
-        int64_t received_bytes,
-                retransmissions = 0;
         char ack[4]{0};
         sendto(request.socket, packet, packet_size, 0, (struct sockaddr *)&request.server_address,
                request.peer_length);
