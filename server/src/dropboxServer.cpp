@@ -30,16 +30,19 @@ bool Server::has_client_connected(const std::string &client_id) {
     return client_iterator != clients_.end();
 }
 
-void Server::parse_command(const std::string &command_line) {
+void Server::parse_command(struct sockaddr_in &client, const std::string &command_line) {
     logger_->debug("Parsing command {}", command_line);
     auto tokens = util::split_words_by_token(command_line);
     auto command = tokens[0];
     if (command == "connect") {
         auto user_id = tokens[1], device_id = tokens[2];
         add_client(user_id, device_id);
+        send_command_confirmation(client);
     } else if (command == "download") {
+        send_command_confirmation(client);
         send_file(tokens[1]);
     } else if (command == "upload") {
+        send_command_confirmation(client);
         receive_file(tokens[1]);
     }
 }
@@ -96,8 +99,7 @@ void Server::listen() {
             std::fill(buffer, buffer + sizeof(buffer), 0);
             recvfrom(socket_, buffer, sizeof(buffer), 0, (struct sockaddr *) &client, &peer_length_);
             logger_->debug("Received from client {} port {} the message: {}", inet_ntoa(client.sin_addr), ntohs(client.sin_port), buffer);
-            send_command_confirmation(client);
-            parse_command(buffer);
+            parse_command(client, buffer);
         } catch (std::string &e) {
             logger_->error("Error parsing command from client {}", e);
             send_command_error_message(client, e);
