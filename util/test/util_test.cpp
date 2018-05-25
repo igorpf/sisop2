@@ -119,6 +119,16 @@ TEST(LoggerFactory, GivenLoggersWithSameNameShouldNotCrash)
     ASSERT_NO_THROW(sameNameLogger = LoggerFactory::getLoggerForName(loggerName));
 }
 
+// File
+TEST(File, SendInexistentFile)
+{
+    DropboxUtil::file_transfer_request request;
+    request.in_file_path = "InexistentFile";
+
+    DropboxUtil::File file_util;
+    ASSERT_ANY_THROW(file_util.send_file(request));
+}
+
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
