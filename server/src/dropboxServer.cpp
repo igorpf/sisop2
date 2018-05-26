@@ -118,7 +118,7 @@ void Server::receive_file(const std::string& filename, const std::string &user_i
     fs::path filepath(filename);
     std::string filename_without_path = filepath.filename().string();
     std::string local_file_path = StringFormatter()
-            << local_directory_ << "/"<< user_id << "/" << filename_without_path;
+            << local_directory_ << "/" << user_id << "/" << filename_without_path;
 
     request.in_file_path = local_file_path;
 
@@ -131,6 +131,13 @@ void Server::receive_file(const std::string& filename, const std::string &user_i
     received_file_info.last_modification_time = fs::last_write_time(local_file_path);
 
     auto client_iterator = get_client_info(user_id);
+    auto file_iterator = std::find_if(client_iterator->user_files.begin(), client_iterator->user_files.end(),
+            [&filename_without_path] (const DropboxUtil::file_info& info) ->
+                    bool {return filename_without_path == info.name;});
+
+    if (file_iterator != client_iterator->user_files.end())
+        remove_file_from_client(user_id, filename);
+
     client_iterator->user_files.emplace_back(received_file_info);
 }
 
@@ -147,6 +154,16 @@ void Server::send_file(const std::string& filename, const std::string &user_id) 
 
     util::File file_util;
     file_util.send_file(request);
+}
+
+void Server::delete_file(const std::string& filename, const std::string &user_id) {
+    fs::path filepath(filename);
+    std::string filename_without_path = filepath.filename().string();
+
+    std::string server_file = StringFormatter() << local_directory_ << "/" << user_id << "/" << filename_without_path;
+    fs::remove(server_file);
+
+    remove_file_from_client(user_id, filename_without_path);
 }
 
 void Server::list_server(const std::string &user_id) {
@@ -186,8 +203,12 @@ void Server::parse_command(const std::string &command_line) {
         send_file(tokens[1], tokens[2]);
     } else if (command == "upload") {
         receive_file(tokens[1], tokens[2]);
+    } else if (command == "remove") {
+        delete_file(tokens[1], tokens[2]);
     } else if (command == "list_server") {
         list_server(tokens[1]);
+    } else {
+        throw std::runtime_error("Invalid command received from client");
     }
 }
 
@@ -225,4 +246,12 @@ bool Server::has_client_connected(const std::string &client_id) {
 std::vector<client_info>::iterator Server::get_client_info(const std::string& user_id) {
     return std::find_if(clients_.begin(), clients_.end(),
                         [&user_id](const client_info& c) -> bool {return user_id == c.user_id;});
+}
+
+void Server::remove_file_from_client(const std::string &user_id, const std::string &filename) {
+    auto client_iterator = get_client_info(user_id);
+    client_iterator->user_files.erase(std::remove_if(client_iterator->user_files.begin(),
+                                                     client_iterator->user_files.end(),
+                                                     [&filename] (const DropboxUtil::file_info& info) ->
+                                                             bool {return filename == info.name;}));
 }

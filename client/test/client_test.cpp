@@ -47,6 +47,9 @@ public:
     void get_file(const std::string &filename) override {
         last_command_ = "get_file";
     }
+    void delete_file(const std::string &filename) override {
+        last_command_ = "delete_file";
+    }
 
     std::vector<std::vector<std::string>> list_server() override {
         last_command_ = "list_server";
@@ -423,6 +426,20 @@ TEST(ShellTest, Upload)
     shell.loop(local_stream);
 
     ASSERT_EQ("send_file", mock_client.last_command_);
+    ASSERT_FALSE(mock_client.active_session_);
+}
+
+TEST(ShellTest, Remove)
+{
+    std::stringstream local_stream;
+    local_stream << "remove file\nexit";
+
+    MockClient mock_client;
+    Shell shell(mock_client);
+
+    shell.loop(local_stream);
+
+    ASSERT_EQ("delete_file", mock_client.last_command_);
     ASSERT_FALSE(mock_client.active_session_);
 }
 

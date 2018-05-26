@@ -30,14 +30,12 @@ public:
     /**
      * Envia um arquivo para o servidor (upload)
      * @param filename Nome do arquivo a ser enviado
-     * TODO(jfguimaraes) O nome do arquivo é um caminho absoluto ou relativo?
      */
     void send_file(const std::string &filename) override;
 
     /**
      * Obtém um arquivo do servidor (download)
      * @param filename Nome do arquivo a ser obtido
-     * TODO(jfguimaraes) É possível otimizar copiando o arquivo do diretório sync_dir local?
      */
     void get_file(const std::string &filename) override;
 
@@ -45,7 +43,7 @@ public:
      * Exclui um arquivo de "sync_dir_<user_id>"
      * @param filename Nome do arquivo a ser excluído
      */
-    void delete_file(const std::string &filename);
+    void delete_file(const std::string &filename) override;
 
     /**
      * Lista os arquivos do usuário no servidor

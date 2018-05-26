@@ -14,11 +14,12 @@ ShellCommandParser::ShellCommandParser() {
                     "help                \tshows the help message\n"
                     "upload <filepath>   \tuploads the file on filepath to the server\n"
                     "download <filepath> \tdownloads the file on the server's filepath\n"
+                    "remove <filepath>   \tremoves the file on the server's filepath\n"
                     "list_server         \tlists the files on the server\n"
                     "list_client         \tlists the files on the sync_dir_userid local folder\n"
                     "get_sync_dir        \tcreates the directory sync_dir_userid on your home folder\n"
                     "exit                \tcloses the connection to the server\n")
-            ("filepath", program_options::value<std::string>(), "path to the file on which to operate (applies to upload and download)\n")
+            ("filepath", program_options::value<std::string>(), "path to the file on which to operate (applies to upload, download and remove)\n")
             ;
 
     positional_description_.add("operation", 1);
@@ -40,7 +41,7 @@ void ShellCommandParser::ParseInput(std::vector<std::string> arguments) {
         throw std::runtime_error("missing parameters, use help for usage info");
 
     auto operation = variables_map_["operation"].as<std::string>();
-    bool path_used = operation == "upload" || operation == "download";
+    bool path_used = operation == "upload" || operation == "download" || operation == "remove";
 
     bool path_specified_when_should = path_used ? variables_map_.count("filepath") > 0 : true;
 

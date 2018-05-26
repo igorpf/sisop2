@@ -43,6 +43,7 @@ private:
 
     void operation_upload();
     void operation_download();
+    void operation_remove();
     void operation_list_server();
     void operation_list_client();
     void operation_sync_dir();

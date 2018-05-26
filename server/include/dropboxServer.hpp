@@ -34,15 +34,18 @@ public:
 
     /**
      * Recebe um arquivo do cliente (upload)
-     * @param filename Nome do arquivo a ser recebido
      */
     void receive_file(const std::string& filename, const std::string &user_id);
 
     /**
      * Envia um arquivo para o cliente (download)
-     * @param filename Nome do arquivo a ser enviado
      */
     void send_file(const std::string& filename, const std::string &user_id);
+
+    /**
+     * Remove um arquivo do cliente (remove)
+     */
+    void delete_file(const std::string& filename, const std::string &user_id);
 
     /**
      * Envia a lista de arquivos do usuário no servidor no formato
@@ -62,13 +65,32 @@ private:
      */
     void load_info_from_disk();
 
-    // command related methods
+    /**
+     * Parses the command received by the client
+     */
     void parse_command(const std::string &command_line);
+
+    /**
+     * Adds a new client and it's respective device to the list of clients
+     * If the client is already on the list a new device is added
+     * TODO Error when client already has max devices
+     */
     void add_client(const std::string& user_id, const std::string& device_id);
 
-    // utility methods
+    /**
+     * Checks if the client is already on the list of clients
+     */
     bool has_client_connected(const std::string &client_id);
+
+    /**
+     * Returns the client info inside the list of client infos
+     */
     std::vector<client_info>::iterator get_client_info(const std::string& user_id);
+
+    /**
+     * Removes the file from the list of files of the client
+     */
+    void remove_file_from_client(const std::string& user_id, const std::string& filename);
 
     static const std::string LOGGER_NAME;
     std::shared_ptr<spdlog::logger> logger_;

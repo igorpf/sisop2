@@ -43,7 +43,7 @@ void Shell::loop(std::istream& input_stream)
                 continue;
             }
 
-            if (operation_ == "upload" || operation_ == "download")
+            if (operation_ == "upload" || operation_ == "download" || operation_ == "remove")
                 file_path_ = command_parser.GetFilePath();
 
             execute_operation();
@@ -59,17 +59,18 @@ void Shell::loop(std::istream& input_stream)
 void Shell::execute_operation()
 {
     // TODO Use a map to map the strings to the functions
-    if (operation_ == "upload") {
+    if (operation_ == "upload")
         operation_upload();
-    } else if (operation_ == "download") {
+    else if (operation_ == "download")
         operation_download();
-    } else if (operation_ == "list_server") {
+    else if (operation_ == "remove")
+        operation_remove();
+    else if (operation_ == "list_server")
         operation_list_server();
-    } else if (operation_ == "list_client") {
+    else if (operation_ == "list_client")
         operation_list_client();
-    } else if (operation_ == "get_sync_dir") {
+    else if (operation_ == "get_sync_dir")
         operation_sync_dir();
-    }
 }
 
 void Shell::operation_upload()
@@ -84,10 +85,20 @@ void Shell::operation_download()
     client_.get_file(file_path_);
 }
 
+void Shell::operation_remove()
+{
+    logger_->info("Removing file " + file_path_ + " from server");
+    client_.delete_file(file_path_);
+}
+
 void Shell::operation_list_server()
 {
     logger_->info("Listing files on server");
     std::vector<std::vector<std::string>> server_files = client_.list_server();
+    if (server_files.size() > 2)
+        std::sort(server_files.begin() + 1, server_files.end(),
+                  [] (std::vector<std::string> line_1, std::vector<std::string> line_2) ->
+                          bool {return line_1[0] < line_2[0];});
     TablePrinter table_printer(server_files);
     table_printer.Print();
 }
@@ -96,6 +107,10 @@ void Shell::operation_list_client()
 {
     logger_->info("Listing files on client");
     std::vector<std::vector<std::string>> client_files = client_.list_client();
+    if (client_files.size() > 2)
+        std::sort(client_files.begin() + 1, client_files.end(),
+                  [] (std::vector<std::string> line_1, std::vector<std::string> line_2) ->
+                          bool {return line_1[0] < line_2[0];});
     TablePrinter table_printer(client_files);
     table_printer.Print();
 }
