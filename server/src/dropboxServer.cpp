@@ -1,6 +1,7 @@
 #include "../../util/include/dropboxUtil.hpp"
 #include "../../util/include/File.hpp"
 #include "../include/dropboxServer.hpp"
+#include "../../util/include/string_formatter.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -123,6 +124,7 @@ void Server::send_command_confirmation(struct sockaddr_in &client) {
 }
 
 void Server::send_command_error_message(struct sockaddr_in &client, const std::string &error_message)  {
-    sendto(socket_, error_message.c_str(), error_message.size(), 0, (struct sockaddr *)&client, peer_length_);
+    const std::string complete_error_message = StringFormatter() << util::ERROR_MESSAGE_INITIAL_TOKEN << error_message;
+    sendto(socket_, complete_error_message.c_str(), complete_error_message.size(), 0, (struct sockaddr *)&client, peer_length_);
 }
 

@@ -129,6 +129,21 @@ TEST(File, SendInexistentFile)
     ASSERT_ANY_THROW(file_util.send_file(request));
 }
 
+// Error messages
+TEST(ErrorMessage, GetErrorFromErrorMessage)
+{
+    std::string error = " some error that occured",
+            complete_error_message = DropboxUtil::ERROR_MESSAGE_INITIAL_TOKEN + error;
+    ASSERT_EQ(DropboxUtil::get_error_from_message(complete_error_message), error);
+}
+
+// File
+TEST(ErrorMessage, GetErrorFromNonErrorMessage)
+{
+    std::string error = "Some random error that occured";
+    ASSERT_EQ(DropboxUtil::get_error_from_message(error), error);
+}
+
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();

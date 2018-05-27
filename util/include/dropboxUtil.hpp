@@ -23,6 +23,7 @@ namespace DropboxUtil {
     const int16_t DEFAULT_SERVER_PORT = 9001;
     const std::string LOOPBACK_IP = "127.0.0.1";
     const std::string COMMAND_SEPARATOR_TOKEN = ";";
+    const std::string ERROR_MESSAGE_INITIAL_TOKEN = "!ERROR: ";
 
     template <typename Collection, typename UnaryOperator>
     Collection map(Collection col, UnaryOperator op) {
@@ -51,6 +52,7 @@ namespace DropboxUtil {
                                                   const std::string &token = COMMAND_SEPARATOR_TOKEN);
     std::string get_errno_with_message(const std::string &base_message = "");
     int64_t get_random_number();
+    std::string get_error_from_message(const std::string &error_message);
 }
 
 #endif // SISOP2_UTIL_INCLUDE_DROPBOXUTIL_HPP
