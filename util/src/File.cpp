@@ -15,7 +15,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-using namespace DropboxUtil;
+using namespace dropbox_util;
 
 const std::string File::LOGGER_NAME = "File";
 
@@ -173,7 +173,7 @@ void File::receive_file(file_transfer_request request) {
         logger_->debug("Error disabling packet timeout");
 }
 
-void File::send_list_files(DropboxUtil::file_transfer_request request, const std::string& data) {
+void File::send_list_files(dropbox_util::file_transfer_request request, const std::string& data) {
     struct sockaddr_in from{};
 
     struct timeval set_timeout_val = {0, TIMEOUT_US};
@@ -238,7 +238,7 @@ void File::send_list_files(DropboxUtil::file_transfer_request request, const std
         logger_->debug("Error disabling packet timeout");
 }
 
-std::vector<std::vector<std::string>> File::receive_list_files(DropboxUtil::file_transfer_request request) {
+std::vector<std::vector<std::string>> File::receive_list_files(dropbox_util::file_transfer_request request) {
     struct sockaddr_in client_addr{0};
     establish_handshake(request, client_addr);
 
@@ -278,7 +278,7 @@ std::vector<std::vector<std::string>> File::receive_list_files(DropboxUtil::file
     else
         logger_->debug("Error disabling packet timeout");
 
-    return DropboxUtil::parse_file_list_string(received_data);
+    return dropbox_util::parse_file_list_string(received_data);
 }
 
 void File::send_finish_handshake(file_transfer_request request, struct sockaddr_in &from) {

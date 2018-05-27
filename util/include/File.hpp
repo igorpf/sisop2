@@ -8,7 +8,7 @@
 
 namespace filesystem = boost::filesystem;
 
-namespace DropboxUtil {
+namespace dropbox_util {
     // TODO Acho que devia se chamar algo como TransferHelper
     class File {
     public:

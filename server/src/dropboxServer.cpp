@@ -18,7 +18,7 @@
 
 #include <boost/filesystem.hpp>
 
-namespace util = DropboxUtil;
+namespace util = dropbox_util;
 namespace fs = boost::filesystem;
 
 const std::string Server::LOGGER_NAME = "Server";
@@ -131,12 +131,9 @@ void Server::receive_file(const std::string& filename, const std::string &user_i
     received_file_info.last_modification_time = fs::last_write_time(local_file_path);
 
     auto client_iterator = get_client_info(user_id);
-    auto file_iterator = std::find_if(client_iterator->user_files.begin(), client_iterator->user_files.end(),
-            [&filename_without_path] (const DropboxUtil::file_info& info) ->
-                    bool {return filename_without_path == info.name;});
 
-    if (file_iterator != client_iterator->user_files.end())
-        remove_file_from_client(user_id, filename);
+    // Se já existe um registro do arquivo o remove para adição do novo registro
+    remove_file_from_client(user_id, filename);
 
     client_iterator->user_files.emplace_back(received_file_info);
 }
@@ -207,9 +204,8 @@ void Server::parse_command(const std::string &command_line) {
         delete_file(tokens[1], tokens[2]);
     } else if (command == "list_server") {
         list_server(tokens[1]);
-    } else {
-        throw std::runtime_error("Invalid command received from client");
     }
+    // TODO Erro ao receber comando invãlido
 }
 
 void Server::add_client(const std::string& user_id, const std::string& device_id) {
@@ -245,13 +241,15 @@ bool Server::has_client_connected(const std::string &client_id) {
 
 std::vector<client_info>::iterator Server::get_client_info(const std::string& user_id) {
     return std::find_if(clients_.begin(), clients_.end(),
-                        [&user_id](const client_info& c) -> bool {return user_id == c.user_id;});
+                        [&user_id] (const client_info& c) -> bool {return user_id == c.user_id;});
 }
 
 void Server::remove_file_from_client(const std::string &user_id, const std::string &filename) {
     auto client_iterator = get_client_info(user_id);
-    client_iterator->user_files.erase(std::remove_if(client_iterator->user_files.begin(),
-                                                     client_iterator->user_files.end(),
-                                                     [&filename] (const DropboxUtil::file_info& info) ->
-                                                             bool {return filename == info.name;}));
+    if (!client_iterator->user_files.empty())
+        client_iterator->user_files.erase(std::remove_if(client_iterator->user_files.begin(),
+                                                         client_iterator->user_files.end(),
+                                                         [&filename] (const dropbox_util::file_info& info) ->
+                                                                 bool {return filename == info.name;}),
+                                          client_iterator->user_files.end());
 }

@@ -9,7 +9,7 @@
 
 #include <gtest/gtest.h>
 
-namespace util = DropboxUtil;
+namespace util = dropbox_util;
 
 /**
  * Cria um arquivo temporário no construtor e o remove no destrutor

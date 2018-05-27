@@ -9,22 +9,22 @@
 
 std::once_flag rand_init;
 
-std::vector<std::string> DropboxUtil::split_words_by_token(const std::string &phrase, const std::string &token) {
+std::vector<std::string> dropbox_util::split_words_by_token(const std::string &phrase, const std::string &token) {
     std::vector<std::string> words;
     boost::split(words, phrase, boost::is_any_of(token));
     return words;
 }
 
-std::string DropboxUtil::get_errno_with_message(const std::string &base_message) {
+std::string dropbox_util::get_errno_with_message(const std::string &base_message) {
     return StringFormatter() << base_message << ", error code " << errno;
 }
 
-int64_t DropboxUtil::get_random_number() {
+int64_t dropbox_util::get_random_number() {
     std::call_once(rand_init, [](){std::srand(static_cast<unsigned int>(std::time(nullptr)));});
     return std::rand();
 }
 
-std::vector<std::vector<std::string>> DropboxUtil::parse_file_list_string(const std::string &received_data) {
+std::vector<std::vector<std::string>> dropbox_util::parse_file_list_string(const std::string &received_data) {
     std::vector<std::vector<std::string>> server_entries;
     unsigned long last_position = 0;
     unsigned long separator_position = 0;

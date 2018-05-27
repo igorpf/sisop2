@@ -12,7 +12,7 @@ TEST(FilePermissions, ReadOnlyFile)
     auto perms_int = static_cast<int16_t>(
         filesystem::owner_read | filesystem::group_read | filesystem::others_read
     );
-    DropboxUtil::File file_util;
+    dropbox_util::File file_util;
     filesystem::perms perms = file_util.parse_file_permissions_from_string(std::to_string(perms_int));
     ASSERT_TRUE(perms & filesystem::owner_read);
     ASSERT_FALSE(perms & filesystem::owner_write);
@@ -27,8 +27,8 @@ TEST(FilePermissions, ReadOnlyFile)
 
 TEST(FilePermissions, ExecutableFile)
 {
-    DropboxUtil::File fileUtil;
-    filesystem::perms perms = fileUtil.parse_file_permissions_from_string("509");
+    dropbox_util::File file_util;
+    filesystem::perms perms = file_util.parse_file_permissions_from_string("509");
     ASSERT_TRUE(perms & filesystem::owner_read);
     ASSERT_TRUE(perms & filesystem::owner_write);
     ASSERT_TRUE(perms & filesystem::owner_exe);
@@ -61,7 +61,7 @@ TEST(UtilityFunctions, SplitOnSpaces)
 {
     std::string original_string = "string with spaces";
 
-    std::vector<std::string> words = DropboxUtil::split_words_by_token(original_string, " ");
+    std::vector<std::string> words = dropbox_util::split_words_by_token(original_string, " ");
 
     ASSERT_EQ("string", words[0]);
     ASSERT_EQ("with", words[1]);
@@ -73,7 +73,7 @@ TEST(UtilityFunctions, ErrnoWithMessage)
     auto previous_errno = errno;
     errno = 2;
     std::string base_message = "Test message";
-    std::string full_message = DropboxUtil::get_errno_with_message(base_message);
+    std::string full_message = dropbox_util::get_errno_with_message(base_message);
 
     EXPECT_EQ("Test message, error code 2", full_message);
     errno = previous_errno;
@@ -81,9 +81,9 @@ TEST(UtilityFunctions, ErrnoWithMessage)
 
 TEST(UtilityFunctions, RandomNumber)
 {
-    auto random_1 = DropboxUtil::get_random_number();
-    auto random_2 = DropboxUtil::get_random_number();
-    auto random_3 = DropboxUtil::get_random_number();
+    auto random_1 = dropbox_util::get_random_number();
+    auto random_2 = dropbox_util::get_random_number();
+    auto random_3 = dropbox_util::get_random_number();
 
     ASSERT_NE(random_1, random_2);
     ASSERT_NE(random_1, random_3);
@@ -108,7 +108,7 @@ TEST(FileListParsing, FileListParsing)
 
     std::string data {"name;size;modification_time&name1;15000;1526852765&name2;1456;1526845650"};
 
-    std::vector<std::vector<std::string>> parsed_list = DropboxUtil::parse_file_list_string(data);
+    std::vector<std::vector<std::string>> parsed_list = dropbox_util::parse_file_list_string(data);
 
     ASSERT_EQ(parsed_list, expected_list);
 }

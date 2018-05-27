@@ -9,8 +9,6 @@
 #include "../../util/include/dropboxUtil.hpp"
 #include "iclient.hpp"
 
-namespace util = DropboxUtil;
-
 class Client : public IClient {
 public:
     Client();
@@ -64,8 +62,9 @@ private:
     bool logged_in_ = false;
     std::string device_id_;
     std::string user_id_;
-    std::vector<util::file_info> user_files_;
     std::string local_directory_;
+    std::vector<dropbox_util::file_info> user_files_;
+    std::vector<dropbox_util::file_info> modified_files_;
 
     static const std::string LOGGER_NAME;
     std::shared_ptr<spdlog::logger> logger_;
@@ -73,7 +72,7 @@ private:
     int64_t port_;
     std::string hostname_;
     struct sockaddr_in server_addr_;
-    util::SOCKET socket_;
+    dropbox_util::SOCKET socket_;
     socklen_t peer_length_;
 
     /**

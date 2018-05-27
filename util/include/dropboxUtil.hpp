@@ -13,7 +13,7 @@
 
 namespace filesystem = boost::filesystem;
 
-namespace DropboxUtil {
+namespace dropbox_util {
     /// Constantes
     const int32_t BUFFER_SIZE = 64000; // approximately an ip packet size
     const int64_t TIMEOUT_US  = 50000; // to disable timeout, set 500000000000 as value
@@ -26,7 +26,7 @@ namespace DropboxUtil {
 
     template <typename Collection, typename UnaryOperator>
     Collection map(Collection col, UnaryOperator op) {
-        std::transform(col.begin(),col.end(),col.begin(),op);
+        std::transform(col.begin(), col.end(), col.begin(), op);
         return col;
     }
 

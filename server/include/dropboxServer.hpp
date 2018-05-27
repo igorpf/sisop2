@@ -12,7 +12,7 @@
 struct client_info {
     std::string user_id;
     std::vector<std::string> user_devices;
-    std::vector<DropboxUtil::file_info> user_files;
+    std::vector<dropbox_util::file_info> user_files;
 };
 
 class Server {
@@ -32,6 +32,8 @@ public:
      */
     void sync_server();
 
+    // TODO O servidor recebe instruções de manipulação de arquivos sem timestamp, executando sempre
+    // Isso pode ser um problema se dois clientes modificam um arquivo mas enviam as modificações na ordem errada
     /**
      * Recebe um arquivo do cliente (upload)
      */
@@ -101,7 +103,7 @@ private:
     int32_t port_;
     struct sockaddr_in server_addr_ {0};
     struct sockaddr_in current_client_ {0};
-    DropboxUtil::SOCKET socket_;
+    dropbox_util::SOCKET socket_;
     socklen_t peer_length_;
     std::vector<client_info> clients_;
     std::string local_directory_;

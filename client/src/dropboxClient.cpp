@@ -22,6 +22,7 @@
 #include "../include/login_command_parser.hpp"
 
 namespace fs = boost::filesystem;
+namespace util = dropbox_util;
 
 const std::string Client::LOGGER_NAME = "Client";
 
@@ -59,6 +60,20 @@ void Client::start_client(int argc, char **argv)
     device_id_ = to_string(device_id);
 
     login_server();
+
+    // Inicializa o sync_dir
+    if (local_directory_.empty()) {
+        char *home_folder;
+
+        if ((home_folder = getenv("HOME")) == nullptr) {
+            home_folder = getpwuid(getuid())->pw_dir;
+        }
+
+        local_directory_ = StringFormatter() << home_folder << "/sync_dir_" << user_id_;
+        boost::filesystem::create_directory(local_directory_);
+    }
+
+    load_info_from_disk();
 }
 
 void Client::login_server()
@@ -81,28 +96,104 @@ void Client::login_server()
 
 void Client::sync_client()
 {
-    // Inicializa o sync_dir
-    if (local_directory_.empty()) {
-        char *home_folder;
+    // TODO(jfguimaraes) list_server converts timestamps to visual representation, correct this
+    // Recebe a lista de arquivos e remove o header
+    auto server_files = list_server();
+    server_files.erase(server_files.begin());
 
-        if ((home_folder = getenv("HOME")) == nullptr) {
-            home_folder = getpwuid(getuid())->pw_dir;
+    // Compara as modificações locais com a lista de arquivos no servidor
+    // Se as modificações locais são mais recentes envia ao servidor
+    for (const auto& modified_file : modified_files_) {
+        auto server_file_iterator = std::find_if(server_files.begin(), server_files.end(),
+                [&modified_file] (const std::vector<std::string>& server_file) ->
+                        bool {return server_file[0] == modified_file.name;});
+
+        // Se o arquivo foi deletado localmente deve ser deletado no servidor
+        bool file_deleted = fs::exists(fs::path(StringFormatter() << local_directory_ << "/" << modified_file.name));
+
+        // Arquivo não existe no servidor, foi criado localmente e será enviado
+        // Se o arquivo não existe localmente nada a fazer
+        if (server_file_iterator == server_files.end()) {
+            if (!file_deleted)
+                send_file(StringFormatter() << local_directory_ << "/" << modified_file.name);
+            continue;
         }
 
-        local_directory_ = StringFormatter() << home_folder << "/sync_dir_" << user_id_;
-        boost::filesystem::create_directory(local_directory_);
+        // Modificação local é mais recente, envia ao servidor
+        if (std::to_string(modified_file.last_modification_time) > server_file_iterator->at(2)) {
+            if (file_deleted)
+                delete_file(modified_file.name);
+            else
+                send_file(StringFormatter() << local_directory_ << "/" << modified_file.name);
+            continue;
+        }
 
-        load_info_from_disk();
+        // Versão do servidor é mais recente, recebe
+        if (std::to_string(modified_file.last_modification_time) < server_file_iterator->at(2))
+            get_file(StringFormatter() << local_directory_ << "/" << modified_file.name);
     }
 
-    // TODO Sync files with the server
-    // throw std::logic_error("Function not implemented");
+    // Compara os arquivos locais com a lista de arquivos no servidor
+    for (const auto& user_file : user_files_) {
+        auto modified_file_iterator = std::find_if(modified_files_.begin(), modified_files_.end(),
+                                        [&user_file] (const util::file_info& modified_file) ->
+                                                bool {return modified_file.name == user_file.name;});
+
+        // Se o arquivo foi modificado já foi tratado
+        if (modified_file_iterator != modified_files_.end())
+            continue;
+
+        auto server_file_iterator = std::find_if(server_files.begin(), server_files.end(),
+                                                 [&user_file] (const std::vector<std::string>& server_file) ->
+                                                         bool {return server_file[0] == user_file.name;});
+
+        // Se o arquivo não existe no servidor e não foi criado localmente o remove
+        if (server_file_iterator == server_files.end()) {
+            fs::remove(fs::path(StringFormatter() << local_directory_ << "/" << modified_file_iterator->name));
+            continue;
+        }
+
+        // Verifica se o servidor está desatualizado, se estiver envia a versão mais recente
+        if (std::to_string(user_file.last_modification_time) > server_file_iterator->at(2)) {
+            send_file(StringFormatter() << local_directory_ << "/" << user_file.name);
+            continue;
+        }
+
+        // Versão do arquivo no servidor é mais recente, recebe
+        if (std::to_string(user_file.last_modification_time) < server_file_iterator->at(2))
+            get_file(StringFormatter() << local_directory_ << "/" << user_file.name);
+    }
+
+    // Verifica se existem arquivos novos no servidor, se existirem faz o download
+    for (const auto& server_file : server_files) {
+        auto modified_file_iterator = std::find_if(modified_files_.begin(), modified_files_.end(),
+                                                   [&server_file] (const util::file_info& modified_file) ->
+                                                           bool {return modified_file.name == server_file[0];});
+
+        // Se o arquivo foi modificado já foi tratado
+        if (modified_file_iterator != modified_files_.end())
+            continue;
+
+        auto user_file_iterator = std::find_if(user_files_.begin(), user_files_.end(),
+                                                   [&server_file] (const util::file_info& user_file) ->
+                                                           bool {return user_file.name == server_file[0];});
+
+        // Se o arquivo já existe no cliente já foi tratado
+        if (user_file_iterator != user_files_.end())
+            continue;
+
+        // Recebe o novo arquivo
+        get_file(StringFormatter() << local_directory_ << "/" << server_file[0]);
+    }
+
+    // Limpa o buffer de arquivos modificados
+    modified_files_.clear();
 }
 
 void Client::load_info_from_disk() {
     for (const fs::directory_entry& file : fs::directory_iterator(local_directory_)) {
         if (fs::is_directory(file.path())) {
-            throw std::runtime_error(StringFormatter() << "Unexpected subfolder on user folder");
+            throw std::runtime_error("Unexpected subfolder on user folder");
         }
 
         std::string filename = file.path().string();
@@ -125,8 +216,12 @@ void Client::send_file(const std::string& filename)
     request.server_address = server_addr_;
     request.socket = socket_;
 
+    fs::path filepath(filename);
+    std::string filename_without_path = filepath.filename().string();
+    std::string local_file_path = StringFormatter() << local_directory_ << "/" << filename_without_path;
+
     std::string command(StringFormatter() << "upload" << util::COMMAND_SEPARATOR_TOKEN
-                                          << filename << util::COMMAND_SEPARATOR_TOKEN << user_id_);
+                                          << filename_without_path << util::COMMAND_SEPARATOR_TOKEN << user_id_);
 
     sendto(socket_, command.c_str(), command.size(), 0, (struct sockaddr *)&server_addr_, peer_length_);
 
@@ -142,13 +237,34 @@ void Client::get_file(const std::string& filename)
     request.server_address = server_addr_;
     request.socket = socket_;
 
+    fs::path filepath(filename);
+    std::string filename_without_path = filepath.filename().string();
+    std::string local_file_path = StringFormatter() << local_directory_ << "/" << filename_without_path;
+
     std::string command(StringFormatter() << "download" << util::COMMAND_SEPARATOR_TOKEN
-                                          << filename << util::COMMAND_SEPARATOR_TOKEN << user_id_);
+                                          << filename_without_path << util::COMMAND_SEPARATOR_TOKEN << user_id_);
 
     sendto(socket_, command.c_str(), command.size(), 0, (struct sockaddr *)&server_addr_, peer_length_);
 
     util::File file_util;
     file_util.receive_file(request);
+
+    // If the file was downloaded to the sync_dir folder update its info
+    if (local_file_path == filename) {
+        util::file_info received_file_info;
+        received_file_info.name = filename_without_path;
+        received_file_info.size = fs::file_size(local_file_path);
+        received_file_info.last_modification_time = fs::last_write_time(local_file_path);
+
+        // Se já existe um registro do arquivo o remove para adição do novo registro
+        if (!user_files_.empty())
+            user_files_.erase(std::remove_if(user_files_.begin(), user_files_.end(),
+                                             [&filename_without_path] (const dropbox_util::file_info& info) ->
+                                                     bool {return filename_without_path == info.name;}),
+                              user_files_.end());
+
+        user_files_.emplace_back(received_file_info);
+    }
 }
 
 void Client::delete_file(const std::string& filename)
