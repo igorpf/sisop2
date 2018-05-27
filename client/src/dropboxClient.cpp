@@ -78,6 +78,7 @@ void Client::start_client(int argc, char **argv)
 
 void Client::login_server()
 {
+    // TODO Shouldn't login fail if the server doesn't answer?
     if((socket_ = socket(AF_INET, SOCK_DGRAM,0)) < 0) {
         logger_->error("Error creating socket");
         throw std::runtime_error("Error trying to login to server");
@@ -96,7 +97,6 @@ void Client::login_server()
 
 void Client::sync_client()
 {
-    // TODO(jfguimaraes) list_server converts timestamps to visual representation, correct this
     // Recebe a lista de arquivos e remove o header
     auto server_files = list_server();
     server_files.erase(server_files.begin());
@@ -109,7 +109,7 @@ void Client::sync_client()
                         bool {return server_file[0] == modified_file.name;});
 
         // Se o arquivo foi deletado localmente deve ser deletado no servidor
-        bool file_deleted = fs::exists(fs::path(StringFormatter() << local_directory_ << "/" << modified_file.name));
+        bool file_deleted = !fs::exists(fs::path(StringFormatter() << local_directory_ << "/" << modified_file.name));
 
         // Arquivo não existe no servidor, foi criado localmente e será enviado
         // Se o arquivo não existe localmente nada a fazer
@@ -133,6 +133,8 @@ void Client::sync_client()
             get_file(StringFormatter() << local_directory_ << "/" << modified_file.name);
     }
 
+    std::vector<std::string> removed_files;
+
     // Compara os arquivos locais com a lista de arquivos no servidor
     for (const auto& user_file : user_files_) {
         auto modified_file_iterator = std::find_if(modified_files_.begin(), modified_files_.end(),
@@ -149,7 +151,8 @@ void Client::sync_client()
 
         // Se o arquivo não existe no servidor e não foi criado localmente o remove
         if (server_file_iterator == server_files.end()) {
-            fs::remove(fs::path(StringFormatter() << local_directory_ << "/" << modified_file_iterator->name));
+            fs::remove(fs::path(StringFormatter() << local_directory_ << "/" << user_file.name));
+            removed_files.emplace_back(user_file.name);
             continue;
         }
 
@@ -163,6 +166,14 @@ void Client::sync_client()
         if (std::to_string(user_file.last_modification_time) < server_file_iterator->at(2))
             get_file(StringFormatter() << local_directory_ << "/" << user_file.name);
     }
+
+    // Remove os registros dos arquivos excluídos
+    if (!removed_files.empty())
+        user_files_.erase(std::remove_if(user_files_.begin(), user_files_.end(),
+                                         [&removed_files] (const dropbox_util::file_info& info) -> bool
+                                         {return std::find(removed_files.begin(), removed_files.end(), info.name)
+                                                 != removed_files.end();}),
+                          user_files_.end());
 
     // Verifica se existem arquivos novos no servidor, se existirem faz o download
     for (const auto& server_file : server_files) {
@@ -298,12 +309,8 @@ std::vector<std::vector<std::string>> Client::list_client()
     for (const auto& file : user_files_) {
         std::vector<std::string> info;
         info.emplace_back(file.name);
-        info.emplace_back(std::to_string(file.size) + " B");
-        std::time_t timestamp = file.last_modification_time;
-        std::tm *ptm = std::localtime(&timestamp);
-        char readable_timestamp[50];
-        std::strftime(readable_timestamp, 50, "%Y-%m-%d %H:%M:%S", ptm);
-        info.emplace_back(readable_timestamp);
+        info.emplace_back(std::to_string(file.size));
+        info.emplace_back(std::to_string(file.last_modification_time));
         entries.emplace_back(info);
     }
 

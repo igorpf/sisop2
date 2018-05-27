@@ -93,18 +93,8 @@ TEST(UtilityFunctions, RandomNumber)
 
 TEST(FileListParsing, FileListParsing)
 {
-    std::time_t timestamp_1 = 1526852765;
-    std::tm *ptm_1 = std::localtime(&timestamp_1);
-    char readable_timestamp_1[50];
-    std::strftime(readable_timestamp_1, 50, "%Y-%m-%d %H:%M:%S", ptm_1);
-
-    std::time_t timestamp_2 = 1526845650;
-    std::tm *ptm_2 = std::localtime(&timestamp_2);
-    char readable_timestamp_2[50];
-    std::strftime(readable_timestamp_2, 50, "%Y-%m-%d %H:%M:%S", ptm_2);
-
     std::vector<std::vector<std::string>> expected_list = {{"name", "size", "modification_time"},
-            {"name1", "15000 B", readable_timestamp_1}, {"name2", "1456 B", readable_timestamp_2}};
+            {"name1", "15000", "1526852765"}, {"name2", "1456", "1526845650"}};
 
     std::string data {"name;size;modification_time&name1;15000;1526852765&name2;1456;1526845650"};
 

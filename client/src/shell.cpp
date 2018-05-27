@@ -94,29 +94,43 @@ void Shell::operation_remove()
 void Shell::operation_list_server()
 {
     logger_->info("Listing files on server");
-    std::vector<std::vector<std::string>> server_files = client_.list_server();
-    if (server_files.size() > 2)
-        std::sort(server_files.begin() + 1, server_files.end(),
-                  [] (std::vector<std::string> line_1, std::vector<std::string> line_2) ->
-                          bool {return line_1[0] < line_2[0];});
-    TablePrinter table_printer(server_files);
-    table_printer.Print();
+    show_file_list(client_.list_server());
 }
 
 void Shell::operation_list_client()
 {
     logger_->info("Listing files on client");
-    std::vector<std::vector<std::string>> client_files = client_.list_client();
-    if (client_files.size() > 2)
-        std::sort(client_files.begin() + 1, client_files.end(),
-                  [] (std::vector<std::string> line_1, std::vector<std::string> line_2) ->
-                          bool {return line_1[0] < line_2[0];});
-    TablePrinter table_printer(client_files);
-    table_printer.Print();
+    show_file_list(client_.list_client());
 }
 
 void Shell::operation_sync_dir()
 {
     logger_->info("Creating sync_dir folder");
     client_.sync_client();
+}
+
+void Shell::show_file_list(std::vector<std::vector<std::string>> file_list)
+{
+    // Formata tamanho e timestamp ignorando o header
+    if (file_list.size() > 1) {
+        for (int64_t i = 1; i < file_list.size(); ++i) {
+            auto& info = file_list[i];
+            info[1] = StringFormatter() << info[1] << " B";
+            std::time_t timestamp = std::stoi(info[2]);
+            std::tm *ptm = std::localtime(&timestamp);
+            char readable_timestamp[50];
+            std::strftime(readable_timestamp, 50, "%Y-%m-%d %H:%M:%S", ptm);
+            info[2] = readable_timestamp;
+        }
+    }
+
+    // Ordena os arquivos em ordem alfabética de nome, ignorando o header
+    if (file_list.size() > 2)
+        std::sort(file_list.begin() + 1, file_list.end(),
+                  [] (std::vector<std::string> line_1, std::vector<std::string> line_2) ->
+                          bool {return line_1[0] < line_2[0];});
+
+    // Exibe na tela
+    TablePrinter table_printer(file_list);
+    table_printer.Print();
 }

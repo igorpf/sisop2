@@ -37,7 +37,7 @@ private:
     std::shared_ptr<spdlog::logger> logger_;
 
     /**
-     * Executes the operation inputted
+     * Executa a operação indicada pelo usuário
      */
     void execute_operation();
 
@@ -47,6 +47,11 @@ private:
     void operation_list_server();
     void operation_list_client();
     void operation_sync_dir();
+
+    /**
+     * Shows the list of files in the screen, formatting sizes and timestamps
+     */
+    void show_file_list(std::vector<std::vector<std::string>> file_list);
 };
 
 #endif // SISOP2_CLIENT_INCLUDE_SHELL_HPP

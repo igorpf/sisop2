@@ -61,17 +61,12 @@ std::vector<std::vector<std::string>> dropbox_util::parse_file_list_string(const
 
         // Tamanho do arquivo
         separator_position = received_data.find(';', last_position);
-        info.emplace_back(StringFormatter()
-                                  << received_data.substr(last_position,separator_position - last_position) << " B");
+        info.emplace_back(received_data.substr(last_position,separator_position - last_position));
         last_position = separator_position + 1;
 
         // Última modificação no arquivo
         separator_position = received_data.find('&', last_position);
-        std::time_t timestamp = std::stoi(received_data.substr(last_position, separator_position - last_position));
-        std::tm *ptm = std::localtime(&timestamp);
-        char readable_timestamp[50];
-        std::strftime(readable_timestamp, 50, "%Y-%m-%d %H:%M:%S", ptm);
-        info.emplace_back(readable_timestamp);
+        info.emplace_back(received_data.substr(last_position, separator_position - last_position));
         last_position = separator_position;
 
         if (last_position != std::string::npos)
