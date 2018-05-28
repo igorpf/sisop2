@@ -17,9 +17,10 @@
 #include "../../util/include/string_formatter.hpp"
 #include "../../util/include/table_printer.hpp"
 #include "../../util/include/File.hpp"
-#include "../include/dropboxClient.hpp"
-
+#include "../../util/include/lock_guard.hpp"
 #include "../include/login_command_parser.hpp"
+
+#include "../include/dropboxClient.hpp"
 
 namespace fs = boost::filesystem;
 namespace util = dropbox_util;
@@ -101,9 +102,15 @@ void Client::sync_client()
     auto server_files = list_server();
     server_files.erase(server_files.begin());
 
+    // Copia o buffer de arquivos modificados para permitir que novas modificações
+    // possam ser adicionadas enquanto a sincronização acontece
+    LockGuard modification_buffer_lock(modification_buffer_mutex_);
+    auto modification_buffer = modified_files_;
+    modification_buffer_lock.Unlock();
+
     // Compara as modificações locais com a lista de arquivos no servidor
     // Se as modificações locais são mais recentes envia ao servidor
-    for (const auto& modified_file : modified_files_) {
+    for (const auto& modified_file : modification_buffer) {
         auto server_file_iterator = std::find_if(server_files.begin(), server_files.end(),
                 [&modified_file] (const std::vector<std::string>& server_file) ->
                         bool {return server_file[0] == modified_file.name;});
@@ -133,16 +140,23 @@ void Client::sync_client()
             get_file(StringFormatter() << local_directory_ << "/" << modified_file.name);
     }
 
+    // Buffer para arquivos que foram removidos para atualizar o registro de arquivos
     std::vector<std::string> removed_files;
 
+    // Copia a lista de arquivos do cliente para poder modificar os arquivos sem prejudicar
+    // o algoritmo de iteração sobre a lista
+    LockGuard user_files_lock(user_files_mutex_);
+    auto user_files_buffer = user_files_;
+    user_files_lock.Unlock();
+
     // Compara os arquivos locais com a lista de arquivos no servidor
-    for (const auto& user_file : user_files_) {
-        auto modified_file_iterator = std::find_if(modified_files_.begin(), modified_files_.end(),
+    for (const auto& user_file : user_files_buffer) {
+        auto modified_file_iterator = std::find_if(modification_buffer.begin(), modification_buffer.end(),
                                         [&user_file] (const util::file_info& modified_file) ->
                                                 bool {return modified_file.name == user_file.name;});
 
         // Se o arquivo foi modificado já foi tratado
-        if (modified_file_iterator != modified_files_.end())
+        if (modified_file_iterator != modification_buffer.end())
             continue;
 
         auto server_file_iterator = std::find_if(server_files.begin(), server_files.end(),
@@ -168,29 +182,33 @@ void Client::sync_client()
     }
 
     // Remove os registros dos arquivos excluídos
-    if (!removed_files.empty())
+    if (!removed_files.empty()) {
+        user_files_lock.Lock();
         user_files_.erase(std::remove_if(user_files_.begin(), user_files_.end(),
-                                         [&removed_files] (const dropbox_util::file_info& info) -> bool
-                                         {return std::find(removed_files.begin(), removed_files.end(), info.name)
-                                                 != removed_files.end();}),
+                                         [&removed_files](const dropbox_util::file_info &info) -> bool {
+                                             return std::find(removed_files.begin(), removed_files.end(), info.name)
+                                                    != removed_files.end();
+                                         }),
                           user_files_.end());
+        user_files_lock.Unlock();
+    }
 
     // Verifica se existem arquivos novos no servidor, se existirem faz o download
     for (const auto& server_file : server_files) {
-        auto modified_file_iterator = std::find_if(modified_files_.begin(), modified_files_.end(),
+        auto modified_file_iterator = std::find_if(modification_buffer.begin(), modification_buffer.end(),
                                                    [&server_file] (const util::file_info& modified_file) ->
                                                            bool {return modified_file.name == server_file[0];});
 
         // Se o arquivo foi modificado já foi tratado
-        if (modified_file_iterator != modified_files_.end())
+        if (modified_file_iterator != modification_buffer.end())
             continue;
 
-        auto user_file_iterator = std::find_if(user_files_.begin(), user_files_.end(),
+        auto user_file_iterator = std::find_if(user_files_buffer.begin(), user_files_buffer.end(),
                                                    [&server_file] (const util::file_info& user_file) ->
                                                            bool {return user_file.name == server_file[0];});
 
         // Se o arquivo já existe no cliente já foi tratado
-        if (user_file_iterator != user_files_.end())
+        if (user_file_iterator != user_files_buffer.end())
             continue;
 
         // Recebe o novo arquivo
@@ -221,6 +239,8 @@ void Client::load_info_from_disk() {
 
 void Client::send_file(const std::string& filename)
 {
+    LockGuard lock(socket_mutex_);
+
     util::file_transfer_request request;
     request.in_file_path = filename;
     request.peer_length = peer_length_;
@@ -242,6 +262,8 @@ void Client::send_file(const std::string& filename)
 
 void Client::get_file(const std::string& filename)
 {
+    LockGuard lock(socket_mutex_);
+
     util::file_transfer_request request;
     request.in_file_path = filename;
     request.peer_length = peer_length_;
@@ -267,6 +289,8 @@ void Client::get_file(const std::string& filename)
         received_file_info.size = fs::file_size(local_file_path);
         received_file_info.last_modification_time = fs::last_write_time(local_file_path);
 
+        LockGuard user_files_lock(user_files_mutex_);
+
         // Se já existe um registro do arquivo o remove para adição do novo registro
         if (!user_files_.empty())
             user_files_.erase(std::remove_if(user_files_.begin(), user_files_.end(),
@@ -280,6 +304,8 @@ void Client::get_file(const std::string& filename)
 
 void Client::delete_file(const std::string& filename)
 {
+    LockGuard lock(socket_mutex_);
+
     std::string command(StringFormatter() << "remove" << util::COMMAND_SEPARATOR_TOKEN
                                           << filename << util::COMMAND_SEPARATOR_TOKEN << user_id_);
     sendto(socket_, command.c_str(), command.size(), 0, (struct sockaddr *)&server_addr_, peer_length_);
@@ -287,6 +313,8 @@ void Client::delete_file(const std::string& filename)
 
 std::vector<std::vector<std::string>> Client::list_server()
 {
+    LockGuard lock(socket_mutex_);
+
     util::file_transfer_request request;
     request.peer_length = peer_length_;
     request.server_address = server_addr_;
@@ -306,6 +334,8 @@ std::vector<std::vector<std::string>> Client::list_client()
     std::vector<std::string> header {"name", "size", "modification_time"};
     entries.emplace_back(header);
 
+    LockGuard user_files_lock(user_files_mutex_);
+
     for (const auto& file : user_files_) {
         std::vector<std::string> info;
         info.emplace_back(file.name);
@@ -319,5 +349,5 @@ std::vector<std::vector<std::string>> Client::list_client()
 
 void Client::close_session()
 {
-    throw std::logic_error("Function not implemented");
+    throw std::logic_error("Disconnecting from server not implemented");
 }
