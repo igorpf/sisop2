@@ -147,15 +147,24 @@ void Client::close_session()
 
 void Client::send_command_and_expect_confirmation(const std::string &command) {
     logger_->debug("Sent command {} to server. Expecting ACK", command);
-    sendto(socket_, command.c_str(), command.size(), 0, (struct sockaddr *)&server_addr_, peer_length_);
+    struct timeval set_timeout_val = {0, util::TIMEOUT_US},
+                   unset_timeout_val = {0, 0};
     char ack[util::BUFFER_SIZE]{0};
-    recvfrom(socket_, ack, sizeof(ack), 0,(struct sockaddr *) &server_addr_, &peer_length_);
+    ssize_t received_bytes;
+
+    setsockopt(socket_, SOL_SOCKET, SO_RCVTIMEO, &set_timeout_val, sizeof(set_timeout_val));
+    sendto(socket_, command.c_str(), command.size(), 0, (struct sockaddr *)&server_addr_, peer_length_);
+    received_bytes = recvfrom(socket_, ack, sizeof(ack), 0,(struct sockaddr *) &server_addr_, &peer_length_);
+    setsockopt(socket_, SOL_SOCKET, SO_RCVTIMEO, &unset_timeout_val, sizeof(unset_timeout_val));
+
+    if (received_bytes <= 0)
+        throw std::runtime_error("Server is unreachable!");
+
     if (strcmp("ACK", ack) != 0) {
         std::string message = util::get_error_from_message(ack);
 
-        throw std::runtime_error(StringFormatter() << "Sent command " << command <<
-                                                   " but failed to receive ACK. Received " << message
-                                                   << " from server.");
+        throw std::logic_error(StringFormatter() << "Sent command " << command << " but failed to receive ACK. Received "
+                                                                                    << message << " from server.");
     }
 
     logger_->debug("Received ACK from server");
