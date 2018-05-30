@@ -93,6 +93,13 @@ void Client::login_server()
                                           << user_id_ << util::COMMAND_SEPARATOR_TOKEN << device_id_);
 
     sendto(socket_, command.c_str(), command.size(), 0, (struct sockaddr*)&server_addr_, peer_length_);
+
+    // TODO remove this
+    char buffer[500];
+    recvfrom(socket_, buffer, sizeof(buffer), 0, (struct sockaddr *) &server_addr_, &peer_length_);
+    logger_->debug("Received from client {} port {} the message: {}",
+                   inet_ntoa(server_addr_.sin_addr), server_addr_.sin_port, buffer)
+            ;
     logged_in_ = true;
 }
 

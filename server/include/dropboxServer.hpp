@@ -2,6 +2,7 @@
 #define SISOP2_SERVER_INCLUDE_DROPBOXSERVER_HPP
 
 #include "../../util/include/dropboxUtil.hpp"
+#include "ClientThreadPool.hpp"
 
 #include <string>
 #include <vector>
@@ -107,6 +108,8 @@ private:
     socklen_t peer_length_;
     std::vector<client_info> clients_;
     std::string local_directory_;
+
+    ClientThreadPool thread_pool_;
 };
 
 #endif // SISOP2_SERVER_INCLUDE_DROPBOXSERVER_HPP

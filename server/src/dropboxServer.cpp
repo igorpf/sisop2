@@ -2,6 +2,7 @@
 #include "../../util/include/string_formatter.hpp"
 #include "../../util/include/File.hpp"
 #include "../include/dropboxServer.hpp"
+#include "../include/ClientThread.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -101,10 +102,11 @@ void Server::listen() {
             std::fill(buffer, buffer + sizeof(buffer), 0);
             recvfrom(socket_, buffer, sizeof(buffer), 0, (struct sockaddr *) &current_client_, &peer_length_);
             logger_->debug("Received from client {} port {} the message: {}",
-                           inet_ntoa(current_client_.sin_addr), current_client_.sin_port, buffer);
+                           inet_ntoa(current_client_.sin_addr), ntohs(current_client_.sin_port), buffer);
             parse_command(buffer);
         } catch (std::exception& e) {
             logger_->error("Error parsing command from client {}", e.what());
+            break;
         }
     }
 }
@@ -218,6 +220,7 @@ void Server::add_client(const std::string& user_id, const std::string& device_id
 
         std::string client_path = StringFormatter() << local_directory_ << "/" << user_id;
         fs::create_directory(client_path);
+        thread_pool_.add_client("ClientThread" + user_id + device_id, inet_ntoa(current_client_.sin_addr), ntohs(current_client_.sin_port));
 
         logger_->info("Connected new client, total clients: {}",  clients_.size());
     }
