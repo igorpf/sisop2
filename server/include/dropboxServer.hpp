@@ -18,19 +18,14 @@ struct client_info {
 class Server {
 public:
     // TODO Implementar função pra logoff do cliente que remove o dispositivo da lista (é isso que deve acontecer?)
+    // TODO Se um comando falha o próximo sync do cliente falha por falta de ACK, revisar isso
     Server();
-
     virtual ~Server();
 
     /**
      * Inicializa o servidor e o coloca para ouvir comandos dos clientes
      */
     void listen();
-
-    /**
-     * Sincroniza o servidor com o diretório "sync_dir_<user_id>"
-     */
-    void sync_server();
 
     // TODO O servidor recebe instruções de manipulação de arquivos sem timestamp, executando sempre
     // Isso pode ser um problema se dois clientes modificam um arquivo mas enviam as modificações na ordem errada

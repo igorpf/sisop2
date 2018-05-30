@@ -22,6 +22,8 @@ public:
     virtual std::vector<std::vector<std::string>> list_client() = 0;
 
     virtual void close_session() = 0;
+
+    bool logged_in_ = false;
 };
 
 #endif // SISOP2_CLIENT_INCLUDE_ICLIENT_HPP

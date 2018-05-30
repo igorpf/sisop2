@@ -185,7 +185,7 @@ void Client::sync_client()
     if (!removed_files.empty()) {
         user_files_lock.Lock();
         user_files_.erase(std::remove_if(user_files_.begin(), user_files_.end(),
-                                         [&removed_files](const dropbox_util::file_info &info) -> bool {
+                                         [&removed_files] (const dropbox_util::file_info &info) -> bool {
                                              return std::find(removed_files.begin(), removed_files.end(), info.name)
                                                     != removed_files.end();
                                          }),
@@ -215,8 +215,18 @@ void Client::sync_client()
         get_file(StringFormatter() << local_directory_ << "/" << server_file[0]);
     }
 
-    // Limpa o buffer de arquivos modificados
-    modified_files_.clear();
+    // Limpa o buffer de arquivos modificados, removendo os que foram tratados durante a sincronização,
+    // mas não removendo os que foram alterados novamente desde o início da sincronização
+    modification_buffer_lock.Lock();
+    for (const auto& modified_file : modification_buffer) {
+        modified_files_.erase(std::remove_if(modified_files_.begin(), modified_files_.end(),
+                                         [&modified_file] (const dropbox_util::file_info &info) -> bool {
+                                             return info.name == modified_file.name &&
+                                                    info.last_modification_time <= modified_file.last_modification_time;
+                                         }),
+                              modified_files_.end());
+    }
+    modification_buffer_lock.Unlock();
 }
 
 void Client::load_info_from_disk() {
@@ -281,6 +291,8 @@ void Client::get_file(const std::string& filename)
 
     util::File file_util;
     file_util.receive_file(request);
+
+    lock.Unlock();
 
     // If the file was downloaded to the sync_dir folder update its info
     if (local_file_path == filename) {
@@ -349,5 +361,7 @@ std::vector<std::vector<std::string>> Client::list_client()
 
 void Client::close_session()
 {
-    throw std::logic_error("Disconnecting from server not implemented");
+    // TODO(jfguimaraes) Implement client logoff
+    logger_->debug("Client logged off");
+    logged_in_ = false;
 }

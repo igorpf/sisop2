@@ -71,7 +71,6 @@ private:
      */
     void load_info_from_disk();
 
-    bool logged_in_ = false;
     std::string device_id_;
     std::string user_id_;
     std::string local_directory_;

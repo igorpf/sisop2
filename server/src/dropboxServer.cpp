@@ -184,10 +184,6 @@ void Server::list_server(const std::string &user_id) {
     file_util.send_list_files(request, user_file_list);
 }
 
-void Server::sync_server() {
-    throw std::logic_error("Function not implemented");
-}
-
 void Server::parse_command(const std::string &command_line) {
     // TODO Validar parâmetros
     logger_->debug("Parsing command {}", command_line);
@@ -205,7 +201,7 @@ void Server::parse_command(const std::string &command_line) {
     } else if (command == "list_server") {
         list_server(tokens[1]);
     }
-    // TODO Erro ao receber comando invãlido
+    // TODO Erro ao receber comando inválido
 }
 
 void Server::add_client(const std::string& user_id, const std::string& device_id) {

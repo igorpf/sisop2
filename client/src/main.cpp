@@ -16,11 +16,13 @@ int main(int argc, char* argv[])
         client.start_client(argc, argv);
         client.sync_client();
 
-        SyncThread sync_thread;
+        SyncThread sync_thread(client);
         sync_thread.Start();
 
         Shell shell(client);
         shell.loop();
+
+        sync_thread.Join();
     } catch (std::exception &exception) {
         logger->error(exception.what());
     }
