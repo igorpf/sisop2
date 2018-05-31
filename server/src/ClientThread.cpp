@@ -15,36 +15,21 @@ ClientThread::~ClientThread() {
 }
 
 void ClientThread::Run() {
-    init_client_address();
+    logger_->info("New client thread started, socket {} ip {}, port {}", socket_, ip_, port_);
     char buffer[dropbox_util::BUFFER_SIZE];
-    logger_->info("Starting to listen:");
-    struct sockaddr_in client_addr{0};
-    socklen_t peer_length_;
+
     while (true) {
         try {
             std::fill(buffer, buffer + sizeof(buffer), 0);
             logger_->debug("Waiting message from client {} port {}",
-                           inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
-            recvfrom(socket_, buffer, sizeof(buffer), 0, (struct sockaddr *) &client_addr, &peer_length_);
+                           inet_ntoa(client_addr_.sin_addr), ntohs(client_addr_.sin_port));
+            recvfrom(socket_, buffer, sizeof(buffer), 0, (struct sockaddr *) &client_addr_, &peer_length_);
             logger_->debug("Received from client {} port {} the message: {}",
-                           inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), buffer);
+                           inet_ntoa(client_addr_.sin_addr), ntohs(client_addr_.sin_port), buffer);
 
         } catch (std::exception& e) {
             logger_->error("Error parsing command from client {}", e.what());
             break;
         }
     }
-}
-
-void ClientThread::init_client_address() {
-    logger_->info("New client thread started, ip {}, port {}", ip_, port_);
-
-    client_addr_.sin_family = AF_INET;
-    client_addr_.sin_port = htons(static_cast<uint16_t>(port_));
-    client_addr_.sin_addr.s_addr = inet_addr(ip_.c_str());
-    peer_length_ = sizeof(client_addr_);
-
-    logger_->info("Initialized socket {} from client {} port {}", socket_,
-                  inet_ntoa(client_addr_.sin_addr), ntohs(client_addr_.sin_port));
-
 }

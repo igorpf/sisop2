@@ -109,6 +109,7 @@ private:
 
     bool has_started_;
     int32_t port_;
+    int32_t next_client_port_ = dropbox_util::DEFAULT_SERVER_PORT;
     struct sockaddr_in server_addr_ {0};
     struct sockaddr_in current_client_ {0};
     dropbox_util::SOCKET socket_;

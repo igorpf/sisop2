@@ -25,8 +25,6 @@ private:
     struct sockaddr_in client_addr_{0};
     dropbox_util::SOCKET socket_;
     socklen_t peer_length_;
-
-    void init_client_address();
 };
 
 #endif //DROPBOX_CLIENTTHREAD_HPP
