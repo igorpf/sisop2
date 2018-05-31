@@ -16,6 +16,11 @@ struct client_info {
     std::vector<dropbox_util::file_info> user_files;
 };
 
+struct new_client_connection_info {
+    dropbox_util::SOCKET socket;
+    int32_t port;
+};
+
 class Server {
 public:
     // TODO Implementar função pra logoff do cliente que remove o dispositivo da lista (é isso que deve acontecer?)
@@ -94,6 +99,8 @@ private:
      * Removes the file from the list of files of the client
      */
     void remove_file_from_client(const std::string& user_id, const std::string& filename);
+
+    new_client_connection_info allocate_connection_for_client(const std::string &ip);
 
     static const std::string LOGGER_NAME;
     std::shared_ptr<spdlog::logger> logger_;

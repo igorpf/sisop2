@@ -7,7 +7,7 @@
 
 class ClientThreadPool {
 public:
-    void add_client(const std::string &logger_name, const std::string &ip, int32_t port);
+    void add_client(const std::string &logger_name, const std::string &ip, int32_t port, dropbox_util::SOCKET socket);
 private:
     std::vector<std::shared_ptr<ClientThread>> threads_;
 };

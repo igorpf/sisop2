@@ -9,7 +9,7 @@
  */
 class ClientThread : public PThreadWrapper {
 public:
-    ClientThread(const std::string &logger_name, const std::string &ip, int32_t port);
+    ClientThread(const std::string &logger_name, const std::string &ip, int32_t port, dropbox_util::SOCKET socket);
 
     ~ClientThread() override;
 
@@ -26,7 +26,7 @@ private:
     dropbox_util::SOCKET socket_;
     socklen_t peer_length_;
 
-    void start_socket();
+    void init_client_address();
 };
 
 #endif //DROPBOX_CLIENTTHREAD_HPP

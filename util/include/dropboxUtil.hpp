@@ -21,6 +21,7 @@ namespace dropbox_util {
     const int8_t DEFAULT_ERROR_CODE = 1;
     const int8_t EOF_SYMBOL = -1;
     const int16_t DEFAULT_SERVER_PORT = 9001;
+    const int32_t MAX_VALID_PORT = 60000;
     const std::string LOOPBACK_IP = "127.0.0.1";
     const std::string COMMAND_SEPARATOR_TOKEN = ";";
 

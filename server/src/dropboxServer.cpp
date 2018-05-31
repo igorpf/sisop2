@@ -220,9 +220,11 @@ void Server::add_client(const std::string& user_id, const std::string& device_id
 
         std::string client_path = StringFormatter() << local_directory_ << "/" << user_id;
         fs::create_directory(client_path);
-//        thread_pool_.add_client("ClientThread" + user_id + device_id, inet_ntoa(current_client_.sin_addr), ntohs(current_client_.sin_port));
-        thread_pool_.add_client("ClientThread" + user_id + device_id, inet_ntoa(current_client_.sin_addr), 9002);
-        std::string port = std::to_string(9002);
+
+        std::string client_ip = inet_ntoa(current_client_.sin_addr);
+        auto new_client_connection = allocate_connection_for_client(client_ip);
+        thread_pool_.add_client("ClientThread_" + user_id + "_" + device_id, client_ip, new_client_connection.port, new_client_connection.socket);
+        std::string port = std::to_string(new_client_connection.port);
         sendto(socket_, port.c_str(), port.size(), 0, (struct sockaddr*)&current_client_, peer_length_);
 
         logger_->info("Connected new client, total clients: {}",  clients_.size());
@@ -238,6 +240,30 @@ void Server::add_client(const std::string& user_id, const std::string& device_id
             client_iterator->user_devices.emplace_back(device_id);
         // TODO Adicionar mensagem de erro para demais dispositivos
         // TODO Ignorar/responder com erro requests de demais dispositivos
+}
+
+new_client_connection_info Server::allocate_connection_for_client(const std::string &ip) {
+    dropbox_util::SOCKET new_socket;
+    int32_t port = dropbox_util::DEFAULT_SERVER_PORT + 1;
+
+    if ((new_socket = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
+        throw std::runtime_error(dropbox_util::get_errno_with_message("Error initializing socket"));
+
+    struct sockaddr_in client_addr_{0};
+    client_addr_.sin_family = AF_INET;
+    client_addr_.sin_addr.s_addr = inet_addr(ip.c_str());
+    client_addr_.sin_port = htons(static_cast<uint16_t>(port));
+    while(bind(new_socket, (struct sockaddr *) &client_addr_, peer_length_) == dropbox_util::DEFAULT_ERROR_CODE) {
+        port++;
+        client_addr_.sin_port = htons(static_cast<uint16_t>(port));
+        if (port > dropbox_util::MAX_VALID_PORT) {
+            throw std::runtime_error("Could not find new port for the client");
+        }
+    }
+    logger_->debug("Found new connection for client. Socket {}, port {}", new_socket, port);
+
+    new_client_connection_info new_client{new_socket, port};
+    return new_client;
 }
 
 bool Server::has_client_connected(const std::string &client_id) {
