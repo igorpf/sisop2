@@ -95,11 +95,13 @@ void Client::login_server()
     sendto(socket_, command.c_str(), command.size(), 0, (struct sockaddr*)&server_addr_, peer_length_);
 
     // TODO remove this
-    char buffer[500];
+    char buffer[500]{0};
     recvfrom(socket_, buffer, sizeof(buffer), 0, (struct sockaddr *) &server_addr_, &peer_length_);
     logger_->debug("Received from client {} port {} the message: {}",
-                   inet_ntoa(server_addr_.sin_addr), server_addr_.sin_port, buffer)
-            ;
+                   inet_ntoa(server_addr_.sin_addr), ntohs(server_addr_.sin_port), buffer);
+    server_addr_.sin_port = htons(std::stoi(buffer));
+    sendto(socket_, command.c_str(), command.size(), 0, (struct sockaddr*)&server_addr_, peer_length_);
+
     logged_in_ = true;
 }
 
@@ -328,6 +330,7 @@ std::vector<std::vector<std::string>> Client::list_server()
     request.socket = socket_;
 
     std::string command(StringFormatter() << "list_server" << util::COMMAND_SEPARATOR_TOKEN << user_id_);
+    logger_->debug("sent to server port {}" , ntohs(server_addr_.sin_port));
 
     sendto(socket_, command.c_str(), command.size(), 0, (struct sockaddr *)&server_addr_, peer_length_);
 

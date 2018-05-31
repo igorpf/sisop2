@@ -220,7 +220,10 @@ void Server::add_client(const std::string& user_id, const std::string& device_id
 
         std::string client_path = StringFormatter() << local_directory_ << "/" << user_id;
         fs::create_directory(client_path);
-        thread_pool_.add_client("ClientThread" + user_id + device_id, inet_ntoa(current_client_.sin_addr), ntohs(current_client_.sin_port));
+//        thread_pool_.add_client("ClientThread" + user_id + device_id, inet_ntoa(current_client_.sin_addr), ntohs(current_client_.sin_port));
+        thread_pool_.add_client("ClientThread" + user_id + device_id, inet_ntoa(current_client_.sin_addr), 9002);
+        std::string port = std::to_string(9002);
+        sendto(socket_, port.c_str(), port.size(), 0, (struct sockaddr*)&current_client_, peer_length_);
 
         logger_->info("Connected new client, total clients: {}",  clients_.size());
     }
