@@ -79,16 +79,21 @@ private:
     void parse_command(const std::string &command_line);
 
     /**
-     * Adds a new client and it's respective device to the list of clients
-     * If the client is already on the list a new device is added
-     * TODO Error when client already has max devices
+     * Spawns a new thread to watch for the client's requests
      */
-    void add_client(const std::string& user_id, const std::string& device_id);
+    void login_new_client(const std::string &user_id, const std::string &device_id);
+
+    /**
+     * Adds new client in memory
+     */
+    void add_client(const std::string &user_id);
 
     /**
      * Checks if the client is already on the list of clients
      */
     bool has_client_connected(const std::string &client_id);
+
+    bool has_client_and_device_connected(const std::string &client_id, const std::string &device_id);
 
     /**
      * Returns the client info inside the list of client infos

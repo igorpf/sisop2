@@ -70,7 +70,7 @@ void Server::load_info_from_disk() {
         }
 
         std::string user_id = entry.path().filename().string();
-        add_client(user_id, "");
+        add_client(user_id);
 
         auto client_iterator = get_client_info(user_id);
 
@@ -104,9 +104,11 @@ void Server::listen() {
             logger_->debug("Received from client {} port {} the message: {}",
                            inet_ntoa(current_client_.sin_addr), ntohs(current_client_.sin_port), buffer);
             parse_command(buffer);
-        } catch (std::exception& e) {
-            logger_->error("Error parsing command from client {}", e.what());
+        } catch (std::runtime_error& runtime_error) {
+            logger_->error("Error parsing command from client {}", runtime_error.what());
             break;
+        } catch (std::logic_error& logic_error) {
+            logger_->error("Error parsing command from client {}", logic_error.what());
         }
     }
 }
@@ -197,7 +199,7 @@ void Server::parse_command(const std::string &command_line) {
     auto command = tokens[0];
     if (command == "connect") {
         auto user_id = tokens[1], device_id = tokens[2];
-        add_client(user_id, device_id);
+        login_new_client(user_id, device_id);
     } else if (command == "download") {
         send_file(tokens[1], tokens[2]);
     } else if (command == "upload") {
@@ -206,20 +208,30 @@ void Server::parse_command(const std::string &command_line) {
         delete_file(tokens[1], tokens[2]);
     } else if (command == "list_server") {
         list_server(tokens[1]);
+    } else {
+        throw std::logic_error(StringFormatter() << "Invalid command sent by client " << command_line);
     }
-    // TODO Erro ao receber comando invãlido
 }
 
-void Server::add_client(const std::string& user_id, const std::string& device_id) {
-    if (!has_client_connected(user_id)) {
+
+void Server::add_client(const std::string &user_id) {
+    if(!has_client_connected(user_id)) {
         client_info new_client;
         new_client.user_id = user_id;
-        if (!device_id.empty())
-            new_client.user_devices.emplace_back(device_id);
         clients_.push_back(new_client);
-
         std::string client_path = StringFormatter() << local_directory_ << "/" << user_id;
         fs::create_directory(client_path);
+    }
+}
+
+void Server::login_new_client(const std::string &user_id, const std::string &device_id) {
+    if (!has_client_and_device_connected(user_id, device_id)) {
+        add_client(user_id);
+        auto client_iterator = get_client_info(user_id);
+        if (client_iterator->user_devices.size() < MAX_CLIENT_DEVICES)
+            client_iterator->user_devices.emplace_back(device_id);
+        else
+            throw std::logic_error("User achieved maximum devices connected");
 
         std::string client_ip = inet_ntoa(current_client_.sin_addr);
         auto new_client_connection = allocate_connection_for_client(client_ip);
@@ -227,19 +239,10 @@ void Server::add_client(const std::string& user_id, const std::string& device_id
         std::string port = std::to_string(new_client_connection.port);
         sendto(socket_, port.c_str(), port.size(), 0, (struct sockaddr*)&current_client_, peer_length_);
 
-        logger_->info("Connected new client, total clients: {}",  clients_.size());
+        logger_->info("Connected new device for client, total clients: {}",  clients_.size());
     }
-
-    auto client_iterator = get_client_info(user_id);
-
-    // Verifica se o dispositivo não está na lista
-    if (std::find(client_iterator->user_devices.begin(), client_iterator->user_devices.end(), device_id)
-        == client_iterator->user_devices.end())
-        // Se não estiver, verifica se o cliente ainda pode adicionar dispositivos
-        if (client_iterator->user_devices.size() < MAX_CLIENT_DEVICES)
-            client_iterator->user_devices.emplace_back(device_id);
-        // TODO Adicionar mensagem de erro para demais dispositivos
-        // TODO Ignorar/responder com erro requests de demais dispositivos
+    else
+        throw std::logic_error("User has already connected with this device");
 }
 
 new_client_connection_info Server::allocate_connection_for_client(const std::string &ip) {
@@ -270,6 +273,15 @@ new_client_connection_info Server::allocate_connection_for_client(const std::str
 bool Server::has_client_connected(const std::string &client_id) {
     auto client_iterator = get_client_info(client_id);
     return client_iterator != clients_.end();
+}
+
+bool Server::has_client_and_device_connected(const std::string &client_id, const std::string &device_id) {
+    auto client_iterator = get_client_info(client_id);
+    if (client_iterator == clients_.end())
+        return false;
+    auto device_iterator = std::find_if(client_iterator->user_devices.begin(), client_iterator->user_devices.end(),
+                                        [&device_id] (const std::string& dev) -> bool {return dev == device_id;});
+    return device_iterator != client_iterator->user_devices.end();
 }
 
 std::vector<client_info>::iterator Server::get_client_info(const std::string& user_id) {
