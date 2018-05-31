@@ -468,35 +468,6 @@ TEST(ShellTest, MultipleCommands)
     ASSERT_FALSE(mock_client.active_session_);
 }
 
-/// ClientTest
-
-TEST(ClientTest, SendInexistentFile)
-{
-    std::array<const char*, 4> argv = {"dropboxClient", "id1234", "127.0.0.1", "8080"};
-    int argc = argv.size();
-
-    Client client;
-
-    client.start_client(argc, const_cast<char**>(argv.data()));
-
-    ASSERT_ANY_THROW(client.send_file("INEXISTENT_FILE"));
-}
-
-TEST(ClientTest, ServerOffline)
-{
-    std::string temp_file_name = StringFormatter() << "Testfile_" << util::get_random_number();
-    TemporaryFile temp_file(temp_file_name);
-
-    std::array<const char*, 4> argv = {"dropboxClient", "id1234", "127.0.0.1", "8080"};
-    int argc = argv.size();
-
-    Client client;
-
-    client.start_client(argc, const_cast<char**>(argv.data()));
-
-    ASSERT_ANY_THROW(client.send_file(temp_file_name));
-}
-
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();

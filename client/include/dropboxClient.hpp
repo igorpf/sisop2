@@ -29,10 +29,10 @@ public:
 
     /**
      * Envia um arquivo para o servidor (upload)
-     * @param filename Nome do arquivo a ser enviado
+     * @param complete_file_path Nome do arquivo a ser enviado
      * TODO(jfguimaraes) O nome do arquivo é um caminho absoluto ou relativo?
      */
-    void send_file(const std::string &filename) override;
+    void send_file(const std::string &complete_file_path) override;
 
     /**
      * Obtém um arquivo do servidor (download)
@@ -82,6 +82,12 @@ private:
      * Estabelece uma conexão entre o cliente e o servidor
      */
     void login_server();
+
+    /**
+     * Sends command to server and expects an ACK message.
+     * Throws an exception if no message has been received or if it is not an ACK
+     */
+    void send_command_and_expect_confirmation(const std::string &command);
 };
 
 #endif // SISOP2_CLIENT_INCLUDE_DROPBOXCLIENT_HPP

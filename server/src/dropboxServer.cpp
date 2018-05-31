@@ -1,6 +1,7 @@
 #include "../../util/include/dropboxUtil.hpp"
 #include "../../util/include/File.hpp"
 #include "../include/dropboxServer.hpp"
+#include "../../util/include/string_formatter.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -30,16 +31,19 @@ bool Server::has_client_connected(const std::string &client_id) {
     return client_iterator != clients_.end();
 }
 
-void Server::parse_command(const std::string &command_line) {
+void Server::parse_command(struct sockaddr_in &client, const std::string &command_line) {
     logger_->debug("Parsing command {}", command_line);
     auto tokens = util::split_words_by_token(command_line);
     auto command = tokens[0];
     if (command == "connect") {
         auto user_id = tokens[1], device_id = tokens[2];
         add_client(user_id, device_id);
+        send_command_confirmation(client);
     } else if (command == "download") {
+        send_command_confirmation(client);
         send_file(tokens[1]);
     } else if (command == "upload") {
+        send_command_confirmation(client);
         receive_file(tokens[1]);
     }
 }
@@ -95,11 +99,13 @@ void Server::listen() {
         try {
             std::fill(buffer, buffer + sizeof(buffer), 0);
             recvfrom(socket_, buffer, sizeof(buffer), 0, (struct sockaddr *) &client, &peer_length_);
-            logger_->debug("Received from client {} port {} the message: {}", inet_ntoa(client.sin_addr), client.sin_port, buffer);
-
-            parse_command(buffer);
+            logger_->debug("Received from client {} port {} the message: {}", inet_ntoa(client.sin_addr), ntohs(client.sin_port), buffer);
+            parse_command(client, buffer);
+        } catch (std::string &e) {
+            logger_->error("Error parsing command from client {}", e);
+            send_command_error_message(client, e);
         } catch (std::exception &e) {
-            logger_->error("Error parsing command from client {}", e.what());
+            logger_->error("Fatal error parsing command from client {}. Stopping transmission", e.what());
             break;
         }
     }
@@ -111,5 +117,14 @@ void Server::sync_server() {
 
 void Server::send_file(const std::string& filename) {
     throw std::logic_error("Function not implemented");
+}
+
+void Server::send_command_confirmation(struct sockaddr_in &client) {
+    sendto(socket_, "ACK", 4, 0, (struct sockaddr *)&client, peer_length_);
+}
+
+void Server::send_command_error_message(struct sockaddr_in &client, const std::string &error_message)  {
+    const std::string complete_error_message = StringFormatter() << util::ERROR_MESSAGE_INITIAL_TOKEN << error_message;
+    sendto(socket_, complete_error_message.c_str(), complete_error_message.size(), 0, (struct sockaddr *)&client, peer_length_);
 }
 

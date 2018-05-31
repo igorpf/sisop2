@@ -6,6 +6,8 @@
 
 #include <boost/algorithm/string.hpp>
 
+using namespace DropboxUtil;
+
 std::once_flag rand_init;
 
 std::vector<std::string> DropboxUtil::split_words_by_token(const std::string &phrase, const std::string &token) {
@@ -21,4 +23,12 @@ std::string DropboxUtil::get_errno_with_message(const std::string &base_message)
 int64_t DropboxUtil::get_random_number() {
     std::call_once(rand_init, [](){std::srand(static_cast<unsigned int>(std::time(nullptr)));});
     return std::rand();
+}
+
+std::string DropboxUtil::get_error_from_message(const std::string &error_message) {
+    auto found = error_message.find(ERROR_MESSAGE_INITIAL_TOKEN);
+    if(found != std::string::npos) {
+        return error_message.substr(found + ERROR_MESSAGE_INITIAL_TOKEN.size());
+    }
+    return error_message;
 }
