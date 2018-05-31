@@ -9,7 +9,7 @@
 
 int main(int argc, char* argv[])
 {
-    auto logger = LoggerFactory::getLoggerForName("ClientMain");
+    auto logger = spdlog::stdout_color_mt("ClientMain");
 
     try {
         Client client;
