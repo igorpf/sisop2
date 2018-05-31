@@ -12,6 +12,7 @@ const std::string Shell::LOGGER_NAME = "Shell";
 Shell::Shell(IClient &client) : client_(client)
 {
     logger_ = LoggerFactory::getLoggerForName(LOGGER_NAME);
+    stdout_logger_ = spdlog::stdout_color_mt(LOGGER_NAME + "-stdout");
 }
 
 Shell::~Shell()
@@ -50,7 +51,7 @@ void Shell::loop(std::istream& input_stream)
             execute_operation();
 
         } catch (const std::exception& e) {
-            logger_->error(e.what());
+            stdout_logger_->error(e.what());
         }
     } while (operation_ != "exit");
 
