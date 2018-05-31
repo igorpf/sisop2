@@ -12,7 +12,8 @@ const std::string Shell::LOGGER_NAME = "Shell";
 Shell::Shell(IClient &client) : client_(client)
 {
     logger_ = LoggerFactory::getLoggerForName(LOGGER_NAME);
-    stdout_logger_ = spdlog::stdout_color_mt(LOGGER_NAME + "-stdout");
+    std::string stdout_logger = LOGGER_NAME + "-stdout";
+    stdout_logger_ = spdlog::get(stdout_logger)? spdlog::get(stdout_logger): spdlog::stdout_color_mt(stdout_logger);
 }
 
 Shell::~Shell()
