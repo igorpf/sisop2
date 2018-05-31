@@ -43,6 +43,7 @@ void Server::start() {
 
     local_directory_ = StringFormatter() << home_folder << "/dropbox_server";
     fs::create_directory(local_directory_);
+    thread_pool_.set_local_directory(local_directory_);
 
     load_info_from_disk();
 
@@ -200,15 +201,17 @@ void Server::parse_command(const std::string &command_line) {
     if (command == "connect") {
         auto user_id = tokens[1], device_id = tokens[2];
         login_new_client(user_id, device_id);
-    } else if (command == "download") {
-        send_file(tokens[1], tokens[2]);
-    } else if (command == "upload") {
-        receive_file(tokens[1], tokens[2]);
-    } else if (command == "remove") {
-        delete_file(tokens[1], tokens[2]);
-    } else if (command == "list_server") {
-        list_server(tokens[1]);
-    } else {
+    }
+//    else if (command == "download") {
+//        send_file(tokens[1], tokens[2]);
+//    } else if (command == "upload") {
+//        receive_file(tokens[1], tokens[2]);
+//    } else if (command == "remove") {
+//        delete_file(tokens[1], tokens[2]);
+//    } else if (command == "list_server") {
+//        list_server(tokens[1]);
+//    }
+    else {
         throw std::logic_error(StringFormatter() << "Invalid command sent by client " << command_line);
     }
 }

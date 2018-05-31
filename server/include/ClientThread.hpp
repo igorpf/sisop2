@@ -13,6 +13,15 @@ public:
 
     ~ClientThread() override;
 
+    /**
+     * Envia um arquivo para o cliente (download)
+     */
+    void send_file(const std::string& filename, const std::string &user_id);
+
+    void parse_command(const std::string &command_line);
+
+    void set_local_directory(const std::string &local_directory);
+
 protected:
     void Run() override;
 private:
@@ -25,6 +34,9 @@ private:
     struct sockaddr_in client_addr_{0};
     dropbox_util::SOCKET socket_;
     socklen_t peer_length_;
+
+    std::string local_directory_;
+
 };
 
 #endif //DROPBOX_CLIENTTHREAD_HPP
