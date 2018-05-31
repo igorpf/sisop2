@@ -89,6 +89,37 @@ TEST(UtilityFunctions, RandomNumber)
     ASSERT_NE(random_1, random_3);
 }
 
+TEST(UtilityFunctions, StartsWith)
+{
+    std::string original_string = "Hello, world!";
+    std::string valid_prefix = "Hello";
+    std::string invalid_prefix = "helo";
+
+    ASSERT_TRUE(dropbox_util::starts_with(original_string, valid_prefix));
+    ASSERT_FALSE(dropbox_util::starts_with(original_string, invalid_prefix));
+}
+
+TEST(UtilityFunctions, EndsWith)
+{
+    std::string original_string = "Hello, world!";
+    std::string valid_suffix = "world!";
+    std::string invalid_suffix = "word!";
+
+    ASSERT_TRUE(dropbox_util::ends_with(original_string, valid_suffix));
+    ASSERT_FALSE(dropbox_util::ends_with(original_string, invalid_suffix));
+}
+
+TEST(UtilityFunctions, ShouldIgnoreFile)
+{
+    std::string normal_file = "filename.txt";
+    std::string hidden_file = ".filename.txt";
+    std::string backup_file = "filename.txt~";
+
+    EXPECT_FALSE(dropbox_util::should_ignore_file(normal_file));
+    EXPECT_TRUE(dropbox_util::should_ignore_file(hidden_file));
+    EXPECT_TRUE(dropbox_util::should_ignore_file(backup_file));
+}
+
 /// File list parsing
 
 TEST(FileListParsing, FileListParsing)

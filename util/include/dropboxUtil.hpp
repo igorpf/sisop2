@@ -51,9 +51,19 @@ namespace dropbox_util {
                                                   const std::string &token = COMMAND_SEPARATOR_TOKEN);
     std::string get_errno_with_message(const std::string &base_message = "");
     int64_t get_random_number();
+    bool starts_with(const std::string& str, const std::string& prefix);
+    bool ends_with(const std::string& str, const std::string& suffix);
 
     /// Parse de string de lista de arquivos
     std::vector<std::vector<std::string>> parse_file_list_string(const std::string& received_data);
+
+    /**
+     * Função que determina se o arquivo deve ser ignorado quando ocorrem modificações
+     * Arquivos ignorados são:
+     *  - Arquivos temporários: começam com "."
+     *  - Arquivos de backup: terminam com "~"
+     */
+    bool should_ignore_file(const std::string& filename);
 }
 
 #endif // SISOP2_UTIL_INCLUDE_DROPBOXUTIL_HPP

@@ -24,6 +24,14 @@ int64_t dropbox_util::get_random_number() {
     return std::rand();
 }
 
+bool dropbox_util::starts_with(const std::string& str, const std::string& prefix) {
+    return str.size() >= prefix.size() && 0 == str.compare(0, prefix.size(), prefix);
+}
+
+bool dropbox_util::ends_with(const std::string& str, const std::string& suffix) {
+    return str.size() >= suffix.size() && 0 == str.compare(str.size()-suffix.size(), suffix.size(), suffix);
+}
+
 std::vector<std::vector<std::string>> dropbox_util::parse_file_list_string(const std::string &received_data) {
     std::vector<std::vector<std::string>> server_entries;
     unsigned long last_position = 0;
@@ -77,4 +85,8 @@ std::vector<std::vector<std::string>> dropbox_util::parse_file_list_string(const
     }
 
     return server_entries;
+}
+
+bool dropbox_util::should_ignore_file(const std::string &filename) {
+    return starts_with(filename, ".") || ends_with(filename, "~");
 }

@@ -1,5 +1,8 @@
 #include "../include/file_watcher.hpp"
 
+#include "../../util/include/dropboxUtil.hpp"
+#include "../../util/include/string_formatter.hpp"
+
 #include <iostream>
 
 const std::string FileWatcher::LOGGER_NAME = "FileWatcher";
@@ -32,14 +35,10 @@ void FileWatcher::Run()
     inotify_watcher = inotify_add_watch(inotify_descriptor, client_.local_directory_.c_str(),
             IN_CREATE | IN_CLOSE_WRITE | IN_DELETE | IN_MOVED_FROM | IN_MOVED_TO);
 
-    std::cout << "Watching directory: " << client_.local_directory_ << std::endl;
+    logger_->debug(static_cast<std::string>(StringFormatter() << "Watching directory: " << client_.local_directory_));
 
     while (client_.logged_in_) {
-        std::cout << "Waiting for event... " << std::endl;
-
         modification_length = read(inotify_descriptor, buffer, EVENT_BUF_LEN);
-
-        std::cout << "Processing new event of size: " << modification_length << std::endl;
 
         if (modification_length < 0)
             throw std::runtime_error("Error processing change on sync_dir folder");
@@ -47,24 +46,21 @@ void FileWatcher::Run()
         for (int64_t i = 0; i < modification_length; i += EVENT_SIZE + event->len) {
             event = reinterpret_cast<struct inotify_event*>(&buffer[i]);
 
-            if (event->len) {
+            if (event->len && !(event->mask & IN_ISDIR) && !dropbox_util::should_ignore_file(event->name)) {
                 if (event->mask & IN_CREATE) {
-                    if (event->mask & IN_ISDIR) {
-                        std::cout << "New directory " << event->name << " was created" << std::endl;
-                    } else {
-                        std::cout << "New file " << event->name << " was created" << std::endl;
-                    }
+                    logger_->debug(static_cast<std::string>(StringFormatter() << "File " << event->name << " created"));
+                    std::cout << "New file " << event->name << " was created" << std::endl;
                 } else if (event->mask & IN_CLOSE_WRITE) {
+                    logger_->debug(static_cast<std::string>(StringFormatter() << "File " << event->name << " written"));
                     std::cout << "File " << event->name << " opened for writing was closed" << std::endl;
                 } else if (event->mask & IN_DELETE) {
-                    if (event->mask & IN_ISDIR) {
-                        std::cout << "Directory " << event->name << " was deleted" << std::endl;
-                    } else {
-                        std::cout << "File " << event->name << " was deleted" << std::endl;
-                    }
+                    logger_->debug(static_cast<std::string>(StringFormatter() << "File " << event->name << " deleted"));
+                    std::cout << "File " << event->name << " was deleted" << std::endl;
                 } else if (event->mask & IN_MOVED_FROM) {
+                    logger_->debug(static_cast<std::string>(StringFormatter() << "File " << event->name << " moved out"));
                     std::cout << "File " << event->name << " moved out of sync_dir" << std::endl;
                 } else if (event->mask & IN_MOVED_TO) {
+                    logger_->debug(static_cast<std::string>(StringFormatter() << "File " << event->name << " moved in"));
                     std::cout << "File " << event->name << " moved to sync_dir" << std::endl;
                 }
             }
