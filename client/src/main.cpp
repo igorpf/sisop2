@@ -4,6 +4,7 @@
 #include <spdlog/spdlog.h>
 
 #include "../include/dropboxClient.hpp"
+#include "../include/file_watcher.hpp"
 #include "../include/sync_thread.hpp"
 #include "../include/shell.hpp"
 
@@ -15,6 +16,11 @@ int main(int argc, char* argv[])
         Client client;
         client.start_client(argc, argv);
         client.sync_client();
+
+        FileWatcher file_watcher(client);
+        file_watcher.Start();
+
+        file_watcher.Join();
 
         SyncThread sync_thread(client);
         sync_thread.Start();

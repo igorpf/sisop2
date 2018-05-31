@@ -24,6 +24,7 @@ public:
     virtual void close_session() = 0;
 
     bool logged_in_ = false;
+    std::string local_directory_;
 };
 
 #endif // SISOP2_CLIENT_INCLUDE_ICLIENT_HPP

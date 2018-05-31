@@ -27,11 +27,13 @@ add_executable(dropboxClient
         include/dropboxClient.hpp
         include/shell.hpp
         include/sync_thread.hpp
+        include/file_watcher.hpp
         src/login_command_parser.cpp
         src/shell_command_parser.cpp
         src/dropboxClient.cpp
         src/shell.cpp
         src/sync_thread.cpp
+        src/file_watcher.cpp
         src/main.cpp)
 
 # Target libraries

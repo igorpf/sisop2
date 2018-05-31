@@ -2,7 +2,6 @@
 
 #include <chrono>
 #include <thread>
-#include <iostream>
 
 const std::string SyncThread::LOGGER_NAME = "SyncThread";
 

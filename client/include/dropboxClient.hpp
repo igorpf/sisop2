@@ -73,7 +73,6 @@ private:
 
     std::string device_id_;
     std::string user_id_;
-    std::string local_directory_;
     std::vector<dropbox_util::file_info> user_files_;
     std::vector<dropbox_util::file_info> modified_files_;
 
