@@ -24,6 +24,7 @@ namespace dropbox_util {
     const int32_t MAX_VALID_PORT = 60000;
     const std::string LOOPBACK_IP = "127.0.0.1";
     const std::string COMMAND_SEPARATOR_TOKEN = ";";
+    const std::string ERROR_MESSAGE_INITIAL_TOKEN = "!ERROR: ";
 
     template <typename Collection, typename UnaryOperator>
     Collection map(Collection col, UnaryOperator op) {
@@ -31,7 +32,7 @@ namespace dropbox_util {
         return col;
     }
 
-    /// Definições de estruturas de dados
+    /// Structs definition
     typedef int SOCKET;
 
     struct file_info {
@@ -69,6 +70,7 @@ namespace dropbox_util {
 
     /// Parse de string de lista de arquivos
     std::vector<std::vector<std::string>> parse_file_list_string(const std::string& received_data);
+    std::string get_error_from_message(const std::string &error_message);
 }
 
 #endif // SISOP2_UTIL_INCLUDE_DROPBOXUTIL_HPP

@@ -30,7 +30,7 @@ public:
      * Envia um arquivo para o servidor (upload)
      * @param filename Nome do arquivo a ser enviado
      */
-    void send_file(const std::string &filename) override;
+    void send_file(const std::string &complete_file_path) override;
 
     /**
      * Obtém um arquivo do servidor (download)
@@ -90,6 +90,16 @@ private:
     pthread_mutex_t socket_mutex_ = PTHREAD_MUTEX_INITIALIZER;
     pthread_mutex_t user_files_mutex_ = PTHREAD_MUTEX_INITIALIZER;
     pthread_mutex_t modification_buffer_mutex_ = PTHREAD_MUTEX_INITIALIZER;
+    /**
+     * Estabelece uma conexão entre o cliente e o servidor
+     */
+    void login_server();
+
+    /**
+     * Sends command to server and expects an ACK message.
+     * Throws an exception if no message has been received or if it is not an ACK
+     */
+    void send_command_and_expect_confirmation(const std::string &command);
 };
 
 #endif // SISOP2_CLIENT_INCLUDE_DROPBOXCLIENT_HPP

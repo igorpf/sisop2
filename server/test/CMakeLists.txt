@@ -18,6 +18,9 @@ add_executable(server_test
         ../../util/src/File.cpp
         ../include/dropboxServer.hpp
         ../src/dropboxServer.cpp
+        server_test.cpp
+        ../../util/src/LoggerFactory.cpp
+        ../../util/include/LoggerFactory.hpp
         ../src/ClientThread.cpp
         ../include/ClientThread.hpp
         server_test.cpp

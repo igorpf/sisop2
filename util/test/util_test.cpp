@@ -2,6 +2,7 @@
 #include "../include/string_formatter.hpp"
 #include "../include/File.hpp"
 #include "../include/table_printer.hpp"
+#include "../include/LoggerFactory.hpp"
 
 #include <gtest/gtest.h>
 
@@ -121,6 +122,40 @@ TEST(TablePrinter, RegularTable)
 
     ASSERT_EQ("test1       test2  test3  ", line1);
     ASSERT_EQ("hello_world s      string ", line2);
+}
+
+TEST(LoggerFactory, GivenLoggersWithSameNameShouldNotCrash)
+{
+    auto loggerName = "someLogger";
+    std::shared_ptr<spdlog::logger> firstLogger, sameNameLogger;
+    
+    ASSERT_NO_THROW(firstLogger = LoggerFactory::getLoggerForName(loggerName));
+    ASSERT_NO_THROW(sameNameLogger = LoggerFactory::getLoggerForName(loggerName));
+}
+
+// File
+TEST(File, SendInexistentFile)
+{
+    DropboxUtil::file_transfer_request request;
+    request.in_file_path = "InexistentFile";
+
+    DropboxUtil::File file_util;
+    ASSERT_ANY_THROW(file_util.send_file(request));
+}
+
+// Error messages
+TEST(ErrorMessage, GetErrorFromErrorMessage)
+{
+    std::string error = " some error that occured",
+            complete_error_message = DropboxUtil::ERROR_MESSAGE_INITIAL_TOKEN + error;
+    ASSERT_EQ(DropboxUtil::get_error_from_message(complete_error_message), error);
+}
+
+// File
+TEST(ErrorMessage, GetErrorFromNonErrorMessage)
+{
+    std::string error = "Some random error that occured";
+    ASSERT_EQ(DropboxUtil::get_error_from_message(error), error);
 }
 
 int main(int argc, char **argv) {

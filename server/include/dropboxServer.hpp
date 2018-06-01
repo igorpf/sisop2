@@ -3,6 +3,7 @@
 
 #include "../../util/include/dropboxUtil.hpp"
 #include "ClientThreadPool.hpp"
+#include "../../util/include/LoggerFactory.hpp"
 
 #include <string>
 #include <vector>
@@ -67,7 +68,8 @@ private:
      */
     std::vector<dropbox_util::client_info>::iterator get_client_info(const std::string& user_id);
 
-
+    void send_command_confirmation(struct sockaddr_in &client);
+    void send_command_error_message(struct sockaddr_in &client, const std::string &error_message);
 
     new_client_connection_info allocate_connection_for_client(const std::string &ip);
 

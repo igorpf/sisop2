@@ -7,6 +7,8 @@
 
 #include <boost/algorithm/string.hpp>
 
+using namespace dropbox_util;
+
 std::once_flag rand_init;
 
 std::vector<std::string> dropbox_util::split_words_by_token(const std::string &phrase, const std::string &token) {
@@ -77,4 +79,12 @@ std::vector<std::vector<std::string>> dropbox_util::parse_file_list_string(const
     }
 
     return server_entries;
+}
+
+std::string dropbox_util::get_error_from_message(const std::string &error_message) {
+    auto found = error_message.find(ERROR_MESSAGE_INITIAL_TOKEN);
+    if(found != std::string::npos) {
+        return error_message.substr(found + ERROR_MESSAGE_INITIAL_TOKEN.size());
+    }
+    return error_message;
 }

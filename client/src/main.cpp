@@ -6,6 +6,7 @@
 #include "../include/dropboxClient.hpp"
 #include "../include/sync_thread.hpp"
 #include "../include/shell.hpp"
+#include "../../util/include/LoggerFactory.hpp"
 
 int main(int argc, char* argv[])
 {

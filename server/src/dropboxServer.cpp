@@ -25,8 +25,7 @@ namespace fs = boost::filesystem;
 const std::string Server::LOGGER_NAME = "Server";
 
 Server::Server() {
-    logger_ = spdlog::stdout_color_mt(LOGGER_NAME);
-    logger_->set_level(spdlog::level::debug);
+    logger_ = LoggerFactory::getLoggerForName(LOGGER_NAME);
 }
 
 Server::~Server() {
@@ -110,6 +109,7 @@ void Server::listen() {
             break;
         } catch (std::logic_error& logic_error) {
             logger_->error("Error parsing command from client {}", logic_error.what());
+            send_command_error_message(client, logic_error.what());
         }
     }
 }
@@ -137,6 +137,15 @@ void Server::add_client(const std::string &user_id) {
         std::string client_path = StringFormatter() << local_directory_ << "/" << user_id;
         fs::create_directory(client_path);
     }
+}
+
+void Server::send_command_confirmation(struct sockaddr_in &client) {
+    sendto(socket_, "ACK", 4, 0, (struct sockaddr *)&client, peer_length_);
+}
+
+void Server::send_command_error_message(struct sockaddr_in &client, const std::string &error_message)  {
+    const std::string complete_error_message = StringFormatter() << util::ERROR_MESSAGE_INITIAL_TOKEN << error_message;
+    sendto(socket_, complete_error_message.c_str(), complete_error_message.size(), 0, (struct sockaddr *)&client, peer_length_);
 }
 
 void Server::login_new_client(const std::string &user_id, const std::string &device_id) {
