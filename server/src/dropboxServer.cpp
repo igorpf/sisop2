@@ -109,7 +109,7 @@ void Server::listen() {
             break;
         } catch (std::logic_error& logic_error) {
             logger_->error("Error parsing command from client {}", logic_error.what());
-            send_command_error_message(client, logic_error.what());
+            send_command_error_message(current_client_, logic_error.what());
         }
     }
 }

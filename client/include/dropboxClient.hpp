@@ -60,16 +60,6 @@ public:
     void close_session() override;
 
 private:
-    /**
-     * Estabelece uma conexão entre o cliente e o servidor
-     */
-    void login_server();
-
-    /**
-     * Carrega informações de arquivos já disponíveis no disco
-     * Útil para quando o cliente é reiniciado
-     */
-    void load_info_from_disk();
 
     bool logged_in_ = false;
     std::string device_id_;
@@ -90,10 +80,17 @@ private:
     pthread_mutex_t socket_mutex_ = PTHREAD_MUTEX_INITIALIZER;
     pthread_mutex_t user_files_mutex_ = PTHREAD_MUTEX_INITIALIZER;
     pthread_mutex_t modification_buffer_mutex_ = PTHREAD_MUTEX_INITIALIZER;
+
     /**
      * Estabelece uma conexão entre o cliente e o servidor
      */
     void login_server();
+
+    /**
+     * Carrega informações de arquivos já disponíveis no disco
+     * Útil para quando o cliente é reiniciado
+     */
+    void load_info_from_disk();
 
     /**
      * Sends command to server and expects an ACK message.

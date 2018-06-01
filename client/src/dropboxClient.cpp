@@ -256,13 +256,9 @@ void Client::send_file(const std::string& complete_file_path)
     auto tokens = util::split_words_by_token(complete_file_path, "/");
     std::string filename_only = tokens[tokens.size() - 1];
 
-    fs::path filepath(filename);
+    fs::path filepath(complete_file_path);
     std::string filename_without_path = filepath.filename().string();
     std::string local_file_path = StringFormatter() << local_directory_ << "/" << filename_without_path;
-
-    std::string command(StringFormatter() << "upload" << util::COMMAND_SEPARATOR_TOKEN
-                                          << filename_without_path << util::COMMAND_SEPARATOR_TOKEN << user_id_);
-
 
     std::string command(StringFormatter() << "upload" << util::COMMAND_SEPARATOR_TOKEN << filename_only);
     send_command_and_expect_confirmation(command);

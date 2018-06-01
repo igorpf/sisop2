@@ -136,10 +136,10 @@ TEST(LoggerFactory, GivenLoggersWithSameNameShouldNotCrash)
 // File
 TEST(File, SendInexistentFile)
 {
-    DropboxUtil::file_transfer_request request;
+    dropbox_util::file_transfer_request request;
     request.in_file_path = "InexistentFile";
 
-    DropboxUtil::File file_util;
+    dropbox_util::File file_util;
     ASSERT_ANY_THROW(file_util.send_file(request));
 }
 
@@ -147,15 +147,15 @@ TEST(File, SendInexistentFile)
 TEST(ErrorMessage, GetErrorFromErrorMessage)
 {
     std::string error = " some error that occured",
-            complete_error_message = DropboxUtil::ERROR_MESSAGE_INITIAL_TOKEN + error;
-    ASSERT_EQ(DropboxUtil::get_error_from_message(complete_error_message), error);
+            complete_error_message = dropbox_util::ERROR_MESSAGE_INITIAL_TOKEN + error;
+    ASSERT_EQ(dropbox_util::get_error_from_message(complete_error_message), error);
 }
 
 // File
 TEST(ErrorMessage, GetErrorFromNonErrorMessage)
 {
     std::string error = "Some random error that occured";
-    ASSERT_EQ(DropboxUtil::get_error_from_message(error), error);
+    ASSERT_EQ(dropbox_util::get_error_from_message(error), error);
 }
 
 int main(int argc, char **argv) {
