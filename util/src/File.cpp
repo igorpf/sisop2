@@ -374,3 +374,7 @@ filesystem::perms File::parse_file_permissions_from_string(const std::string &pe
     }
     return p;
 }
+
+bool File::file_exists(const std::string &file_path) {
+    return filesystem::exists(filesystem::path(file_path));
+}

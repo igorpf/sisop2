@@ -52,6 +52,7 @@ public:
 
     void parse_command(const std::string &command_line);
     void send_command_confirmation();
+    void send_command_error_message(const std::string &error_message);
 
 protected:
     void Run() override;

@@ -22,6 +22,8 @@ namespace dropbox_util {
         std::vector<std::vector<std::string>> receive_list_files(file_transfer_request request);
         filesystem::perms parse_file_permissions_from_string(const std::string &perms);
 
+        static bool file_exists(const std::string &file_path);
+
     private:
         /**
          * Establishes an started handshake. Must be called by the part that is receiving the file

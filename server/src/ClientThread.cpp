@@ -25,7 +25,6 @@ void ClientThread::parse_command(const std::string &command_line) {
     auto tokens = dropbox_util::split_words_by_token(command_line);
     auto command = tokens[0];
     if (command == "download") {
-        send_command_confirmation();
         send_file(tokens[1], tokens[2]);
     } else if (command == "upload") {
         send_command_confirmation();
@@ -59,11 +58,19 @@ void ClientThread::Run() {
             logger_->debug("Received from client {} port {} the message: {}",
                            inet_ntoa(client_addr_.sin_addr), ntohs(client_addr_.sin_port), buffer);
             parse_command(buffer);
-        } catch (std::exception& e) {
-            logger_->error("Error parsing command from client {}", e.what());
+        } catch (std::runtime_error& runtime_error) {
+            logger_->error("Error parsing command from client {}", runtime_error.what());
             break;
+        } catch (std::logic_error& logic_error) {
+            logger_->error("Error parsing command from client {}", logic_error.what());
+            send_command_error_message(logic_error.what());
         }
     }
+}
+
+void ClientThread::send_command_error_message(const std::string &error_message)  {
+    const std::string complete_error_message = StringFormatter() << dropbox_util::ERROR_MESSAGE_INITIAL_TOKEN << error_message;
+    sendto(socket_, complete_error_message.c_str(), complete_error_message.size(), 0, (struct sockaddr *)&client_addr_, peer_length_);
 }
 
 void ClientThread::init_client_address() {
@@ -84,6 +91,10 @@ void ClientThread::send_file(const std::string& filename, const std::string &use
 
     request.in_file_path = StringFormatter() << local_directory_ << "/" << user_id << "/" << filename_without_path;
 
+    if(!dropbox_util::File::file_exists(request.in_file_path))
+        throw std::logic_error("The requested file does not exist!");
+
+    send_command_confirmation();
     dropbox_util::File file_util;
     file_util.send_file(request);
 }
