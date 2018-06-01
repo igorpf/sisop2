@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <memory>
+#include "../../util/include/dropboxUtil.hpp"
 #include "ClientThread.hpp"
 
 class ClientThreadPool {

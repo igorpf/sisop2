@@ -33,34 +33,6 @@ public:
      */
     void listen();
 
-    /**
-     * Sincroniza o servidor com o diretório "sync_dir_<user_id>"
-     */
-    void sync_server();
-
-    // TODO O servidor recebe instruções de manipulação de arquivos sem timestamp, executando sempre
-    // Isso pode ser um problema se dois clientes modificam um arquivo mas enviam as modificações na ordem errada
-    /**
-     * Recebe um arquivo do cliente (upload)
-     */
-    void receive_file(const std::string& filename, const std::string &user_id);
-
-    /**
-     * Envia um arquivo para o cliente (download)
-     */
-    void send_file(const std::string& filename, const std::string &user_id);
-
-    /**
-     * Remove um arquivo do cliente (remove)
-     */
-    void delete_file(const std::string& filename, const std::string &user_id);
-
-    /**
-     * Envia a lista de arquivos do usuário no servidor no formato
-     * nome_arquivo_1;tamanho_arquivo_1;timestamp_arquivo_1&nome_arquivo_2;tamanho_arquivo_2;timestamp_arquivo_2&...
-     */
-     void list_server(const std::string& user_id);
-
 private:
     /**
      * Inicializa as estruturas internas do servidor
