@@ -24,8 +24,7 @@ namespace fs = boost::filesystem;
 const std::string Server::LOGGER_NAME = "Server";
 
 Server::Server() {
-    logger_ = spdlog::stdout_color_mt(LOGGER_NAME);
-    logger_->set_level(spdlog::level::debug);
+    logger_ = LoggerFactory::getLoggerForName(LOGGER_NAME);
 }
 
 Server::~Server() {
@@ -99,12 +98,15 @@ void Server::listen() {
     while (true) {
         try {
             std::fill(buffer, buffer + sizeof(buffer), 0);
-            recvfrom(socket_, buffer, sizeof(buffer), 0, (struct sockaddr *) &current_client_, &peer_length_);
-            logger_->debug("Received from client {} port {} the message: {}",
-                           inet_ntoa(current_client_.sin_addr), current_client_.sin_port, buffer);
-            parse_command(buffer);
-        } catch (std::exception& e) {
-            logger_->error("Error parsing command from client {}", e.what());
+            recvfrom(socket_, buffer, sizeof(buffer), 0, (struct sockaddr *) &client, &peer_length_);
+            logger_->debug("Received from client {} port {} the message: {}", inet_ntoa(client.sin_addr), ntohs(client.sin_port), buffer);
+            parse_command(client, buffer);
+        } catch (std::string &e) {
+            logger_->error("Error parsing command from client {}", e);
+            send_command_error_message(client, e);
+        } catch (std::exception &e) {
+            logger_->error("Fatal error parsing command from client {}. Stopping transmission", e.what());
+            break;
         }
     }
 }
@@ -192,14 +194,19 @@ void Server::parse_command(const std::string &command_line) {
     if (command == "connect") {
         auto user_id = tokens[1], device_id = tokens[2];
         add_client(user_id, device_id);
+        send_command_confirmation(client);
     } else if (command == "download") {
         send_file(tokens[1], tokens[2]);
+        send_command_confirmation(client);
     } else if (command == "upload") {
         receive_file(tokens[1], tokens[2]);
+        send_command_confirmation(client);
     } else if (command == "remove") {
         delete_file(tokens[1], tokens[2]);
+        send_command_confirmation(client);
     } else if (command == "list_server") {
         list_server(tokens[1]);
+        send_command_confirmation(client);
     }
     // TODO Erro ao receber comando inválido
 }
@@ -248,4 +255,13 @@ void Server::remove_file_from_client(const std::string &user_id, const std::stri
                                                          [&filename] (const dropbox_util::file_info& info) ->
                                                                  bool {return filename == info.name;}),
                                           client_iterator->user_files.end());
+}
+
+void Server::send_command_confirmation(struct sockaddr_in &client) {
+    sendto(socket_, "ACK", 4, 0, (struct sockaddr *)&client, peer_length_);
+}
+
+void Server::send_command_error_message(struct sockaddr_in &client, const std::string &error_message)  {
+    const std::string complete_error_message = StringFormatter() << util::ERROR_MESSAGE_INITIAL_TOKEN << error_message;
+    sendto(socket_, complete_error_message.c_str(), complete_error_message.size(), 0, (struct sockaddr *)&client, peer_length_);
 }

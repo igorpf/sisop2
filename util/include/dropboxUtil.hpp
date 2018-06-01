@@ -23,6 +23,7 @@ namespace dropbox_util {
     const int16_t DEFAULT_SERVER_PORT = 9001;
     const std::string LOOPBACK_IP = "127.0.0.1";
     const std::string COMMAND_SEPARATOR_TOKEN = ";";
+    const std::string ERROR_MESSAGE_INITIAL_TOKEN = "!ERROR: ";
 
     template <typename Collection, typename UnaryOperator>
     Collection map(Collection col, UnaryOperator op) {
@@ -64,6 +65,7 @@ namespace dropbox_util {
      *  - Arquivos de backup: terminam com "~"
      */
     bool should_ignore_file(const std::string& filename);
+    std::string get_error_from_message(const std::string &error_message);
 }
 
 #endif // SISOP2_UTIL_INCLUDE_DROPBOXUTIL_HPP

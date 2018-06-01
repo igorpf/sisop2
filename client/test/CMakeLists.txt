@@ -27,7 +27,9 @@ add_executable(client_test
         ../src/shell_command_parser.cpp
         ../src/dropboxClient.cpp
         ../src/shell.cpp
-        client_test.cpp)
+        client_test.cpp
+        ../../util/src/LoggerFactory.cpp
+        ../../util/include/LoggerFactory.hpp)
 
 # Target libraries
 target_link_libraries(client_test PUBLIC GTest::main Boost::program_options Boost::boost Boost::system Boost::filesystem -static-libstdc++)

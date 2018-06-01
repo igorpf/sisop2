@@ -2,6 +2,7 @@
 #define SISOP2_SERVER_INCLUDE_DROPBOXSERVER_HPP
 
 #include "../../util/include/dropboxUtil.hpp"
+#include "../../util/include/LoggerFactory.hpp"
 
 #include <string>
 #include <vector>
@@ -65,7 +66,9 @@ private:
     /**
      * Parses the command received by the client
      */
-    void parse_command(const std::string &command_line);
+    void parse_command(struct sockaddr_in &client, const std::string &command_line);
+    void send_command_confirmation(struct sockaddr_in &client);
+    void send_command_error_message(struct sockaddr_in &client, const std::string &error_message);
 
     /**
      * Adds a new client and it's respective device to the list of clients

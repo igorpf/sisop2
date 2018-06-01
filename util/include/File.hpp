@@ -48,8 +48,17 @@ namespace dropbox_util {
          */
         void confirm_finish_handshake(file_transfer_request request, struct sockaddr_in &client_addr);
 
+        void send_packet_with_retransmission(file_transfer_request request, struct sockaddr_in from, char* packet, size_t packet_size);
+
+        void enable_socket_timeout(const file_transfer_request &request);
+
+        void disable_socket_timeout(const file_transfer_request &request);
+
+        // Attributes
         static const std::string LOGGER_NAME;
         std::shared_ptr<spdlog::logger> logger_;
+
+
     };
 }
 

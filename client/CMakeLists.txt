@@ -18,9 +18,11 @@ add_executable(dropboxClient
         ../util/include/table_printer.hpp
         ../util/include/lock_guard.hpp
         ../util/include/pthread_wrapper.hpp
+        ../util/include/LoggerFactory.hpp
         ../util/src/dropboxUtil.cpp
         ../util/src/File.cpp
         ../util/src/table_printer.cpp
+        ../util/src/LoggerFactory.cpp
         include/iclient.hpp
         include/login_command_parser.hpp
         include/shell_command_parser.hpp

@@ -35,6 +35,7 @@ private:
 
     static const std::string LOGGER_NAME;
     std::shared_ptr<spdlog::logger> logger_;
+    std::shared_ptr<spdlog::logger> stdout_logger_;
 
     /**
      * Executa a operação indicada pelo usuário
