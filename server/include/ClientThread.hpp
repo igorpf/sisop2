@@ -51,6 +51,7 @@ public:
 
 
     void parse_command(const std::string &command_line);
+    void send_command_confirmation();
 
 protected:
     void Run() override;
@@ -67,6 +68,8 @@ private:
 
     std::string local_directory_;
     dropbox_util::client_info &info_;
+
+    void init_client_address();
 };
 
 #endif //DROPBOX_CLIENTTHREAD_HPP

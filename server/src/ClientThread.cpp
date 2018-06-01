@@ -5,14 +5,14 @@
 #include "../../util/include/dropboxUtil.hpp"
 #include "../../util/include/string_formatter.hpp"
 #include "../../util/include/File.hpp"
+#include "../../util/include/LoggerFactory.hpp"
 
 namespace fs = boost::filesystem;
 
 ClientThread::ClientThread(const std::string &local_directory, const std::string &logger_name,
                            const std::string &ip, int32_t port, dropbox_util::SOCKET socket, dropbox_util::client_info &info) :
         local_directory_(local_directory), logger_name_(logger_name), ip_(ip), port_(port), socket_(socket), info_(info) {
-    logger_ = spdlog::stdout_color_mt(logger_name);
-    logger_->set_level(spdlog::level::debug);
+    logger_ = LoggerFactory::getLoggerForName(logger_name);
 }
 
 ClientThread::~ClientThread() {
@@ -25,12 +25,16 @@ void ClientThread::parse_command(const std::string &command_line) {
     auto tokens = dropbox_util::split_words_by_token(command_line);
     auto command = tokens[0];
     if (command == "download") {
+        send_command_confirmation();
         send_file(tokens[1], tokens[2]);
     } else if (command == "upload") {
+        send_command_confirmation();
         receive_file(tokens[1], tokens[2]);
     } else if (command == "remove") {
         delete_file(tokens[1], tokens[2]);
+        send_command_confirmation();
     } else if (command == "list_server") {
+        send_command_confirmation();
         list_server(tokens[1]);
     }
     else {
@@ -38,10 +42,14 @@ void ClientThread::parse_command(const std::string &command_line) {
     }
 }
 
+void ClientThread::send_command_confirmation() {
+    sendto(socket_, "ACK", 4, 0, (struct sockaddr *)&client_addr_, peer_length_);
+}
+
 void ClientThread::Run() {
     logger_->info("New client thread started, socket {} ip {}, port {}", socket_, ip_, port_);
     char buffer[dropbox_util::BUFFER_SIZE];
-
+    init_client_address();
     while (true) {
         try {
             std::fill(buffer, buffer + sizeof(buffer), 0);
@@ -51,12 +59,18 @@ void ClientThread::Run() {
             logger_->debug("Received from client {} port {} the message: {}",
                            inet_ntoa(client_addr_.sin_addr), ntohs(client_addr_.sin_port), buffer);
             parse_command(buffer);
-
         } catch (std::exception& e) {
             logger_->error("Error parsing command from client {}", e.what());
             break;
         }
     }
+}
+
+void ClientThread::init_client_address() {
+    client_addr_.sin_family = AF_INET;
+    client_addr_.sin_port = htons(static_cast<uint16_t>(port_));
+    client_addr_.sin_addr.s_addr = inet_addr(ip_.c_str());
+    peer_length_ = sizeof(client_addr_);
 }
 
 void ClientThread::send_file(const std::string& filename, const std::string &user_id) {

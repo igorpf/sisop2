@@ -162,11 +162,12 @@ void Server::login_new_client(const std::string &user_id, const std::string &dev
         dropbox_util::new_client_param_list param_list{
             "ClientThread_" + user_id + "_" + device_id,
              client_ip,
-             new_client_connection.port,
+            ntohs(current_client_.sin_port),
              new_client_connection.socket,
              *client_iterator
         };
         thread_pool_.add_client(param_list);
+        send_command_confirmation(current_client_);
         std::string port = std::to_string(new_client_connection.port);
         sendto(socket_, port.c_str(), port.size(), 0, (struct sockaddr*)&current_client_, peer_length_);
 

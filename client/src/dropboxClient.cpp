@@ -253,14 +253,14 @@ void Client::send_file(const std::string& complete_file_path)
     request.peer_length = peer_length_;
     request.server_address = server_addr_;
     request.socket = socket_;
-    auto tokens = util::split_words_by_token(complete_file_path, "/");
-    std::string filename_only = tokens[tokens.size() - 1];
 
     fs::path filepath(complete_file_path);
     std::string filename_without_path = filepath.filename().string();
     std::string local_file_path = StringFormatter() << local_directory_ << "/" << filename_without_path;
 
-    std::string command(StringFormatter() << "upload" << util::COMMAND_SEPARATOR_TOKEN << filename_only);
+    std::string command(StringFormatter() << "upload" << util::COMMAND_SEPARATOR_TOKEN
+                                          << filename_without_path << util::COMMAND_SEPARATOR_TOKEN << user_id_);
+
     send_command_and_expect_confirmation(command);
     util::File file_util;
     file_util.send_file(request);
@@ -283,7 +283,7 @@ void Client::get_file(const std::string& filename)
     std::string command(StringFormatter() << "download" << util::COMMAND_SEPARATOR_TOKEN
                                           << filename_without_path << util::COMMAND_SEPARATOR_TOKEN << user_id_);
 
-    sendto(socket_, command.c_str(), command.size(), 0, (struct sockaddr *)&server_addr_, peer_length_);
+    send_command_and_expect_confirmation(command);
 
     util::File file_util;
     file_util.receive_file(request);
@@ -314,7 +314,7 @@ void Client::delete_file(const std::string& filename)
 
     std::string command(StringFormatter() << "remove" << util::COMMAND_SEPARATOR_TOKEN
                                           << filename << util::COMMAND_SEPARATOR_TOKEN << user_id_);
-    sendto(socket_, command.c_str(), command.size(), 0, (struct sockaddr *)&server_addr_, peer_length_);
+    send_command_and_expect_confirmation(command);
 }
 
 std::vector<std::vector<std::string>> Client::list_server()
@@ -329,7 +329,7 @@ std::vector<std::vector<std::string>> Client::list_server()
     std::string command(StringFormatter() << "list_server" << util::COMMAND_SEPARATOR_TOKEN << user_id_);
     logger_->debug("sent to server port {}" , ntohs(server_addr_.sin_port));
 
-    sendto(socket_, command.c_str(), command.size(), 0, (struct sockaddr *)&server_addr_, peer_length_);
+    send_command_and_expect_confirmation(command);
 
     util::File file_util;
     return file_util.receive_list_files(request);
