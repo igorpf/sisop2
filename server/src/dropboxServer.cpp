@@ -131,7 +131,7 @@ void Server::parse_command(const std::string &command_line) {
 
 void Server::add_client(const std::string &user_id) {
     if(!has_client_connected(user_id)) {
-        client_info new_client;
+        dropbox_util::client_info new_client;
         new_client.user_id = user_id;
         clients_.push_back(new_client);
         std::string client_path = StringFormatter() << local_directory_ << "/" << user_id;
@@ -150,7 +150,14 @@ void Server::login_new_client(const std::string &user_id, const std::string &dev
 
         std::string client_ip = inet_ntoa(current_client_.sin_addr);
         auto new_client_connection = allocate_connection_for_client(client_ip);
-        thread_pool_.add_client("ClientThread_" + user_id + "_" + device_id, client_ip, new_client_connection.port, new_client_connection.socket);
+        dropbox_util::new_client_param_list param_list{
+            "ClientThread_" + user_id + "_" + device_id,
+             client_ip,
+             new_client_connection.port,
+             new_client_connection.socket,
+             *client_iterator
+        };
+        thread_pool_.add_client(param_list);
         std::string port = std::to_string(new_client_connection.port);
         sendto(socket_, port.c_str(), port.size(), 0, (struct sockaddr*)&current_client_, peer_length_);
 
@@ -199,17 +206,7 @@ bool Server::has_client_and_device_connected(const std::string &client_id, const
     return device_iterator != client_iterator->user_devices.end();
 }
 
-std::vector<client_info>::iterator Server::get_client_info(const std::string& user_id) {
+std::vector<dropbox_util::client_info>::iterator Server::get_client_info(const std::string& user_id) {
     return std::find_if(clients_.begin(), clients_.end(),
-                        [&user_id] (const client_info& c) -> bool {return user_id == c.user_id;});
-}
-
-void Server::remove_file_from_client(const std::string &user_id, const std::string &filename) {
-    auto client_iterator = get_client_info(user_id);
-    if (!client_iterator->user_files.empty())
-        client_iterator->user_files.erase(std::remove_if(client_iterator->user_files.begin(),
-                                                         client_iterator->user_files.end(),
-                                                         [&filename] (const dropbox_util::file_info& info) ->
-                                                                 bool {return filename == info.name;}),
-                                          client_iterator->user_files.end());
+                        [&user_id] (const dropbox_util::client_info& c) -> bool {return user_id == c.user_id;});
 }

@@ -9,7 +9,8 @@
  */
 class ClientThread : public PThreadWrapper {
 public:
-    ClientThread(const std::string &local_directory, const std::string &logger_name, const std::string &ip, int32_t port, dropbox_util::SOCKET socket);
+    ClientThread(const std::string &local_directory, const std::string &logger_name, const std::string &ip, int32_t port,
+                 dropbox_util::SOCKET socket, dropbox_util::client_info &info);
 
     ~ClientThread() override;
 
@@ -30,6 +31,7 @@ public:
      */
     void delete_file(const std::string& filename, const std::string &user_id);
 
+    void add_file(const dropbox_util::file_info &received_file_info);
 
     /**
      * Envia a lista de arquivos do usuário no servidor no formato
@@ -42,6 +44,10 @@ public:
      */
     void sync_server();
 
+    /**
+     * Removes the file from the list of files of the client
+     */
+    void remove_file_from_info(const std::string &filename);
 
 
     void parse_command(const std::string &command_line);
@@ -60,7 +66,7 @@ private:
     socklen_t peer_length_;
 
     std::string local_directory_;
-
+    dropbox_util::client_info &info_;
 };
 
 #endif //DROPBOX_CLIENTTHREAD_HPP

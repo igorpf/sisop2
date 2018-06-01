@@ -9,8 +9,8 @@
 namespace fs = boost::filesystem;
 
 ClientThread::ClientThread(const std::string &local_directory, const std::string &logger_name,
-                           const std::string &ip, int32_t port, dropbox_util::SOCKET socket) : local_directory_(local_directory),
-         logger_name_(logger_name), ip_(ip), port_(port), socket_(socket) {
+                           const std::string &ip, int32_t port, dropbox_util::SOCKET socket, dropbox_util::client_info &info) :
+        local_directory_(local_directory), logger_name_(logger_name), ip_(ip), port_(port), socket_(socket), info_(info) {
     logger_ = spdlog::stdout_color_mt(logger_name);
     logger_->set_level(spdlog::level::debug);
 }
@@ -96,12 +96,13 @@ void ClientThread::receive_file(const std::string& filename, const std::string &
     received_file_info.last_modification_time = fs::last_write_time(local_file_path);
 
 
-//    auto client_iterator = get_client_info(user_id);
-//
-//    // Se já existe um registro do arquivo o remove para adição do novo registro
-//    remove_file_from_client(user_id, filename);
-//
-//    client_iterator->user_files.emplace_back(received_file_info);
+    remove_file_from_info(filename);
+    add_file(received_file_info);
+}
+
+void ClientThread::add_file(const dropbox_util::file_info &received_file_info) {
+    // TODO put a lock guard here
+    info_.user_files.emplace_back(received_file_info);
 }
 
 
@@ -112,27 +113,38 @@ void ClientThread::delete_file(const std::string& filename, const std::string &u
     std::string server_file = StringFormatter() << local_directory_ << "/" << user_id << "/" << filename_without_path;
     fs::remove(server_file);
 
-//    remove_file_from_client(user_id, filename_without_path);
+    remove_file_from_info(filename_without_path);
 }
 
 
 void ClientThread::list_server(const std::string &user_id) {
-//    auto client_iterator = get_client_info(user_id);
-//    std::string user_file_list {"name;size;modification_time&"};
-//
-//    for (const auto& file : client_iterator->user_files) {
-//        user_file_list.append(StringFormatter() << file.name << ';'<< file.size << ';'
-//                                                << file.last_modification_time << '&');
-//    }
-//
-//    // Remove último &
-//    user_file_list.pop_back();
-//
-//    dropbox_util::file_transfer_request request;
-//    request.socket = socket_;
-//    request.server_address = client_addr_;
-//    request.peer_length = peer_length_;
-//
-//    dropbox_util::File file_util;
-//    file_util.send_list_files(request, user_file_list);
+    std::string user_file_list {"name;size;modification_time&"};
+
+    // TODO put a guard here
+    for (const auto& file : info_.user_files) {
+        user_file_list.append(StringFormatter() << file.name << ';'<< file.size << ';'
+                                                << file.last_modification_time << '&');
+    }
+
+    // Remove último &
+    user_file_list.pop_back();
+
+    dropbox_util::file_transfer_request request;
+    request.socket = socket_;
+    request.server_address = client_addr_;
+    request.peer_length = peer_length_;
+
+    dropbox_util::File file_util;
+    file_util.send_list_files(request, user_file_list);
 }
+
+void ClientThread::remove_file_from_info(const std::string &filename) {
+    // TODO put a lock guard here
+    if (!info_.user_files.empty())
+        info_.user_files.erase(std::remove_if(info_.user_files.begin(),
+                                              info_.user_files.end(),
+                                                         [&filename] (const dropbox_util::file_info& info) ->
+                                                                 bool {return filename == info.name;}),
+                               info_.user_files.end());
+}
+

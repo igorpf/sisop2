@@ -47,6 +47,20 @@ namespace dropbox_util {
         std::string in_file_path;
     };
 
+    struct client_info {
+        std::string user_id;
+        std::vector<std::string> user_devices;
+        std::vector<file_info> user_files;
+    };
+
+    struct new_client_param_list {
+        std::string logger_name;
+        std::string ip;
+        int32_t port;
+        SOCKET socket;
+        client_info &info;
+    };
+
     /// Funções de utilidade geral
     std::vector<std::string> split_words_by_token(const std::string &phrase,
                                                   const std::string &token = COMMAND_SEPARATOR_TOKEN);

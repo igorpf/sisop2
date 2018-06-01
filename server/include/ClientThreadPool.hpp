@@ -8,7 +8,7 @@
 
 class ClientThreadPool {
 public:
-    void add_client(const std::string &logger_name, const std::string &ip, int32_t port, dropbox_util::SOCKET socket);
+    void add_client(dropbox_util::new_client_param_list client_param_list);
 
     void set_local_directory(const std::string &local_directory);
 

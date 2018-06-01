@@ -2,8 +2,9 @@
 #include <arpa/inet.h>
 #include "../include/ClientThreadPool.hpp"
 
-void ClientThreadPool::add_client(const std::string &logger_name, const std::string &ip, int32_t port, dropbox_util::SOCKET socket) {
-    auto client = std::make_shared<ClientThread>(local_directory_, logger_name, ip, port, socket);
+void ClientThreadPool::add_client(dropbox_util::new_client_param_list client_param_list) {
+    auto client = std::make_shared<ClientThread>(local_directory_, client_param_list.logger_name, client_param_list.ip,
+                                                 client_param_list.port, client_param_list.socket, client_param_list.info);
     threads_.push_back(client);
     client->Start();
 }
