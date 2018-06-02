@@ -14,6 +14,8 @@ public:
 
 private:
     std::vector<std::shared_ptr<ClientThread>> threads_;
+    std::map<std::string, pthread_mutex_t> locks_;
+
     std::string local_directory_;
 };
 #endif //DROPBOX_CLIENTTHREADPOOL_HPP

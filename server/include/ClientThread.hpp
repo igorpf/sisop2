@@ -10,7 +10,7 @@
 class ClientThread : public PThreadWrapper {
 public:
     ClientThread(const std::string &local_directory, const std::string &logger_name, const std::string &ip, int32_t port,
-                 dropbox_util::SOCKET socket, dropbox_util::client_info &info);
+                 dropbox_util::SOCKET socket, dropbox_util::client_info &info, pthread_mutex_t &client_info_mutex);
 
     ~ClientThread() override;
 
@@ -70,6 +70,7 @@ private:
     std::string local_directory_;
     dropbox_util::client_info &info_;
 
+    pthread_mutex_t &client_info_mutex_;
     void init_client_address();
 };
 

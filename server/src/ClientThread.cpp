@@ -6,12 +6,15 @@
 #include "../../util/include/string_formatter.hpp"
 #include "../../util/include/File.hpp"
 #include "../../util/include/LoggerFactory.hpp"
+#include "../../util/include/lock_guard.hpp"
 
 namespace fs = boost::filesystem;
 
 ClientThread::ClientThread(const std::string &local_directory, const std::string &logger_name,
-                           const std::string &ip, int32_t port, dropbox_util::SOCKET socket, dropbox_util::client_info &info) :
-        local_directory_(local_directory), logger_name_(logger_name), ip_(ip), port_(port), socket_(socket), info_(info) {
+                           const std::string &ip, int32_t port, dropbox_util::SOCKET socket, dropbox_util::client_info &info,
+                           pthread_mutex_t &client_info_mutex) :
+        local_directory_(local_directory), logger_name_(logger_name), ip_(ip), port_(port), socket_(socket), info_(info),
+        client_info_mutex_(client_info_mutex) {
     logger_ = LoggerFactory::getLoggerForName(logger_name);
 }
 
@@ -126,7 +129,7 @@ void ClientThread::receive_file(const std::string& filename, const std::string &
 }
 
 void ClientThread::add_file(const dropbox_util::file_info &received_file_info) {
-    // TODO put a lock guard here
+    LockGuard user_info_lock(client_info_mutex_);
     info_.user_files.emplace_back(received_file_info);
 }
 
@@ -145,11 +148,12 @@ void ClientThread::delete_file(const std::string& filename, const std::string &u
 void ClientThread::list_server(const std::string &user_id) {
     std::string user_file_list {"name;size;modification_time&"};
 
-    // TODO put a guard here
+    LockGuard user_info_lock(client_info_mutex_);
     for (const auto& file : info_.user_files) {
         user_file_list.append(StringFormatter() << file.name << ';'<< file.size << ';'
                                                 << file.last_modification_time << '&');
     }
+    user_info_lock.Unlock();
 
     // Remove último &
     user_file_list.pop_back();
@@ -164,7 +168,7 @@ void ClientThread::list_server(const std::string &user_id) {
 }
 
 void ClientThread::remove_file_from_info(const std::string &filename) {
-    // TODO put a lock guard here
+    LockGuard user_info_lock(client_info_mutex_);
     if (!info_.user_files.empty())
         info_.user_files.erase(std::remove_if(info_.user_files.begin(),
                                               info_.user_files.end(),
