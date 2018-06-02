@@ -61,6 +61,12 @@ public:
 
 private:
     /**
+     * Verifica se existe um id salvo no disco e o utiliza
+     * Se não existir gera um novo e salva no disco
+     */
+    void set_device_id();
+
+    /**
      * Estabelece uma conexão entre o cliente e o servidor
      */
     void login_server();
@@ -84,6 +90,8 @@ private:
 
     static const std::string LOGGER_NAME;
     std::shared_ptr<spdlog::logger> logger_;
+
+    const std::string device_id_file_ = ".device_id";
 
     int64_t port_;
     std::string hostname_;

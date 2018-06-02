@@ -4,3 +4,4 @@ bin/
 build/
 _builds/
 **.log
+.device_id

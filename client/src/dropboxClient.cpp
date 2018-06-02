@@ -57,10 +57,7 @@ void Client::start_client(int argc, char **argv)
     hostname_ = login_command_parser.GetHostname();
     user_id_ = login_command_parser.GetUserid();
 
-    // TODO(jfguimaraes) UUID não é especifico por dispositivo mas por usuário, gerar aleatório e salvar no disco
-    boost::uuids::name_generator_sha1 id_generator(boost::uuids::ns::dns());
-    boost::uuids::uuid device_id = id_generator(user_id_);
-    device_id_ = to_string(device_id);
+    set_device_id();
 
     login_server();
 
@@ -77,6 +74,21 @@ void Client::start_client(int argc, char **argv)
     }
 
     load_info_from_disk();
+}
+
+void Client::set_device_id()
+{
+    // TODO Validar device_id encontrado no disco
+    if (fs::exists(fs::path(device_id_file_))) {
+        std::ifstream id_file(device_id_file_);
+        std::getline(id_file, device_id_);
+    } else {
+        boost::uuids::uuid device_id = boost::uuids::random_generator()();
+        device_id_ = to_string(device_id);
+
+        std::ofstream id_file(device_id_file_);
+        id_file << device_id_;
+    }
 }
 
 void Client::login_server()

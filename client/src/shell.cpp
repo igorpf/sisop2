@@ -8,7 +8,7 @@
 #include "../../util/include/LoggerFactory.hpp"
 
 const std::string Shell::LOGGER_NAME = "Shell";
-const std::string Shell::STDOUT_LOGGER_NAME = "Shell_out";
+const std::string Shell::STDOUT_LOGGER_NAME = "ClientShell";
 
 Shell::Shell(IClient &client) : client_(client)
 {
