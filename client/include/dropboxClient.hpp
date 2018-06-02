@@ -28,7 +28,7 @@ public:
 
     /**
      * Envia um arquivo para o servidor (upload)
-     * @param filename Nome do arquivo a ser enviado
+     * @param complete_file_path Nome do arquivo a ser enviado
      */
     void send_file(const std::string &complete_file_path) override;
 
@@ -72,8 +72,8 @@ private:
     void load_info_from_disk();
 
     /**
-     * Sends command to server and expects an ACK message.
-     * Throws an exception if no message has been received or if it is not an ACK
+     * Envia um comando para o servidor e aguarda uma mensagem de ACK, joga uma
+     * exceção se não receber o ack ou se receber uma mensagem de erro
      */
     void send_command_and_expect_confirmation(const std::string& command);
 

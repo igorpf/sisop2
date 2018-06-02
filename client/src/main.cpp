@@ -18,10 +18,10 @@ int main(int argc, char* argv[])
         client.start_client(argc, argv);
         client.sync_client();
 
-        FileWatcher file_watcher(client);
+        /*FileWatcher file_watcher(client);
         file_watcher.Start();
 
-        file_watcher.Join();
+        file_watcher.Join();*/
 
         SyncThread sync_thread(client);
         sync_thread.Start();

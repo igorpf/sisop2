@@ -4,6 +4,7 @@
 #include <spdlog/spdlog.h>
 
 #include "../../util/include/pthread_wrapper.hpp"
+
 #include "iclient.hpp"
 
 /**

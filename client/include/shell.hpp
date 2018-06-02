@@ -34,6 +34,7 @@ private:
     std::string file_path_;
 
     static const std::string LOGGER_NAME;
+    static const std::string STDOUT_LOGGER_NAME;
     std::shared_ptr<spdlog::logger> logger_;
     std::shared_ptr<spdlog::logger> stdout_logger_;
 

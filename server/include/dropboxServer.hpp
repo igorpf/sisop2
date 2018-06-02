@@ -64,31 +64,39 @@ private:
     void load_info_from_disk();
 
     /**
-     * Parses the command received by the client
+     * Verifica o comando enviado pelo cliente e executa a operação correspondente
      */
-    void parse_command(struct sockaddr_in &client, const std::string &command_line);
-    void send_command_confirmation(struct sockaddr_in &client);
-    void send_command_error_message(struct sockaddr_in &client, const std::string &error_message);
+    void parse_command(const std::string& command_line);
 
     /**
-     * Adds a new client and it's respective device to the list of clients
-     * If the client is already on the list a new device is added
-     * TODO Error when client already has max devices
+     * Envia uma confirmação ao cliente de que um comando foi recebido
+     */
+    void send_command_confirmation();
+
+    /**
+     * Envia uma mensagem de erro ao cliente
+     */
+    void send_command_error_message(const std::string &error_message);
+
+    /**
+     * Adiciona um novo cliente e seu respectivo dispositivo à lista de clientes
+     * Se o cliente já está na lista o novo dispositivo é adicionado
+     * TODO Enviar mensagem de erro quando o cliente já estiver com o número máximo de dispositivos
      */
     void add_client(const std::string& user_id, const std::string& device_id);
 
     /**
-     * Checks if the client is already on the list of clients
+     * Verifica se o cliente já está na lista de usuários
      */
     bool has_client_connected(const std::string &client_id);
 
     /**
-     * Returns the client info inside the list of client infos
+     * Retorna uma referência (na forma de um iterador) para as informações do usuário na lista
      */
     std::vector<client_info>::iterator get_client_info(const std::string& user_id);
 
     /**
-     * Removes the file from the list of files of the client
+     * Remove o arquivo da lista de arquivos do cliente
      */
     void remove_file_from_client(const std::string& user_id, const std::string& filename);
 

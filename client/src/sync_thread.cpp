@@ -3,12 +3,13 @@
 #include <chrono>
 #include <thread>
 
+#include "../../util/include/LoggerFactory.hpp"
+
 const std::string SyncThread::LOGGER_NAME = "SyncThread";
 
 SyncThread::SyncThread(IClient& client) : client_(client)
 {
-    // TODO This logger should output to a file
-    logger_ = spdlog::stdout_color_mt(LOGGER_NAME);
+    logger_ = LoggerFactory::getLoggerForName(LOGGER_NAME);
 }
 
 SyncThread::~SyncThread()

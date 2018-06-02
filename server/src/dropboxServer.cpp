@@ -98,12 +98,12 @@ void Server::listen() {
     while (true) {
         try {
             std::fill(buffer, buffer + sizeof(buffer), 0);
-            recvfrom(socket_, buffer, sizeof(buffer), 0, (struct sockaddr *) &client, &peer_length_);
-            logger_->debug("Received from client {} port {} the message: {}", inet_ntoa(client.sin_addr), ntohs(client.sin_port), buffer);
-            parse_command(client, buffer);
+            recvfrom(socket_, buffer, sizeof(buffer), 0, (struct sockaddr *) &current_client_, &peer_length_);
+            logger_->debug("Received from client {} port {} the message: {}", inet_ntoa(current_client_.sin_addr), ntohs(current_client_.sin_port), buffer);
+            parse_command(buffer);
         } catch (std::string &e) {
             logger_->error("Error parsing command from client {}", e);
-            send_command_error_message(client, e);
+            send_command_error_message(e);
         } catch (std::exception &e) {
             logger_->error("Fatal error parsing command from client {}. Stopping transmission", e.what());
             break;
@@ -191,22 +191,23 @@ void Server::parse_command(const std::string &command_line) {
     logger_->debug("Parsing command {}", command_line);
     auto tokens = util::split_words_by_token(command_line);
     auto command = tokens[0];
+    // TODO Os comandos do cliente estão preparados pra receber mensagens de erro?
     if (command == "connect") {
         auto user_id = tokens[1], device_id = tokens[2];
         add_client(user_id, device_id);
-        send_command_confirmation(client);
+        send_command_confirmation();
     } else if (command == "download") {
+        send_command_confirmation();
         send_file(tokens[1], tokens[2]);
-        send_command_confirmation(client);
     } else if (command == "upload") {
+        send_command_confirmation();
         receive_file(tokens[1], tokens[2]);
-        send_command_confirmation(client);
     } else if (command == "remove") {
         delete_file(tokens[1], tokens[2]);
-        send_command_confirmation(client);
+        send_command_confirmation();
     } else if (command == "list_server") {
+        send_command_confirmation();
         list_server(tokens[1]);
-        send_command_confirmation(client);
     }
     // TODO Erro ao receber comando inválido
 }
@@ -257,11 +258,11 @@ void Server::remove_file_from_client(const std::string &user_id, const std::stri
                                           client_iterator->user_files.end());
 }
 
-void Server::send_command_confirmation(struct sockaddr_in &client) {
-    sendto(socket_, "ACK", 4, 0, (struct sockaddr *)&client, peer_length_);
+void Server::send_command_confirmation() {
+    sendto(socket_, "ACK", 4, 0, (struct sockaddr *)&current_client_, peer_length_);
 }
 
-void Server::send_command_error_message(struct sockaddr_in &client, const std::string &error_message)  {
+void Server::send_command_error_message(const std::string &error_message)  {
     const std::string complete_error_message = StringFormatter() << util::ERROR_MESSAGE_INITIAL_TOKEN << error_message;
-    sendto(socket_, complete_error_message.c_str(), complete_error_message.size(), 0, (struct sockaddr *)&client, peer_length_);
+    sendto(socket_, complete_error_message.c_str(), complete_error_message.size(), 0, (struct sockaddr *)&current_client_, peer_length_);
 }

@@ -2,6 +2,7 @@
 
 #include "../../util/include/dropboxUtil.hpp"
 #include "../../util/include/string_formatter.hpp"
+#include "../../util/include/LoggerFactory.hpp"
 
 #include <iostream>
 
@@ -9,8 +10,7 @@ const std::string FileWatcher::LOGGER_NAME = "FileWatcher";
 
 FileWatcher::FileWatcher(IClient& client) : client_(client)
 {
-    // TODO This logger should output to a file
-    logger_ = spdlog::stdout_color_mt(LOGGER_NAME);
+    logger_ = LoggerFactory::getLoggerForName(LOGGER_NAME);
 }
 
 FileWatcher::~FileWatcher()
@@ -21,6 +21,7 @@ FileWatcher::~FileWatcher()
 void FileWatcher::Run()
 {
     // TODO(jfguimaraes) Check file is valid (not hidden nor a backup one) and add to the buffer of modified files
+    // TODO(jfguimaraes) First check if the modification is more recent than the registries in modified_list and user_file_list
     int64_t modification_length;
     int inotify_descriptor;
     int inotify_watcher;

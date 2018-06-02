@@ -91,9 +91,9 @@ bool dropbox_util::should_ignore_file(const std::string &filename) {
     return starts_with(filename, ".") || ends_with(filename, "~");
 }
 
-std::string DropboxUtil::get_error_from_message(const std::string &error_message) {
+std::string dropbox_util::get_error_from_message(const std::string &error_message) {
     auto found = error_message.find(ERROR_MESSAGE_INITIAL_TOKEN);
-    if(found != std::string::npos) {
+    if (found != std::string::npos) {
         return error_message.substr(found + ERROR_MESSAGE_INITIAL_TOKEN.size());
     }
     return error_message;
