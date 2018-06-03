@@ -8,9 +8,15 @@
 
 class ClientThreadPool {
 public:
+    virtual ~ClientThreadPool();
+
     void add_client(dropbox_util::new_client_param_list client_param_list);
 
     void set_local_directory(const std::string &local_directory);
+
+    static void remove_client_thread(ClientThreadPool &pool, const std::string &user_id, const std::string &device_id);
+
+    std::vector<std::shared_ptr<ClientThread>> &getThreads();
 
 private:
     std::vector<std::shared_ptr<ClientThread>> threads_;

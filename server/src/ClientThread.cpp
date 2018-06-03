@@ -40,6 +40,9 @@ void ClientThread::parse_command(const std::string &command_line) {
     } else if (command == "list_server") {
         send_command_confirmation();
         list_server(tokens[1]);
+    } else if (command == "logout") {
+        send_command_confirmation();
+        throw std::exception();
     }
     else {
         throw std::logic_error(StringFormatter() << "Invalid command sent by client " << command_line);
@@ -69,8 +72,12 @@ void ClientThread::Run() {
         } catch (std::logic_error& logic_error) {
             logger_->error("Error parsing command from client {}", logic_error.what());
             send_command_error_message(logic_error.what());
+        } catch (std::exception &e) {
+            logger_->info("Logged out successfully from server");
+            break;
         }
     }
+    logout_callback_();
 }
 
 void ClientThread::send_command_error_message(const std::string &error_message)  {
@@ -198,5 +205,17 @@ void ClientThread::replace_local_file_by_temporary_if_more_recent(const std::str
     } else {
         fs::remove(fs::path(tmp_file_path));
     }
+}
+
+void ClientThread::setLogoutCallback(const std::function<void()> &logout_callback) {
+    ClientThread::logout_callback_ = logout_callback;
+}
+
+const std::string &ClientThread::getUserId() const {
+    return user_id_;
+}
+
+const std::string &ClientThread::getDeviceId() const {
+    return device_id_;
 }
 

@@ -61,6 +61,12 @@ public:
     void send_command_confirmation();
     void send_command_error_message(const std::string &error_message);
 
+    void setLogoutCallback(const std::function<void()> &logout_callback);
+
+    const std::string &getUserId() const;
+
+    const std::string &getDeviceId() const;
+
 protected:
     void Run() override;
 private:
@@ -82,6 +88,8 @@ private:
 
     pthread_mutex_t &client_info_mutex_;
     void init_client_address();
+
+    std::function<void()> logout_callback_;
 };
 
 #endif //DROPBOX_CLIENTTHREAD_HPP
