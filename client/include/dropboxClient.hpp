@@ -85,8 +85,6 @@ private:
 
     std::string device_id_;
     std::string user_id_;
-    std::vector<dropbox_util::file_info> user_files_;
-    std::vector<dropbox_util::file_info> modified_files_;
 
     static const std::string LOGGER_NAME;
     std::shared_ptr<spdlog::logger> logger_;
@@ -100,8 +98,6 @@ private:
     socklen_t peer_length_;
 
     pthread_mutex_t socket_mutex_ = PTHREAD_MUTEX_INITIALIZER;
-    pthread_mutex_t user_files_mutex_ = PTHREAD_MUTEX_INITIALIZER;
-    pthread_mutex_t modification_buffer_mutex_ = PTHREAD_MUTEX_INITIALIZER;
 };
 
 #endif // SISOP2_CLIENT_INCLUDE_DROPBOXCLIENT_HPP

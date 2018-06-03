@@ -17,13 +17,13 @@ public:
 
 protected:
     /**
-     * Função que executa a sincronização em intervalos pré-definidos de sync_interval_in_seconds_
+     * Função que executa a sincronização em intervalos pré-definidos de sync_interval_in_microseconds_
      */
     void Run() override;
 
 private:
     IClient& client_;
-    int64_t sync_interval_in_seconds_ = 5;
+    int64_t sync_interval_in_microseconds_ = 500;
 
     static const std::string LOGGER_NAME;
     std::shared_ptr<spdlog::logger> logger_;

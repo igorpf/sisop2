@@ -8,6 +8,7 @@
 #include "../../util/include/lock_guard.hpp"
 
 #include <iostream>
+#include <sys/poll.h>
 
 namespace fs = boost::filesystem;
 namespace util = dropbox_util;
@@ -26,9 +27,6 @@ FileWatcher::~FileWatcher()
 
 void FileWatcher::Run()
 {
-    // TODO(jfguimaraes) Check file is valid (not hidden nor a backup one) and add to the buffer of modified files
-    // TODO(jfguimaraes) First check if the modification is more recent than the registries in modified_list and user_file_list
-    int64_t modification_length;
     int inotify_descriptor;
     int inotify_watcher;
     char buffer[EVENT_BUF_LEN];
@@ -44,38 +42,49 @@ void FileWatcher::Run()
 
     logger_->debug(static_cast<std::string>(StringFormatter() << "Watching directory: " << client_.local_directory_));
 
+    pollfd poll_descriptor {inotify_descriptor, POLLIN, 0};
+
     while (client_.logged_in_) {
-        // TODO(jfguimaraes) Usar versão não bloqueante para poder finalizar o programa
-        modification_length = read(inotify_descriptor, buffer, EVENT_BUF_LEN);
-        event_timestamp_ = std::time(nullptr);
+        // Timeout de 50ms
+        int64_t poll_result = poll(&poll_descriptor, 1, 50);
 
-        if (modification_length < 0)
-            throw std::runtime_error("Error processing change on sync_dir folder");
+        if (poll_result < 0) {
+            throw std::runtime_error("Error monitoring changes on sync_dir folder");
+        } else if (poll_result == 0) {
+            continue;
+        } else {
+            int64_t modification_length = read(inotify_descriptor, buffer, EVENT_BUF_LEN);
+            event_timestamp_ = std::time(nullptr);
 
-        for (int64_t i = 0; i < modification_length; i += EVENT_SIZE + event->len) {
-            event = reinterpret_cast<struct inotify_event*>(&buffer[i]);
+            if (modification_length < 0)
+                throw std::runtime_error("Error processing change on sync_dir folder");
 
-            if (event->len && !(event->mask & IN_ISDIR) && !dropbox_util::should_ignore_file(event->name)) {
-                if (event->mask & IN_CREATE) {
-                    logger_->debug(static_cast<std::string>(StringFormatter() << "File " << event->name << " created"));
-                    std::cout << "New file " << event->name << " was created" << std::endl;
-                    AddModifiedFile(event->name);
-                } else if (event->mask & IN_CLOSE_WRITE) {
-                    logger_->debug(static_cast<std::string>(StringFormatter() << "File " << event->name << " written"));
-                    std::cout << "File " << event->name << " opened for writing was closed" << std::endl;
-                    AddModifiedFile(event->name);
-                } else if (event->mask & IN_DELETE) {
-                    logger_->debug(static_cast<std::string>(StringFormatter() << "File " << event->name << " deleted"));
-                    std::cout << "File " << event->name << " was deleted" << std::endl;
-                    AddModifiedFile(event->name);
-                } else if (event->mask & IN_MOVED_FROM) {
-                    logger_->debug(static_cast<std::string>(StringFormatter() << "File " << event->name << " moved out"));
-                    std::cout << "File " << event->name << " moved out of sync_dir" << std::endl;
-                    AddModifiedFile(event->name);
-                } else if (event->mask & IN_MOVED_TO) {
-                    logger_->debug(static_cast<std::string>(StringFormatter() << "File " << event->name << " moved in"));
-                    std::cout << "File " << event->name << " moved to sync_dir" << std::endl;
-                    AddModifiedFile(event->name);
+            for (int64_t i = 0; i < modification_length; i += EVENT_SIZE + event->len) {
+                event = reinterpret_cast<struct inotify_event *>(&buffer[i]);
+
+                // Ignora eventos em diretórios e em arquivos ocultos
+                if (event->len && !(event->mask & IN_ISDIR) && !dropbox_util::should_ignore_file(event->name)) {
+                    if (event->mask & IN_CREATE) {
+                        logger_->debug(static_cast<std::string>(StringFormatter()
+                                << "File " << event->name << " created"));
+                        AddModifiedFile(event->name);
+                    } else if (event->mask & IN_CLOSE_WRITE) {
+                        logger_->debug(static_cast<std::string>(StringFormatter()
+                                << "File " << event->name << " written"));
+                        AddModifiedFile(event->name);
+                    } else if (event->mask & IN_DELETE) {
+                        logger_->debug(static_cast<std::string>(StringFormatter()
+                                << "File " << event->name << " deleted"));
+                        AddModifiedFile(event->name);
+                    } else if (event->mask & IN_MOVED_FROM) {
+                        logger_->debug(static_cast<std::string>(StringFormatter()
+                                << "File " << event->name << " moved out"));
+                        AddModifiedFile(event->name);
+                    } else if (event->mask & IN_MOVED_TO) {
+                        logger_->debug(static_cast<std::string>(StringFormatter()
+                                << "File " << event->name << " moved in"));
+                        AddModifiedFile(event->name);
+                    }
                 }
             }
         }
@@ -97,10 +106,36 @@ void FileWatcher::AddModifiedFile(const std::string &filename)
     // Cria o file_info
     util::file_info modified_file_info {filename, file_size, modification_time};
 
-    // TODO
     // Verifica se o arquivo já está na lista de arquivos do usuário
+    LockGuard user_files_lock(client_.user_files_mutex_);
+    auto user_files_iterator = std::find_if(client_.user_files_.begin(), client_.user_files_.end(),
+            [&filename] (const util::file_info& info) -> bool {return filename == info.name;});
+
     // Se estiver e a versão do usuário é mais recente ignora a modificação
-    // Do contrário verifica se deve adicionar à lista de arquivos modificados
-    // Se o arquivo já está na lista de arquivos modificados com uma modificação mais recente ignora a atual
-    // Se não atualiza a lista de modificados com a nova modificação
+    if (user_files_iterator == client_.user_files_.end()
+        || user_files_iterator->last_modification_time < modification_time) {
+        // Do contrário verifica se deve adicionar à lista de arquivos modificados
+        user_files_lock.Unlock();
+        LockGuard modified_files_lock(client_.modification_buffer_mutex_);
+        auto modified_files_iterator = std::find_if(client_.modified_files_.begin(), client_.modified_files_.end(),
+                [&filename] (const util::file_info& info) -> bool {return filename == info.name;});
+
+        // Se o arquivo já está na lista de arquivos modificados com uma modificação mais recente ignora a atual
+        if (modified_files_iterator == client_.modified_files_.end()
+            || modified_files_iterator->last_modification_time < modification_time) {
+            // Senão atualiza a lista de modificados com a nova modificação
+            util::remove_filename_from_list(filename, client_.modified_files_);
+            client_.modified_files_.emplace_back(modified_file_info);
+            modified_files_lock.Unlock();
+
+            // Atualiza também a lista de arquivos do cliente
+            user_files_lock.Lock();
+            util::remove_filename_from_list(filename, client_.user_files_);
+            client_.user_files_.emplace_back(modified_file_info);
+
+            logger_->info(static_cast<std::string>(StringFormatter() << "Modification added: filename: " << filename
+                                                                     << " size: " << file_size
+                                                                     << " timestamp: "<< modification_time));
+        }
+    }
 }

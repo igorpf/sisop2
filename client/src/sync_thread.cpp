@@ -21,7 +21,7 @@ void SyncThread::Run()
 {
     while (client_.logged_in_) {
         try {
-            std::this_thread::sleep_for(std::chrono::seconds(sync_interval_in_seconds_));
+            std::this_thread::sleep_for(std::chrono::microseconds(sync_interval_in_microseconds_));
 
             if (!client_.logged_in_)
                 break;

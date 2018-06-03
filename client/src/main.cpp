@@ -21,14 +21,13 @@ int main(int argc, char* argv[])
         FileWatcher file_watcher(client);
         file_watcher.Start();
 
-        file_watcher.Join();
-
         SyncThread sync_thread(client);
         sync_thread.Start();
 
         Shell shell(client);
         shell.loop();
 
+        file_watcher.Join();
         sync_thread.Join();
     } catch (std::exception &exception) {
         logger->error(exception.what());

@@ -57,6 +57,7 @@ void Shell::loop(std::istream& input_stream)
         }
     } while (operation_ != "exit");
 
+    stdout_logger_->info("Exiting dropbox client...");
     client_.close_session();
 }
 
