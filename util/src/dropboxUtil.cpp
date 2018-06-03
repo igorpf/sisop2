@@ -98,3 +98,12 @@ std::string dropbox_util::get_error_from_message(const std::string &error_messag
     }
     return error_message;
 }
+
+void dropbox_util::remove_filename_from_list(const std::string &filename,
+                                             std::vector<dropbox_util::file_info> &file_list) {
+    if (!file_list.empty())
+        file_list.erase(std::remove_if(file_list.begin(), file_list.end(),
+                                       [&filename] (const dropbox_util::file_info& info) ->
+                                               bool {return filename == info.name;}),
+                        file_list.end());
+}

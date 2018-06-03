@@ -38,6 +38,11 @@ namespace dropbox_util {
         std::string name;
         int64_t size;
         time_t last_modification_time;
+
+        bool operator==(const file_info& rhs) {
+            return name == rhs.name && size == rhs.size &&
+                   last_modification_time && rhs.last_modification_time;
+        }
     };
 
     struct file_transfer_request {
@@ -65,7 +70,17 @@ namespace dropbox_util {
      *  - Arquivos de backup: terminam com "~"
      */
     bool should_ignore_file(const std::string& filename);
+
+    /**
+     * Obtém a mensagem de erro removendo o token de mensagem de erro
+     * Se não encontrar o token retorna a mensagem original
+     */
     std::string get_error_from_message(const std::string &error_message);
+
+    /**
+     * Verifica se o arquivo está na lista e o remove
+     */
+    void remove_filename_from_list(const std::string& filename, std::vector<file_info>& file_list);
 }
 
 #endif // SISOP2_UTIL_INCLUDE_DROPBOXUTIL_HPP

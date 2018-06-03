@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "../include/dropboxUtil.hpp"
 #include "../include/string_formatter.hpp"
 #include "../include/File.hpp"
@@ -119,6 +121,41 @@ TEST(UtilityFunctions, ShouldIgnoreFile)
     EXPECT_FALSE(dropbox_util::should_ignore_file(normal_file));
     EXPECT_TRUE(dropbox_util::should_ignore_file(hidden_file));
     EXPECT_TRUE(dropbox_util::should_ignore_file(backup_file));
+}
+
+TEST(UtilityFunctions, RemoveFilenameFromList)
+{
+    dropbox_util::file_info file_1 {"file_1", 10, 15623};
+    dropbox_util::file_info file_2 {"file_2", 467, 187295};
+    dropbox_util::file_info file_3 {"file_3", 9575, 126384};
+
+    std::vector<dropbox_util::file_info> file_list;
+
+    // Try to remove item from empty list
+    EXPECT_NO_THROW(dropbox_util::remove_filename_from_list("file_1", file_list));
+
+    // Add items to list
+    file_list.emplace_back(file_1);
+    file_list.emplace_back(file_2);
+    file_list.emplace_back(file_3);
+
+    EXPECT_NE(std::find(file_list.begin(), file_list.end(), file_1), file_list.end());
+    EXPECT_NE(std::find(file_list.begin(), file_list.end(), file_2), file_list.end());
+    EXPECT_NE(std::find(file_list.begin(), file_list.end(), file_3), file_list.end());
+
+    // Remove existent file
+    dropbox_util::remove_filename_from_list("file_2", file_list);
+
+    EXPECT_NE(std::find(file_list.begin(), file_list.end(), file_1), file_list.end());
+    EXPECT_EQ(std::find(file_list.begin(), file_list.end(), file_2), file_list.end());
+    EXPECT_NE(std::find(file_list.begin(), file_list.end(), file_3), file_list.end());
+
+    // Remove non-existent file
+    dropbox_util::remove_filename_from_list("file_4", file_list);
+
+    EXPECT_NE(std::find(file_list.begin(), file_list.end(), file_1), file_list.end());
+    EXPECT_EQ(std::find(file_list.begin(), file_list.end(), file_2), file_list.end());
+    EXPECT_NE(std::find(file_list.begin(), file_list.end(), file_3), file_list.end());
 }
 
 /// File list parsing

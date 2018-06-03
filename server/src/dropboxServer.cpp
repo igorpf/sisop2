@@ -250,12 +250,7 @@ std::vector<client_info>::iterator Server::get_client_info(const std::string& us
 
 void Server::remove_file_from_client(const std::string &user_id, const std::string &filename) {
     auto client_iterator = get_client_info(user_id);
-    if (!client_iterator->user_files.empty())
-        client_iterator->user_files.erase(std::remove_if(client_iterator->user_files.begin(),
-                                                         client_iterator->user_files.end(),
-                                                         [&filename] (const dropbox_util::file_info& info) ->
-                                                                 bool {return filename == info.name;}),
-                                          client_iterator->user_files.end());
+    util::remove_filename_from_list(filename, client_iterator->user_files);
 }
 
 void Server::send_command_confirmation() {

@@ -14,6 +14,7 @@
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
 
+#include "../../util/include/dropboxUtil.hpp"
 #include "../../util/include/string_formatter.hpp"
 #include "../../util/include/table_printer.hpp"
 #include "../../util/include/File.hpp"
@@ -313,11 +314,7 @@ void Client::get_file(const std::string& filename)
         LockGuard user_files_lock(user_files_mutex_);
 
         // Se já existe um registro do arquivo o remove para adição do novo registro
-        if (!user_files_.empty())
-            user_files_.erase(std::remove_if(user_files_.begin(), user_files_.end(),
-                                             [&filename_without_path] (const dropbox_util::file_info& info) ->
-                                                     bool {return filename_without_path == info.name;}),
-                              user_files_.end());
+        util::remove_filename_from_list(filename_without_path, user_files_);
 
         user_files_.emplace_back(received_file_info);
     }
