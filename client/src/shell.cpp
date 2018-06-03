@@ -13,7 +13,8 @@ const std::string Shell::STDOUT_LOGGER_NAME = "ClientShell";
 Shell::Shell(IClient &client) : client_(client)
 {
     logger_ = LoggerFactory::getLoggerForName(LOGGER_NAME);
-    stdout_logger_ = LoggerFactory::getLoggerForName(STDOUT_LOGGER_NAME);
+    stdout_logger_ = spdlog::get(STDOUT_LOGGER_NAME) ?
+            spdlog::get(STDOUT_LOGGER_NAME) : spdlog::stdout_color_mt(STDOUT_LOGGER_NAME);
 }
 
 Shell::~Shell()
@@ -57,7 +58,6 @@ void Shell::loop(std::istream& input_stream)
         }
     } while (operation_ != "exit");
 
-    stdout_logger_->info("Exiting dropbox client...");
     client_.close_session();
 }
 
