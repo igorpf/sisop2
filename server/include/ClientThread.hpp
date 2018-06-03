@@ -9,7 +9,8 @@
  */
 class ClientThread : public PThreadWrapper {
 public:
-    ClientThread(const std::string &local_directory, const std::string &logger_name, const std::string &ip, int32_t port,
+    ClientThread(const std::string &user_id, const std::string &device_id, const std::string &local_directory,
+                 const std::string &logger_name, const std::string &ip, int32_t port,
                  dropbox_util::SOCKET socket, dropbox_util::client_info &info, pthread_mutex_t &client_info_mutex);
 
     ~ClientThread() override;
@@ -49,6 +50,12 @@ public:
      */
     void remove_file_from_info(const std::string &filename);
 
+    /**
+     * Replaces file in local_directory_ by temporary file if it is
+     * newer than the local one (i.e has a more recent modification time)
+     */
+    void replace_local_file_by_temporary_if_more_recent(const std::string &tmp_file_path, const std::string &local_file_path,
+                                                        const dropbox_util::file_info &received_file_info);
 
     void parse_command(const std::string &command_line);
     void send_command_confirmation();
@@ -62,12 +69,15 @@ private:
 
     std::string ip_;
     int32_t port_;
+    std::string user_id_;
+    std::string device_id_;
 
     struct sockaddr_in client_addr_{0};
     dropbox_util::SOCKET socket_;
     socklen_t peer_length_;
 
     std::string local_directory_;
+
     dropbox_util::client_info &info_;
 
     pthread_mutex_t &client_info_mutex_;

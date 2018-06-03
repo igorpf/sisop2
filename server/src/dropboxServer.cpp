@@ -161,6 +161,7 @@ void Server::login_new_client(const std::string &user_id, const std::string &dev
         auto new_client_connection = allocate_connection_for_client(client_ip);
         dropbox_util::new_client_param_list param_list{
             user_id,
+            device_id,
             "ClientThread_" + user_id + "_" + device_id,
              client_ip,
             ntohs(current_client_.sin_port),
