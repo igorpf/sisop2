@@ -15,7 +15,8 @@ void ClientThreadPool::add_client(dropbox_util::new_client_param_list client_par
             locks_.find(client_param_list.user_id)->second
     );
     threads_.push_back(client);
-    client->setLogoutCallback(std::bind(remove_client_thread, std::ref(*this), client_param_list.user_id, client_param_list.device_id));
+    client->setLogoutCallback(std::bind(remove_client_thread_wrapper, std::ref(*this), client_param_list.user_id,
+                                        client_param_list.device_id));
     client->Start();
 }
 
@@ -29,19 +30,25 @@ ClientThreadPool::~ClientThreadPool() {
     }
 }
 
-void ClientThreadPool::remove_client_thread(ClientThreadPool &pool, const std::string &user_id, const std::string &device_id) {
-    std::vector<std::shared_ptr<ClientThread>> &threads = pool.getThreads();
-    auto thread_iterator = std::find_if(threads.begin(), threads.end(),
-                                    [&user_id, &device_id]
-                                            (std::shared_ptr<ClientThread> &thread) -> bool
-                                    {return thread->getDeviceId() == device_id && thread->getUserId() == user_id;}
+void ClientThreadPool::remove_client_thread(const std::string &user_id, std::string device_id) {
+    auto thread_iterator = std::find_if(threads_.begin(), threads_.end(),
+                                        [&user_id, &device_id]
+                                                (std::shared_ptr<ClientThread> &thread) -> bool
+                                        {return thread->getDeviceId() == device_id && thread->getUserId() == user_id;}
     );
-    if (thread_iterator != threads.end()) {
+    if (thread_iterator != threads_.end()) {
         (*thread_iterator)->Join();
-        threads.erase(thread_iterator);
+        threads_.erase(thread_iterator);
+        disconnect_client_callback_(user_id, device_id);
     }
 }
 
-std::vector<std::shared_ptr<ClientThread>> &ClientThreadPool::getThreads() {
-    return threads_;
+
+void ClientThreadPool::remove_client_thread_wrapper(ClientThreadPool &pool, const std::string &user_id,
+                                                    const std::string &device_id) {
+    pool.remove_client_thread(user_id, device_id);
+}
+
+void ClientThreadPool::setDisconnectClientCallback(std::function<void(std::string, std::string)> &disconnect_client_callback) {
+    ClientThreadPool::disconnect_client_callback_ = disconnect_client_callback;
 }

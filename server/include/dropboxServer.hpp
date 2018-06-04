@@ -63,6 +63,9 @@ private:
 
     bool has_client_and_device_connected(const std::string &client_id, const std::string &device_id);
 
+    void remove_device_from_user(const std::string &user_id, std::string device_id);
+    static void remove_device_from_user_wrapper(Server &server, const std::string &user_id, const std::string &device_id);
+
     /**
      * Returns the client info inside the list of client infos
      */

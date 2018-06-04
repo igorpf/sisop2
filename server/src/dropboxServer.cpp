@@ -26,6 +26,8 @@ const std::string Server::LOGGER_NAME = "Server";
 
 Server::Server() {
     logger_ = LoggerFactory::getLoggerForName(LOGGER_NAME);
+    std::function<void(std::string, std::string)> callback = std::bind(remove_device_from_user_wrapper, std::ref(*this), std::placeholders::_1, std::placeholders::_2);
+    thread_pool_.setDisconnectClientCallback(callback);
 }
 
 Server::~Server() {
@@ -139,6 +141,8 @@ void Server::add_client(const std::string &user_id) {
     }
 }
 
+
+
 void Server::send_command_confirmation(struct sockaddr_in &client) {
     sendto(socket_, "ACK", 4, 0, (struct sockaddr *)&client, peer_length_);
 }
@@ -221,4 +225,21 @@ bool Server::has_client_and_device_connected(const std::string &client_id, const
 std::vector<dropbox_util::client_info>::iterator Server::get_client_info(const std::string& user_id) {
     return std::find_if(clients_.begin(), clients_.end(),
                         [&user_id] (const dropbox_util::client_info& c) -> bool {return user_id == c.user_id;});
+}
+
+void Server::remove_device_from_user(const std::string &user_id, std::string device_id) {
+    auto client_iterator = get_client_info(user_id);
+    if (client_iterator != clients_.end()) {
+        auto device_iterator = std::find_if(
+                client_iterator->user_devices.begin(), client_iterator->user_devices.end(),
+                [&device_id] (const std::string device) -> bool {return device == device_id;}
+        );
+        if (device_iterator != client_iterator->user_devices.end()) {
+            client_iterator->user_devices.erase(device_iterator);
+        }
+    }
+}
+
+void Server::remove_device_from_user_wrapper(Server &server, const std::string &user_id, const std::string &device_id) {
+    server.remove_device_from_user(user_id, device_id);
 }

@@ -356,7 +356,7 @@ std::vector<std::vector<std::string>> Client::list_client()
 
 void Client::close_session()
 {
-    throw std::logic_error("Disconnecting from server not implemented");
+    send_command_and_expect_confirmation("logout");
 }
 
 void Client::send_command_and_expect_confirmation(const std::string &command) {
