@@ -1,14 +1,13 @@
 #include "../include/file_watcher.hpp"
 
+#include <sys/poll.h>
+
 #include <boost/filesystem.hpp>
 
 #include "../../util/include/dropboxUtil.hpp"
 #include "../../util/include/LoggerFactory.hpp"
 #include "../../util/include/string_formatter.hpp"
 #include "../../util/include/lock_guard.hpp"
-
-#include <iostream>
-#include <sys/poll.h>
 
 namespace fs = boost::filesystem;
 namespace util = dropbox_util;
@@ -113,7 +112,7 @@ void FileWatcher::AddModifiedFile(const std::string &filename)
 
     // Se estiver e a versão do usuário é mais recente ignora a modificação
     if (user_files_iterator == client_.user_files_.end()
-        || user_files_iterator->last_modification_time < modification_time) {
+        || user_files_iterator->last_modification_time <= modification_time) {
         // Do contrário verifica se deve adicionar à lista de arquivos modificados
         user_files_lock.Unlock();
         LockGuard modified_files_lock(client_.modification_buffer_mutex_);
@@ -122,7 +121,7 @@ void FileWatcher::AddModifiedFile(const std::string &filename)
 
         // Se o arquivo já está na lista de arquivos modificados com uma modificação mais recente ignora a atual
         if (modified_files_iterator == client_.modified_files_.end()
-            || modified_files_iterator->last_modification_time < modification_time) {
+            || modified_files_iterator->last_modification_time <= modification_time) {
             // Senão atualiza a lista de modificados com a nova modificação
             util::remove_filename_from_list(filename, client_.modified_files_);
             client_.modified_files_.emplace_back(modified_file_info);
