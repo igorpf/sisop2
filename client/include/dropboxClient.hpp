@@ -59,6 +59,8 @@ public:
      */
     void close_session() override;
 
+    std::string get_modification_time(const std::string &filename);
+
 private:
     /**
      * Verifica se existe um id salvo no disco e o utiliza

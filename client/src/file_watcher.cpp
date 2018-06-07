@@ -66,7 +66,6 @@ void FileWatcher::Run()
                     if (event->mask & IN_CREATE) {
                         logger_->debug(static_cast<std::string>(StringFormatter()
                                 << "File " << event->name << " created"));
-                        AddModifiedFile(event->name);
                     } else if (event->mask & IN_CLOSE_WRITE) {
                         logger_->debug(static_cast<std::string>(StringFormatter()
                                 << "File " << event->name << " written"));
@@ -104,6 +103,11 @@ void FileWatcher::AddModifiedFile(const std::string &filename)
 
     // Cria o file_info
     util::file_info modified_file_info {filename, file_size, modification_time};
+    logger_->debug("{} exists? {} timestamp {} last_write {}",
+                   filename,
+                   fs::exists(filepath),
+                   modification_time,
+                   fs::exists(filepath) ? fs::last_write_time(filepath) : 0);
 
     // Verifica se o arquivo já está na lista de arquivos do usuário
     LockGuard user_files_lock(client_.user_files_mutex_);

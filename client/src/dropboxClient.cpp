@@ -135,23 +135,33 @@ void Client::sync_client()
         // Arquivo não existe no servidor, foi criado localmente e será enviado
         // Se o arquivo não existe localmente nada a fazer
         if (server_file_iterator == server_files.end()) {
-            if (!file_deleted)
+            if (!file_deleted) {
+                logger_->debug("Arquivo {} não existe no servidor, foi criado localmente e será enviado", modified_file.name);
                 send_file(StringFormatter() << local_directory_ << "/" << modified_file.name);
+            }
             continue;
         }
 
         // Modificação local é mais recente, envia ao servidor
-        if (std::to_string(modified_file.last_modification_time) > server_file_iterator->at(2)) {
-            if (file_deleted)
+        if (get_modification_time(modified_file.name) > server_file_iterator->at(2)) {
+            if (file_deleted) {
+                logger_->debug("Modificação local é mais recente, envia ao servidor, chamando delete pra arquivo  {}",
+                               modified_file.name);
                 delete_file(modified_file.name);
-            else
+            }
+            else {
+                logger_->debug("Modificação local é mais recente, envia ao servidor, chamando send_file pra arquivo  {}",
+                               modified_file.name);
                 send_file(StringFormatter() << local_directory_ << "/" << modified_file.name);
+            }
             continue;
         }
 
         // Versão do servidor é mais recente, recebe
-        if (std::to_string(modified_file.last_modification_time) < server_file_iterator->at(2))
+        if (get_modification_time(modified_file.name) < server_file_iterator->at(2)) {
+            logger_->debug("Versão do servidor é mais recente, recebe {}", modified_file.name);
             get_file(StringFormatter() << local_directory_ << "/" << modified_file.name);
+        }
     }
 
     // Buffer para arquivos que foram removidos para atualizar o registro de arquivos
@@ -179,20 +189,29 @@ void Client::sync_client()
 
         // Se o arquivo não existe no servidor e não foi criado localmente o remove
         if (server_file_iterator == server_files.end()) {
+            logger_->debug("Se o arquivo não existe no servidor e não foi criado localmente o remove {}", user_file.name);
             fs::remove(fs::path(StringFormatter() << local_directory_ << "/" << user_file.name));
             removed_files.emplace_back(user_file.name);
             continue;
         }
 
         // Verifica se o servidor está desatualizado, se estiver envia a versão mais recente
-        if (std::to_string(user_file.last_modification_time) > server_file_iterator->at(2)) {
+        if (get_modification_time(user_file.name) > server_file_iterator->at(2)) {
+            logger_->debug("Verifica se o servidor está desatualizado, se estiver envia a versão mais recente {}",
+                           user_file.name);
+            logger_->debug("Timestamp user_file {} server {}",
+                           user_file.last_modification_time,
+                           server_file_iterator->at(2));
             send_file(StringFormatter() << local_directory_ << "/" << user_file.name);
             continue;
         }
 
         // Versão do arquivo no servidor é mais recente, recebe
-        if (std::to_string(user_file.last_modification_time) < server_file_iterator->at(2))
+        if (get_modification_time(user_file.name) < server_file_iterator->at(2)) {
+            logger_->debug("Versão do arquivo no servidor é mais recente, recebe {}",
+                           user_file.name);
             get_file(StringFormatter() << local_directory_ << "/" << user_file.name);
+        }
     }
 
     // Remove os registros dos arquivos excluídos
@@ -226,6 +245,7 @@ void Client::sync_client()
             continue;
 
         // Recebe o novo arquivo
+        logger_->debug("Recebe o novo arquivo {}", server_file[0]);
         get_file(StringFormatter() << local_directory_ << "/" << server_file[0]);
     }
 
@@ -234,9 +254,9 @@ void Client::sync_client()
     modification_buffer_lock.Lock();
     for (const auto& modified_file : modification_buffer) {
         modified_files_.erase(std::remove_if(modified_files_.begin(), modified_files_.end(),
-                                         [&modified_file] (const dropbox_util::file_info &info) -> bool {
+                                         [&] (const dropbox_util::file_info &info) -> bool {
                                              return info.name == modified_file.name &&
-                                                    info.last_modification_time <= modified_file.last_modification_time;
+                                                     get_modification_time(info.name) <= get_modification_time(modified_file.name);
                                          }),
                               modified_files_.end());
     }
@@ -395,4 +415,10 @@ void Client::send_command_and_expect_confirmation(const std::string &command) {
     }
 
     logger_->debug("Received ACK from server");
+}
+
+std::string Client::get_modification_time(const std::string &filename) {
+    auto path = fs::path(StringFormatter() << local_directory_ << "/" << filename);
+    auto modification_time = fs::exists(path)? fs::last_write_time(path) : std::time(nullptr);
+    return std::to_string(modification_time);
 }
