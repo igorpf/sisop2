@@ -16,7 +16,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-using namespace DropboxUtil;
+using namespace dropbox_util;
 
 const std::string File::LOGGER_NAME = "File";
 
@@ -76,7 +76,7 @@ void File::send_file(file_transfer_request request) {
             sent_packets = 0,
             file_read_bytes;
     char buffer[BUFFER_SIZE] = {0};
-    logger_->info("Divided file transmission in {} packets. File size: {}", packets, file_length);
+    logger_->debug("Divided file transmission in {} packets. File size: {}", packets, file_length);
 
     start_handshake(request, from);
     send_file_metadata(request, from, path);
@@ -98,7 +98,7 @@ void File::send_file(file_transfer_request request) {
 
     send_finish_handshake(request, from);
     disable_socket_timeout(request);
-    logger_->info("Successfully sent file");
+    logger_->debug("Successfully sent file");
 }
 
 void File::receive_file(file_transfer_request request) {
@@ -119,7 +119,7 @@ void File::receive_file(file_transfer_request request) {
     sendto(request.socket, "ACK", 4, 0, (struct sockaddr *)&client_addr, request.peer_length);
     std::string file_mod_time(buffer, static_cast<unsigned long>(received_bytes));
     filesystem::path path(out_path);
-    logger_->info("File modification time: {}", file_mod_time);
+    logger_->debug("File modification time: {}", file_mod_time);
 
     std::fill(buffer, buffer + sizeof(buffer), 0);
     received_bytes = recvfrom(request.socket, buffer, sizeof(buffer), 0, (struct sockaddr *) &client_addr, &request.peer_length);
@@ -128,7 +128,7 @@ void File::receive_file(file_transfer_request request) {
 
     filesystem::permissions(path, parse_file_permissions_from_string(file_perm));
 
-    logger_->info("Received permissions of file: {} ", file_perm);
+    logger_->debug("Received permissions of file: {} ", file_perm);
 
     enable_socket_timeout(request);
 
@@ -149,9 +149,100 @@ void File::receive_file(file_transfer_request request) {
     filesystem::last_write_time(path, std::stol(file_mod_time));
 
     confirm_finish_handshake(request, client_addr);
-    logger_->info("Transferred file successfully!");
+    logger_->debug("Transferred file successfully!");
 
     disable_socket_timeout(request);
+}
+
+void File::send_list_files(dropbox_util::file_transfer_request request, const std::string& data) {
+    struct sockaddr_in from{};
+
+    struct timeval set_timeout_val = {0, TIMEOUT_US};
+    if(setsockopt(request.socket, SOL_SOCKET, SO_RCVTIMEO, &set_timeout_val, sizeof(set_timeout_val)) < 0)
+        logger_->error("Error setting timeout {}", set_timeout_val.tv_usec);
+
+    int64_t packets = static_cast<int64_t>(std::ceil(data.size() / ((float) BUFFER_SIZE))),
+            sent_packets = 0,
+            received_bytes;
+    char buffer[BUFFER_SIZE] {0};
+    logger_->debug("Divided list_file transmission in {} packets.", packets);
+
+    start_handshake(request, from);
+
+    unsigned long data_position = 0;
+
+    char ack[4];
+    while(packets--) {
+        std::fill(buffer, buffer + sizeof(buffer), 0);
+        std::fill(ack, buffer + sizeof(ack), 0);
+        std::string packet = data.substr(data_position, BUFFER_SIZE);
+        data_position = packet.size();
+        strncpy(buffer, packet.c_str(), data_position);
+        logger_->debug("Sending buffer size of: {}", data_position);
+        send_packet_with_retransmission(request, from, buffer, data_position);
+        sent_packets++;
+
+
+        logger_->debug("ACK received");
+    }
+
+    logger_->debug("Sending end of file");
+    buffer[0] = EOF_SYMBOL;
+    sendto(request.socket, buffer, 1, 0, (struct sockaddr *)&request.server_address, request.peer_length);
+    recvfrom(request.socket, ack, sizeof(ack), 0,(struct sockaddr *) &from, &request.peer_length);
+
+    //finish handshake
+    send_finish_handshake(request, from);
+    logger_->debug("Successfully sent file_list");
+
+    struct timeval unset_timeout_val = {0, 0};
+    if(setsockopt(request.socket, SOL_SOCKET, SO_RCVTIMEO, &unset_timeout_val, sizeof(unset_timeout_val)) == 0)
+        logger_->debug("Disabled packet timeout successfully");
+    else
+        logger_->debug("Error disabling packet timeout");
+}
+
+std::vector<std::vector<std::string>> File::receive_list_files(dropbox_util::file_transfer_request request) {
+    struct sockaddr_in client_addr{0};
+    establish_handshake(request, client_addr);
+
+    char buffer[BUFFER_SIZE] = {0}, ack[4];
+    int64_t received_bytes;
+
+    struct timeval set_timeout_val = {0, TIMEOUT_US};
+    if(setsockopt(request.socket, SOL_SOCKET, SO_RCVTIMEO, &set_timeout_val, sizeof(set_timeout_val)) < 0) {
+        logger_->error("Error setting timeout {}", set_timeout_val.tv_usec);
+    }
+
+    bool writable_packet;
+    std::stringstream received_data_stream;
+    std::string received_data;
+
+    do {
+        std::fill(buffer, buffer + sizeof(buffer), 0);
+        received_bytes = recvfrom(request.socket, buffer, sizeof(buffer), 0, (struct sockaddr *) &client_addr, &request.peer_length);
+        if(received_bytes < 0) {
+            // TODO Retry?
+            throw std::runtime_error("Error receiving packet from client");
+        }
+        writable_packet = received_bytes > 1 || (received_bytes == 1 && buffer[0] != EOF_SYMBOL);
+        if(writable_packet)
+            received_data_stream << buffer;
+        logger_->debug("Received packet. Bytes: {}", received_bytes);
+        sendto(request.socket, "ACK", 4, 0, (struct sockaddr *)&client_addr, request.peer_length);
+    } while (writable_packet);
+
+    confirm_finish_handshake(request, client_addr);
+    received_data = received_data_stream.str();
+    logger_->debug("Transferred list of files successfully!");
+
+    struct timeval unset_timeout_val = {0, 0};
+    if(setsockopt(request.socket, SOL_SOCKET, SO_RCVTIMEO, &unset_timeout_val, sizeof(unset_timeout_val)) == 0)
+        logger_->debug("Disabled packet timeout successfully");
+    else
+        logger_->debug("Error disabling packet timeout");
+
+    return dropbox_util::parse_file_list_string(received_data);
 }
 
 void File::send_finish_handshake(file_transfer_request request, struct sockaddr_in &from) {
@@ -188,13 +279,13 @@ void File::send_file_metadata(file_transfer_request request, struct sockaddr_in 
         logger_->error("Error getting modification time of file {}", request.in_file_path);
         throw std::runtime_error("Error getting modification time of file");
     }
-    logger_->info("Modification time of file: {}", st.st_mtim.tv_sec );
+    logger_->debug("Modification time of file: {}", st.st_mtim.tv_sec );
 
     std::string mod_time = std::to_string(st.st_mtim.tv_sec);
     send_packet_with_retransmission(request, from, const_cast<char *>(mod_time.c_str()), mod_time.size());
 
     filesystem::perms file_permissions = filesystem::status(path).permissions();
-    logger_->info("File permissions:  {}", file_permissions);
+    logger_->debug("File permissions:  {}", file_permissions);
     std::string file_perms_str = std::to_string(file_permissions);
     send_packet_with_retransmission(request, from, const_cast<char *>(file_perms_str.c_str()), file_perms_str.size());
 }

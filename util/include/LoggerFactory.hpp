@@ -10,7 +10,9 @@ public:
      * @param loggerName a unique string to identify to logger
      * @return a logger with the given loggerName
      */
-    static std::shared_ptr<spdlog::logger> getLoggerForName(const std::string &loggerName);
+    static std::shared_ptr<spdlog::logger> getLoggerForName(const std::string &loggerName, bool debug_enabled = false);
+private:
+    static size_t MAX_LOG_FILE_SIZE;
 };
 
 #endif //DROPBOX_LOGGERFACTORY_HPP

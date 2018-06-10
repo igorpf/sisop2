@@ -49,7 +49,7 @@ private:
     program_options::positional_options_description positional_description_;
     program_options::variables_map variables_map_;
 
-    std::array<std::string, 7> available_operations = {{"help", "upload", "download", "list_server",
+    std::array<std::string, 8> available_operations = {{"help", "upload", "download", "remove", "list_server",
                                                        "list_client", "get_sync_dir", "exit"}};
 };
 

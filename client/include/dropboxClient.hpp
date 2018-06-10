@@ -3,13 +3,12 @@
 
 #include <string>
 #include <vector>
+#include <pthread.h>
 #include <netinet/in.h>
 #include <spdlog/spdlog.h>
 
 #include "../../util/include/dropboxUtil.hpp"
 #include "iclient.hpp"
-
-namespace util = DropboxUtil;
 
 class Client : public IClient {
 public:
@@ -30,14 +29,12 @@ public:
     /**
      * Envia um arquivo para o servidor (upload)
      * @param complete_file_path Nome do arquivo a ser enviado
-     * TODO(jfguimaraes) O nome do arquivo é um caminho absoluto ou relativo?
      */
     void send_file(const std::string &complete_file_path) override;
 
     /**
      * Obtém um arquivo do servidor (download)
      * @param filename Nome do arquivo a ser obtido
-     * TODO(jfguimaraes) É possível otimizar copiando o arquivo do diretório sync_dir local?
      */
     void get_file(const std::string &filename) override;
 
@@ -45,7 +42,7 @@ public:
      * Exclui um arquivo de "sync_dir_<user_id>"
      * @param filename Nome do arquivo a ser excluído
      */
-    void delete_file(const std::string &filename);
+    void delete_file(const std::string &filename) override;
 
     /**
      * Lista os arquivos do usuário no servidor
@@ -63,20 +60,11 @@ public:
     void close_session() override;
 
 private:
-    bool logged_in_ = false;
-    std::string device_id_;
-    std::string user_id_;
-    std::vector<util::file_info> user_files_;
-    std::string local_directory_;
-
-    static const std::string LOGGER_NAME;
-    std::shared_ptr<spdlog::logger> logger_;
-
-    int64_t port_;
-    std::string hostname_;
-    struct sockaddr_in server_addr_;
-    util::SOCKET socket_;
-    socklen_t peer_length_;
+    /**
+     * Verifica se existe um id salvo no disco e o utiliza
+     * Se não existir gera um novo e salva no disco
+     */
+    void set_device_id();
 
     /**
      * Estabelece uma conexão entre o cliente e o servidor
@@ -84,10 +72,40 @@ private:
     void login_server();
 
     /**
-     * Sends command to server and expects an ACK message.
-     * Throws an exception if no message has been received or if it is not an ACK
+     * Carrega informações de arquivos já disponíveis no disco
+     * Útil para quando o cliente é reiniciado
      */
-    void send_command_and_expect_confirmation(const std::string &command);
+    void load_info_from_disk();
+
+    /**
+     * Envia um comando para o servidor e aguarda uma mensagem de ACK, joga uma
+     * exceção se não receber o ack ou se receber uma mensagem de erro
+     */
+    void send_command_and_expect_confirmation(const std::string& command);
+
+    /**
+     * Atualiza os metadados de um arquivo modificado
+     * Isso é necessário porque às vezes o evento de modificação do arquivo ocorre antes
+     * dos metadados do arquivo terem sido atualizados em disco, o que causa dados incorretos no buffer
+     * Deve ser chamada no sync_client para cada arquivo modificado
+     */
+    void update_modified_info(dropbox_util::file_info& info);
+
+    std::string device_id_;
+    std::string user_id_;
+
+    static const std::string LOGGER_NAME;
+    std::shared_ptr<spdlog::logger> logger_;
+
+    const std::string device_id_file_ = ".device_id";
+
+    int64_t port_;
+    std::string hostname_;
+    struct sockaddr_in server_addr_;
+    dropbox_util::SOCKET socket_;
+    socklen_t peer_length_;
+
+    pthread_mutex_t socket_mutex_ = PTHREAD_MUTEX_INITIALIZER;
 };
 
 #endif // SISOP2_CLIENT_INCLUDE_DROPBOXCLIENT_HPP
