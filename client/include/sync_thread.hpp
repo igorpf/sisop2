@@ -23,7 +23,7 @@ protected:
 
 private:
     IClient& client_;
-    int64_t sync_interval_in_microseconds_ = 500;
+    int64_t sync_interval_in_microseconds_ = 50000;
 
     static const std::string LOGGER_NAME;
     std::shared_ptr<spdlog::logger> logger_;

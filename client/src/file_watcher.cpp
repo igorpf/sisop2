@@ -37,7 +37,7 @@ void FileWatcher::Run()
         throw std::runtime_error("Couldn't add file watcher to sync_dir folder");
 
     inotify_watcher = inotify_add_watch(inotify_descriptor, client_.local_directory_.c_str(),
-            IN_CREATE | IN_CLOSE_WRITE | IN_DELETE | IN_MOVED_FROM | IN_MOVED_TO);
+            IN_CLOSE_WRITE | IN_DELETE | IN_MOVED_FROM | IN_MOVED_TO);
 
     logger_->debug(static_cast<std::string>(StringFormatter() << "Watching directory: " << client_.local_directory_));
 
@@ -63,10 +63,7 @@ void FileWatcher::Run()
 
                 // Ignora eventos em diretórios e em arquivos ocultos
                 if (event->len && !(event->mask & IN_ISDIR) && !dropbox_util::should_ignore_file(event->name)) {
-                    if (event->mask & IN_CREATE) {
-                        logger_->debug(static_cast<std::string>(StringFormatter()
-                                << "File " << event->name << " created"));
-                    } else if (event->mask & IN_CLOSE_WRITE) {
+                    if (event->mask & IN_CLOSE_WRITE) {
                         logger_->debug(static_cast<std::string>(StringFormatter()
                                 << "File " << event->name << " written"));
                         AddModifiedFile(event->name);

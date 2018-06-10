@@ -59,8 +59,6 @@ public:
      */
     void close_session() override;
 
-    std::string get_modification_time(const std::string &filename);
-
 private:
     /**
      * Verifica se existe um id salvo no disco e o utiliza
@@ -84,6 +82,14 @@ private:
      * exceção se não receber o ack ou se receber uma mensagem de erro
      */
     void send_command_and_expect_confirmation(const std::string& command);
+
+    /**
+     * Atualiza os metadados de um arquivo modificado
+     * Isso é necessário porque às vezes o evento de modificação do arquivo ocorre antes
+     * dos metadados do arquivo terem sido atualizados em disco, o que causa dados incorretos no buffer
+     * Deve ser chamada no sync_client para cada arquivo modificado
+     */
+    void update_modified_info(dropbox_util::file_info& info);
 
     std::string device_id_;
     std::string user_id_;

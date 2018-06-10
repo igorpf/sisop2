@@ -116,9 +116,11 @@ void Client::sync_client()
     auto server_files = list_server();
     server_files.erase(server_files.begin());
 
-    // Copia o buffer de arquivos modificados para permitir que novas modificações
-    // possam ser adicionadas enquanto a sincronização acontece
+    // Atualiza as informações dos arquivos modificados e copia o buffer para permitir
+    // que novas modificações possam ser adicionadas enquanto a sincronização acontece
     LockGuard modification_buffer_lock(modification_buffer_mutex_);
+    for (auto& modified_file : modified_files_)
+        update_modified_info(modified_file);
     auto modification_buffer = modified_files_;
     modification_buffer_lock.Unlock();
 
@@ -143,7 +145,7 @@ void Client::sync_client()
         }
 
         // Modificação local é mais recente, envia ao servidor
-        if (get_modification_time(modified_file.name) > server_file_iterator->at(2)) {
+        if (modified_file.last_modification_time > std::stoi(server_file_iterator->at(2))) {
             if (file_deleted) {
                 logger_->debug("Modificação local é mais recente, envia ao servidor, chamando delete pra arquivo  {}",
                                modified_file.name);
@@ -158,7 +160,7 @@ void Client::sync_client()
         }
 
         // Versão do servidor é mais recente, recebe
-        if (get_modification_time(modified_file.name) < server_file_iterator->at(2)) {
+        if (modified_file.last_modification_time < std::stoi(server_file_iterator->at(2))) {
             logger_->debug("Versão do servidor é mais recente, recebe {}", modified_file.name);
             get_file(StringFormatter() << local_directory_ << "/" << modified_file.name);
         }
@@ -196,7 +198,7 @@ void Client::sync_client()
         }
 
         // Verifica se o servidor está desatualizado, se estiver envia a versão mais recente
-        if (get_modification_time(user_file.name) > server_file_iterator->at(2)) {
+        if (user_file.last_modification_time > std::stoi(server_file_iterator->at(2))) {
             logger_->debug("Verifica se o servidor está desatualizado, se estiver envia a versão mais recente {}",
                            user_file.name);
             logger_->debug("Timestamp user_file {} server {}",
@@ -207,7 +209,7 @@ void Client::sync_client()
         }
 
         // Versão do arquivo no servidor é mais recente, recebe
-        if (get_modification_time(user_file.name) < server_file_iterator->at(2)) {
+        if (user_file.last_modification_time < std::stoi(server_file_iterator->at(2))) {
             logger_->debug("Versão do arquivo no servidor é mais recente, recebe {}",
                            user_file.name);
             get_file(StringFormatter() << local_directory_ << "/" << user_file.name);
@@ -256,7 +258,7 @@ void Client::sync_client()
         modified_files_.erase(std::remove_if(modified_files_.begin(), modified_files_.end(),
                                          [&] (const dropbox_util::file_info &info) -> bool {
                                              return info.name == modified_file.name &&
-                                                     get_modification_time(info.name) <= get_modification_time(modified_file.name);
+                                                     info.last_modification_time <= modified_file.last_modification_time;
                                          }),
                               modified_files_.end());
     }
@@ -387,7 +389,7 @@ std::vector<std::vector<std::string>> Client::list_client()
 
 void Client::close_session()
 {
-    // TODO(jfguimaraes) Implement client logoff
+    // TODO Implement client logoff
     logger_->debug("Client logged off");
     logged_in_ = false;
 }
@@ -417,8 +419,26 @@ void Client::send_command_and_expect_confirmation(const std::string &command) {
     logger_->debug("Received ACK from server");
 }
 
-std::string Client::get_modification_time(const std::string &filename) {
-    auto path = fs::path(StringFormatter() << local_directory_ << "/" << filename);
-    auto modification_time = fs::exists(path)? fs::last_write_time(path) : std::time(nullptr);
-    return std::to_string(modification_time);
+void Client::update_modified_info(dropbox_util::file_info& info) {
+    fs::path filepath {fs::path(StringFormatter() << local_directory_ << "/" << info.name)};
+
+    std::time_t modification_time {fs::exists(filepath) ? fs::last_write_time(filepath) : info.last_modification_time};
+    int64_t file_size {fs::exists(filepath) ? static_cast<int64_t>(fs::file_size(filepath)) : info.size};
+
+    if (modification_time != info.last_modification_time || file_size != info.size) {
+        // Se o buffer estava desatualizado a lista de arquivos do usuário também está, atualiza
+        LockGuard user_files_lock(user_files_mutex_);
+
+        auto user_file_iterator = std::find_if(user_files_.begin(), user_files_.end(),
+                                               [&info] (const util::file_info& user_file) ->
+                                                       bool {return user_file.name == info.name;});
+
+        if (user_file_iterator != user_files_.end()) {
+            user_file_iterator->size = file_size;
+            user_file_iterator->last_modification_time = modification_time;
+        }
+
+        info.size = file_size;
+        info.last_modification_time = modification_time;
+    }
 }
