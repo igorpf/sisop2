@@ -37,7 +37,7 @@ void LoginCommandParser::ParseInput(int argc, char **argv) {
 
 void LoginCommandParser::ValidateInput() {
     if (variables_map_.empty())
-        throw std::runtime_error("no arguments have been parsed");
+        throw std::runtime_error("No arguments have been parsed");
 
     if (variables_map_.count("help") > 0)
         return;
@@ -45,24 +45,24 @@ void LoginCommandParser::ValidateInput() {
     auto userid = variables_map_["userid"].as<std::string>();
 
     if (userid.size() < 4)
-        throw std::runtime_error("user id must have more than 4 characters");
+        throw std::runtime_error("User id must have more than 4 characters");
 
     auto hostname = variables_map_["hostname"].as<std::string>();
     boost::system::error_code error_code;
     boost::asio::ip::make_address(hostname, error_code);
 
     if (error_code)
-        throw std::runtime_error("invalid hostname: " + error_code.message());
+        throw std::runtime_error("Invalid hostname: " + error_code.message());
 
     auto port = variables_map_["port"].as<int64_t>();
 
     if (port < 0 || port > 65536)
-        throw std::runtime_error("invalid port");
+        throw std::runtime_error("Invalid port");
 }
 
 bool LoginCommandParser::ShowHelpMessage() {
     if (variables_map_.empty())
-        throw std::runtime_error("no arguments have been parsed");
+        throw std::runtime_error("No arguments have been parsed");
 
     if (variables_map_.count("help") == 0)
         return false;
@@ -75,21 +75,21 @@ bool LoginCommandParser::ShowHelpMessage() {
 
 std::string LoginCommandParser::GetUserid() {
     if (variables_map_.count("userid") == 0)
-        throw std::runtime_error("no userid available");
+        throw std::runtime_error("No userid available");
 
     return variables_map_["userid"].as<std::string>();
 }
 
 std::string LoginCommandParser::GetHostname() {
     if (variables_map_.count("hostname") == 0)
-        throw std::runtime_error("no hostname available");
+        throw std::runtime_error("No hostname available");
 
     return variables_map_["hostname"].as<std::string>();
 }
 
 int64_t LoginCommandParser::GetPort() {
     if (variables_map_.count("port") == 0)
-        throw std::runtime_error("no port available");
+        throw std::runtime_error("No port available");
 
     return variables_map_["port"].as<int64_t >();
 }

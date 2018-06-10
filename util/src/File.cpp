@@ -76,7 +76,7 @@ void File::send_file(file_transfer_request request) {
             sent_packets = 0,
             file_read_bytes;
     char buffer[BUFFER_SIZE] = {0};
-    logger_->info("Divided file transmission in {} packets. File size: {}", packets, file_length);
+    logger_->debug("Divided file transmission in {} packets. File size: {}", packets, file_length);
 
     start_handshake(request, from);
     send_file_metadata(request, from, path);
@@ -98,7 +98,7 @@ void File::send_file(file_transfer_request request) {
 
     send_finish_handshake(request, from);
     disable_socket_timeout(request);
-    logger_->info("Successfully sent file");
+    logger_->debug("Successfully sent file");
 }
 
 void File::receive_file(file_transfer_request request) {
@@ -119,7 +119,7 @@ void File::receive_file(file_transfer_request request) {
     sendto(request.socket, "ACK", 4, 0, (struct sockaddr *)&client_addr, request.peer_length);
     std::string file_mod_time(buffer, static_cast<unsigned long>(received_bytes));
     filesystem::path path(out_path);
-    logger_->info("File modification time: {}", file_mod_time);
+    logger_->debug("File modification time: {}", file_mod_time);
 
     std::fill(buffer, buffer + sizeof(buffer), 0);
     received_bytes = recvfrom(request.socket, buffer, sizeof(buffer), 0, (struct sockaddr *) &client_addr, &request.peer_length);
@@ -128,7 +128,7 @@ void File::receive_file(file_transfer_request request) {
 
     filesystem::permissions(path, parse_file_permissions_from_string(file_perm));
 
-    logger_->info("Received permissions of file: {} ", file_perm);
+    logger_->debug("Received permissions of file: {} ", file_perm);
 
     enable_socket_timeout(request);
 
@@ -149,7 +149,7 @@ void File::receive_file(file_transfer_request request) {
     filesystem::last_write_time(path, std::stol(file_mod_time));
 
     confirm_finish_handshake(request, client_addr);
-    logger_->info("Transferred file successfully!");
+    logger_->debug("Transferred file successfully!");
 
     disable_socket_timeout(request);
 }
@@ -165,7 +165,7 @@ void File::send_list_files(dropbox_util::file_transfer_request request, const st
             sent_packets = 0,
             received_bytes;
     char buffer[BUFFER_SIZE] {0};
-    logger_->info("Divided list_file transmission in {} packets.", packets);
+    logger_->debug("Divided list_file transmission in {} packets.", packets);
 
     start_handshake(request, from);
 
@@ -179,26 +179,9 @@ void File::send_list_files(dropbox_util::file_transfer_request request, const st
         data_position = packet.size();
         strncpy(buffer, packet.c_str(), data_position);
         logger_->debug("Sending buffer size of: {}", data_position);
+        send_packet_with_retransmission(request, from, buffer, data_position);
+        sent_packets++;
 
-        bool ack_error;
-        int retransmissions = 0;
-        do {
-            sendto(request.socket, buffer, static_cast<size_t>(data_position), 0, (struct sockaddr *)&request.server_address,
-                   request.peer_length);
-            received_bytes = recvfrom(request.socket, ack, sizeof(ack), 0,(struct sockaddr *) &from, &request.peer_length);
-            ack[3] = '\0';
-            ack_error = received_bytes <= 0 || strcmp(ack, "ACK") != 0 != 0;
-            if(ack_error) {
-                logger_->error("Error receiving ACK, retransmitting packet of number {}", sent_packets);
-                retransmissions++;
-                if(retransmissions >= MAX_RETRANSMISSIONS) {
-                    logger_->error("Achieved maximum retransmissions of {}, aborting file transmission", retransmissions);
-                    throw std::runtime_error("Maximum retransmissions achieved");
-                }
-            }
-            else
-                sent_packets++;
-        } while(ack_error);
 
         logger_->debug("ACK received");
     }
@@ -210,7 +193,7 @@ void File::send_list_files(dropbox_util::file_transfer_request request, const st
 
     //finish handshake
     send_finish_handshake(request, from);
-    logger_->info("Successfully sent file_list");
+    logger_->debug("Successfully sent file_list");
 
     struct timeval unset_timeout_val = {0, 0};
     if(setsockopt(request.socket, SOL_SOCKET, SO_RCVTIMEO, &unset_timeout_val, sizeof(unset_timeout_val)) == 0)
@@ -251,7 +234,7 @@ std::vector<std::vector<std::string>> File::receive_list_files(dropbox_util::fil
 
     confirm_finish_handshake(request, client_addr);
     received_data = received_data_stream.str();
-    logger_->info("Transferred list of files successfully!");
+    logger_->debug("Transferred list of files successfully!");
 
     struct timeval unset_timeout_val = {0, 0};
     if(setsockopt(request.socket, SOL_SOCKET, SO_RCVTIMEO, &unset_timeout_val, sizeof(unset_timeout_val)) == 0)
@@ -296,13 +279,13 @@ void File::send_file_metadata(file_transfer_request request, struct sockaddr_in 
         logger_->error("Error getting modification time of file {}", request.in_file_path);
         throw std::runtime_error("Error getting modification time of file");
     }
-    logger_->info("Modification time of file: {}", st.st_mtim.tv_sec );
+    logger_->debug("Modification time of file: {}", st.st_mtim.tv_sec );
 
     std::string mod_time = std::to_string(st.st_mtim.tv_sec);
     send_packet_with_retransmission(request, from, const_cast<char *>(mod_time.c_str()), mod_time.size());
 
     filesystem::perms file_permissions = filesystem::status(path).permissions();
-    logger_->info("File permissions:  {}", file_permissions);
+    logger_->debug("File permissions:  {}", file_permissions);
     std::string file_perms_str = std::to_string(file_permissions);
     send_packet_with_retransmission(request, from, const_cast<char *>(file_perms_str.c_str()), file_perms_str.size());
 }

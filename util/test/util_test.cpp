@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "../include/dropboxUtil.hpp"
 #include "../include/string_formatter.hpp"
 #include "../include/File.hpp"
@@ -90,6 +92,72 @@ TEST(UtilityFunctions, RandomNumber)
     ASSERT_NE(random_1, random_3);
 }
 
+TEST(UtilityFunctions, StartsWith)
+{
+    std::string original_string = "Hello, world!";
+    std::string valid_prefix = "Hello";
+    std::string invalid_prefix = "helo";
+
+    ASSERT_TRUE(dropbox_util::starts_with(original_string, valid_prefix));
+    ASSERT_FALSE(dropbox_util::starts_with(original_string, invalid_prefix));
+}
+
+TEST(UtilityFunctions, EndsWith)
+{
+    std::string original_string = "Hello, world!";
+    std::string valid_suffix = "world!";
+    std::string invalid_suffix = "word!";
+
+    ASSERT_TRUE(dropbox_util::ends_with(original_string, valid_suffix));
+    ASSERT_FALSE(dropbox_util::ends_with(original_string, invalid_suffix));
+}
+
+TEST(UtilityFunctions, ShouldIgnoreFile)
+{
+    std::string normal_file = "filename.txt";
+    std::string hidden_file = ".filename.txt";
+    std::string backup_file = "filename.txt~";
+
+    EXPECT_FALSE(dropbox_util::should_ignore_file(normal_file));
+    EXPECT_TRUE(dropbox_util::should_ignore_file(hidden_file));
+    EXPECT_TRUE(dropbox_util::should_ignore_file(backup_file));
+}
+
+TEST(UtilityFunctions, RemoveFilenameFromList)
+{
+    dropbox_util::file_info file_1 {"file_1", 10, 15623};
+    dropbox_util::file_info file_2 {"file_2", 467, 187295};
+    dropbox_util::file_info file_3 {"file_3", 9575, 126384};
+
+    std::vector<dropbox_util::file_info> file_list;
+
+    // Try to remove item from empty list
+    EXPECT_NO_THROW(dropbox_util::remove_filename_from_list("file_1", file_list));
+
+    // Add items to list
+    file_list.emplace_back(file_1);
+    file_list.emplace_back(file_2);
+    file_list.emplace_back(file_3);
+
+    EXPECT_NE(std::find(file_list.begin(), file_list.end(), file_1), file_list.end());
+    EXPECT_NE(std::find(file_list.begin(), file_list.end(), file_2), file_list.end());
+    EXPECT_NE(std::find(file_list.begin(), file_list.end(), file_3), file_list.end());
+
+    // Remove existent file
+    dropbox_util::remove_filename_from_list("file_2", file_list);
+
+    EXPECT_NE(std::find(file_list.begin(), file_list.end(), file_1), file_list.end());
+    EXPECT_EQ(std::find(file_list.begin(), file_list.end(), file_2), file_list.end());
+    EXPECT_NE(std::find(file_list.begin(), file_list.end(), file_3), file_list.end());
+
+    // Remove non-existent file
+    dropbox_util::remove_filename_from_list("file_4", file_list);
+
+    EXPECT_NE(std::find(file_list.begin(), file_list.end(), file_1), file_list.end());
+    EXPECT_EQ(std::find(file_list.begin(), file_list.end(), file_2), file_list.end());
+    EXPECT_NE(std::find(file_list.begin(), file_list.end(), file_3), file_list.end());
+}
+
 /// File list parsing
 
 TEST(FileListParsing, FileListParsing)
@@ -123,6 +191,8 @@ TEST(TablePrinter, RegularTable)
     ASSERT_EQ("test1       test2  test3  ", line1);
     ASSERT_EQ("hello_world s      string ", line2);
 }
+
+/// LoggerFactory
 
 TEST(LoggerFactory, GivenLoggersWithSameNameShouldNotCrash)
 {

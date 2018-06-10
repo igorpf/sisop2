@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#include "../../util/include/dropboxUtil.hpp"
+
 /**
  * Interface genérica para um objeto do tipo cliente
  * Usada para facilitar o teste de módulos que interagem com a classe Client
@@ -22,6 +24,15 @@ public:
     virtual std::vector<std::vector<std::string>> list_client() = 0;
 
     virtual void close_session() = 0;
+
+    bool logged_in_ = false;
+    std::string local_directory_;
+
+    std::vector<dropbox_util::file_info> user_files_;
+    std::vector<dropbox_util::file_info> modified_files_;
+
+    pthread_mutex_t user_files_mutex_ = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_t modification_buffer_mutex_ = PTHREAD_MUTEX_INITIALIZER;
 };
 
 #endif // SISOP2_CLIENT_INCLUDE_ICLIENT_HPP

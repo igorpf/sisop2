@@ -8,17 +8,19 @@
 #include "../../util/include/LoggerFactory.hpp"
 
 const std::string Shell::LOGGER_NAME = "Shell";
+const std::string Shell::STDOUT_LOGGER_NAME = "ClientShell";
 
 Shell::Shell(IClient &client) : client_(client)
 {
     logger_ = LoggerFactory::getLoggerForName(LOGGER_NAME);
-    std::string stdout_logger = LOGGER_NAME + "-stdout";
-    stdout_logger_ = spdlog::get(stdout_logger)? spdlog::get(stdout_logger): spdlog::stdout_color_mt(stdout_logger);
+    stdout_logger_ = spdlog::get(STDOUT_LOGGER_NAME) ?
+            spdlog::get(STDOUT_LOGGER_NAME) : spdlog::stdout_color_mt(STDOUT_LOGGER_NAME);
 }
 
 Shell::~Shell()
 {
     spdlog::drop(LOGGER_NAME);
+    spdlog::drop(STDOUT_LOGGER_NAME);
 }
 
 void Shell::loop(std::istream& input_stream)

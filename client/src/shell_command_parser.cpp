@@ -3,9 +3,11 @@
 #include <iostream>
 #include <exception>
 
-#include <sys/stat.h>
+#include <boost/filesystem.hpp>
 #include <boost/asio.hpp>
 #include <boost/system/error_code.hpp>
+
+namespace fs = boost::filesystem;
 
 ShellCommandParser::ShellCommandParser() {
     description_.add_options()
@@ -38,7 +40,7 @@ void ShellCommandParser::ParseInput(std::vector<std::string> arguments) {
     bool operation_specified = variables_map_.count("operation") > 0;
 
     if (!operation_specified)
-        throw std::runtime_error("missing parameters, use help for usage info");
+        throw std::runtime_error("Missing parameters, use help for usage info");
 
     auto operation = variables_map_["operation"].as<std::string>();
     bool path_used = operation == "upload" || operation == "download" || operation == "remove";
@@ -46,32 +48,36 @@ void ShellCommandParser::ParseInput(std::vector<std::string> arguments) {
     bool path_specified_when_should = path_used ? variables_map_.count("filepath") > 0 : true;
 
     if (!path_specified_when_should)
-        throw std::runtime_error("missing parameters, use help for usage info");
+        throw std::runtime_error("Missing parameters, use help for usage info");
 
     bool path_not_specified_when_shouldnt = !path_used ? variables_map_.count("filepath") < 1 : true;
 
     if (!path_not_specified_when_shouldnt)
-        throw std::runtime_error("too many parameters, use help for usage info");
+        throw std::runtime_error("Too many parameters, use help for usage info");
 }
 
 void ShellCommandParser::ValidateInput() {
     if (variables_map_.empty())
-        throw std::runtime_error("no arguments have been parsed");
+        throw std::runtime_error("No arguments have been parsed");
 
     auto operation = variables_map_["operation"].as<std::string>();
 
     if (std::find(available_operations.begin(), available_operations.end(), operation) == available_operations.end())
-        throw std::runtime_error("invalid operation, use help for usage info");
+        throw std::runtime_error("Invalid operation, use help for usage info");
 
-    struct stat local_file {0};
+    if (operation == "upload") {
+        fs::path file_path {variables_map_["filepath"].as<std::string>().c_str()};
 
-    if (operation == "upload" && stat(variables_map_["filepath"].as<std::string>().c_str(), &local_file) != 0)
-        throw std::runtime_error("local file doesn't exist");
+        if (!fs::exists(file_path))
+            throw std::runtime_error("Local file doesn't exist");
+        else if (fs::is_directory(file_path))
+            throw std::runtime_error("Upload of directories is not supported");
+    }
 }
 
 void ShellCommandParser::ShowHelpMessage() {
     if (variables_map_.empty())
-        throw std::runtime_error("no arguments have been parsed");
+        throw std::runtime_error("No arguments have been parsed");
 
     std::cout << "Usage: operation filepath\n";
     std::cout << description_ << std::endl;
@@ -79,14 +85,14 @@ void ShellCommandParser::ShowHelpMessage() {
 
 std::string ShellCommandParser::GetOperation() {
     if (variables_map_.count("operation") == 0)
-        throw std::runtime_error("no operation available");
+        throw std::runtime_error("No operation available");
 
     return variables_map_["operation"].as<std::string>();
 }
 
 std::string ShellCommandParser::GetFilePath() {
     if (variables_map_.count("filepath") == 0)
-        throw std::runtime_error("no filepath available");
+        throw std::runtime_error("No filepath available");
 
     return variables_map_["filepath"].as<std::string>();
 }

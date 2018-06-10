@@ -21,7 +21,6 @@ class Server {
 public:
     // TODO Implementar função pra logoff do cliente que remove o dispositivo da lista (é isso que deve acontecer?)
     Server();
-
     virtual ~Server();
 
     /**
@@ -42,7 +41,7 @@ private:
     void load_info_from_disk();
 
     /**
-     * Parses the command received by the client
+     * Verifica o comando enviado pelo cliente e executa a operação correspondente
      */
     void parse_command(const std::string &command_line);
 

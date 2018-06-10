@@ -26,6 +26,14 @@ int64_t dropbox_util::get_random_number() {
     return std::rand();
 }
 
+bool dropbox_util::starts_with(const std::string& str, const std::string& prefix) {
+    return str.size() >= prefix.size() && 0 == str.compare(0, prefix.size(), prefix);
+}
+
+bool dropbox_util::ends_with(const std::string& str, const std::string& suffix) {
+    return str.size() >= suffix.size() && 0 == str.compare(str.size()-suffix.size(), suffix.size(), suffix);
+}
+
 std::vector<std::vector<std::string>> dropbox_util::parse_file_list_string(const std::string &received_data) {
     std::vector<std::vector<std::string>> server_entries;
     unsigned long last_position = 0;
@@ -81,10 +89,23 @@ std::vector<std::vector<std::string>> dropbox_util::parse_file_list_string(const
     return server_entries;
 }
 
+bool dropbox_util::should_ignore_file(const std::string &filename) {
+    return starts_with(filename, ".") || ends_with(filename, "~");
+}
+
 std::string dropbox_util::get_error_from_message(const std::string &error_message) {
     auto found = error_message.find(ERROR_MESSAGE_INITIAL_TOKEN);
-    if(found != std::string::npos) {
+    if (found != std::string::npos) {
         return error_message.substr(found + ERROR_MESSAGE_INITIAL_TOKEN.size());
     }
     return error_message;
+}
+
+void dropbox_util::remove_filename_from_list(const std::string &filename,
+                                             std::vector<dropbox_util::file_info> &file_list) {
+    if (!file_list.empty())
+        file_list.erase(std::remove_if(file_list.begin(), file_list.end(),
+                                       [&filename] (const dropbox_util::file_info& info) ->
+                                               bool {return filename == info.name;}),
+                        file_list.end());
 }
