@@ -179,26 +179,9 @@ void File::send_list_files(dropbox_util::file_transfer_request request, const st
         data_position = packet.size();
         strncpy(buffer, packet.c_str(), data_position);
         logger_->debug("Sending buffer size of: {}", data_position);
+        send_packet_with_retransmission(request, from, buffer, data_position);
+        sent_packets++;
 
-        bool ack_error;
-        int retransmissions = 0;
-        do {
-            sendto(request.socket, buffer, static_cast<size_t>(data_position), 0, (struct sockaddr *)&request.server_address,
-                   request.peer_length);
-            received_bytes = recvfrom(request.socket, ack, sizeof(ack), 0,(struct sockaddr *) &from, &request.peer_length);
-            ack[3] = '\0';
-            ack_error = received_bytes <= 0 || strcmp(ack, "ACK") != 0 != 0;
-            if(ack_error) {
-                logger_->error("Error receiving ACK, retransmitting packet of number {}", sent_packets);
-                retransmissions++;
-                if(retransmissions >= MAX_RETRANSMISSIONS) {
-                    logger_->error("Achieved maximum retransmissions of {}, aborting file transmission", retransmissions);
-                    throw std::runtime_error("Maximum retransmissions achieved");
-                }
-            }
-            else
-                sent_packets++;
-        } while(ack_error);
 
         logger_->debug("ACK received");
     }
