@@ -20,12 +20,7 @@ using namespace dropbox_util;
 
 const std::string File::LOGGER_NAME = "File";
 
-File::File() {
-    logger_ = LoggerFactory::getLoggerForName(LOGGER_NAME);
-}
-
-File::~File() {
-    spdlog::drop(LOGGER_NAME);
+File::File() : logger_(LOGGER_NAME) {
 }
 
 int64_t get_file_length(filesystem::path &path) {

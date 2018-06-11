@@ -7,6 +7,7 @@
 
 #include "../../util/include/pthread_wrapper.hpp"
 #include "iclient.hpp"
+#include "../../util/include/logger_wrapper.hpp"
 
 /**
  * Classe que encapsula a thread de monitoramento de arquivos na pasta sync_dir
@@ -14,7 +15,6 @@
 class FileWatcher : public PThreadWrapper {
 public:
     explicit FileWatcher(IClient& client);
-    ~FileWatcher() override;
 
 protected:
     /**
@@ -31,7 +31,7 @@ private:
     IClient& client_;
 
     static const std::string LOGGER_NAME;
-    std::shared_ptr<spdlog::logger> logger_;
+    LoggerWrapper logger_;
 
     const size_t EVENT_SIZE = sizeof (struct inotify_event);
     const size_t EVENT_BUF_LEN = 1024 * (EVENT_SIZE + 16);

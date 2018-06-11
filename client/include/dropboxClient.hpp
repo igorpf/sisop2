@@ -8,12 +8,12 @@
 #include <spdlog/spdlog.h>
 
 #include "../../util/include/dropboxUtil.hpp"
+#include "../../util/include/logger_wrapper.hpp"
 #include "iclient.hpp"
 
 class Client : public IClient {
 public:
     Client();
-    ~Client() override;
 
     /**
      * Inicializa o client fazendo o parse dos argumentos de linha de comando,
@@ -95,7 +95,7 @@ private:
     std::string user_id_;
 
     static const std::string LOGGER_NAME;
-    std::shared_ptr<spdlog::logger> logger_;
+    LoggerWrapper logger_;
 
     const std::string device_id_file_ = ".device_id";
 

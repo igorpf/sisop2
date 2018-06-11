@@ -30,15 +30,7 @@ namespace util = dropbox_util;
 
 const std::string Client::LOGGER_NAME = "Client";
 
-Client::Client()
-{
-    logger_ = LoggerFactory::getLoggerForName(LOGGER_NAME);
-}
-
-Client::~Client()
-{
-    spdlog::drop(LOGGER_NAME);
-}
+Client::Client() : logger_(LOGGER_NAME) {}
 
 void Client::start_client(int argc, char **argv)
 {

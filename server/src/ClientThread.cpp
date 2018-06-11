@@ -15,13 +15,8 @@ ClientThread::ClientThread(const std::string &user_id, const std::string &device
                            const std::string &ip, int32_t port, dropbox_util::SOCKET socket, dropbox_util::client_info &info,
                            pthread_mutex_t &client_info_mutex) :
         user_id_(user_id), device_id_(device_id), logger_name_(logger_name), ip_(ip),
-        port_(port), socket_(socket), info_(info), client_info_mutex_(client_info_mutex) {
-    logger_ = LoggerFactory::getLoggerForName(logger_name);
+        port_(port), socket_(socket), info_(info), client_info_mutex_(client_info_mutex), logger_(logger_name) {
     local_directory_ = StringFormatter() << local_directory << "/" << user_id << "/";
-}
-
-ClientThread::~ClientThread() {
-    spdlog::drop(logger_name_);
 }
 
 void ClientThread::parse_command(const std::string &command_line) {

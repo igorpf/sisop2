@@ -4,6 +4,7 @@
 #include "../../util/include/dropboxUtil.hpp"
 #include "ClientThreadPool.hpp"
 #include "../../util/include/LoggerFactory.hpp"
+#include "../../util/include/logger_wrapper.hpp"
 
 #include <string>
 #include <vector>
@@ -21,7 +22,6 @@ class Server {
 public:
     // TODO Implementar função pra logoff do cliente que remove o dispositivo da lista (é isso que deve acontecer?)
     Server();
-    virtual ~Server();
 
     /**
      * Inicializa o servidor e o coloca para ouvir comandos dos clientes
@@ -76,7 +76,7 @@ private:
     new_client_connection_info allocate_connection_for_client(const std::string &ip);
 
     static const std::string LOGGER_NAME;
-    std::shared_ptr<spdlog::logger> logger_;
+    LoggerWrapper logger_;
 
     const int64_t MAX_CLIENT_DEVICES = 2;
 

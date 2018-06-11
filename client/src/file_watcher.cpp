@@ -14,15 +14,8 @@ namespace util = dropbox_util;
 
 const std::string FileWatcher::LOGGER_NAME = "FileWatcher";
 
-FileWatcher::FileWatcher(IClient& client) : client_(client)
-{
-    logger_ = LoggerFactory::getLoggerForName(LOGGER_NAME);
-}
-
-FileWatcher::~FileWatcher()
-{
-    spdlog::drop(LOGGER_NAME);
-}
+FileWatcher::FileWatcher(IClient& client) : client_(client), logger_(LOGGER_NAME)
+{}
 
 void FileWatcher::Run()
 {

@@ -25,7 +25,7 @@ add_executable(server_test
         ../include/ClientThread.hpp
         server_test.cpp
         ../src/ClientThreadPool.cpp
-        ../include/ClientThreadPool.hpp)
+        ../include/ClientThreadPool.hpp ../../util/include/logger_wrapper.hpp)
 
 # Target libraries
 target_link_libraries(server_test PUBLIC GTest::main Boost::system Boost::filesystem -static-libstdc++)

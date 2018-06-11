@@ -5,6 +5,7 @@
 #include <spdlog/spdlog.h>
 
 #include "dropboxUtil.hpp"
+#include "logger_wrapper.hpp"
 
 namespace filesystem = boost::filesystem;
 
@@ -13,7 +14,6 @@ namespace dropbox_util {
     class File {
     public:
         File();
-        virtual ~File();
 
         void send_file(file_transfer_request request);
         void receive_file(file_transfer_request request);
@@ -58,7 +58,7 @@ namespace dropbox_util {
 
         // Attributes
         static const std::string LOGGER_NAME;
-        std::shared_ptr<spdlog::logger> logger_;
+        LoggerWrapper logger_;
 
 
     };

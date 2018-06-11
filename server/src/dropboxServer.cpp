@@ -24,14 +24,9 @@ namespace fs = boost::filesystem;
 
 const std::string Server::LOGGER_NAME = "Server";
 
-Server::Server() {
-    logger_ = LoggerFactory::getLoggerForName(LOGGER_NAME);
+Server::Server() : logger_(LOGGER_NAME) {
     std::function<void(std::string, std::string)> callback = std::bind(remove_device_from_user_wrapper, std::ref(*this), std::placeholders::_1, std::placeholders::_2);
     thread_pool_.setDisconnectClientCallback(callback);
-}
-
-Server::~Server() {
-    spdlog::drop(LOGGER_NAME);
 }
 
 void Server::start() {

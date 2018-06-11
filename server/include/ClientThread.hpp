@@ -3,6 +3,7 @@
 
 #include "../../util/include/pthread_wrapper.hpp"
 #include "../../util/include/dropboxUtil.hpp"
+#include "../../util/include/logger_wrapper.hpp"
 
 /**
  * Logger name = ClientThread + user_id + device_id position in array
@@ -13,7 +14,6 @@ public:
                  const std::string &logger_name, const std::string &ip, int32_t port,
                  dropbox_util::SOCKET socket, dropbox_util::client_info &info, pthread_mutex_t &client_info_mutex);
 
-    ~ClientThread() override;
 
     /**
      * Envia um arquivo para o cliente (download)
@@ -71,7 +71,7 @@ protected:
     void Run() override;
 private:
     std::string logger_name_;
-    std::shared_ptr<spdlog::logger> logger_;
+    LoggerWrapper logger_;
 
     std::string ip_;
     int32_t port_;

@@ -7,15 +7,7 @@
 
 const std::string SyncThread::LOGGER_NAME = "SyncThread";
 
-SyncThread::SyncThread(IClient& client) : client_(client)
-{
-    logger_ = LoggerFactory::getLoggerForName(LOGGER_NAME);
-}
-
-SyncThread::~SyncThread()
-{
-    spdlog::drop(LOGGER_NAME);
-}
+SyncThread::SyncThread(IClient& client) : client_(client), logger_(LOGGER_NAME) {}
 
 void SyncThread::Run()
 {

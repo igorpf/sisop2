@@ -21,7 +21,7 @@ add_executable(util_test
         ../src/table_printer.cpp
         ../src/LoggerFactory.cpp
         ../include/LoggerFactory.hpp
-        util_test.cpp)
+        util_test.cpp ../include/logger_wrapper.hpp)
 
 # Target libraries
 target_link_libraries(util_test PUBLIC GTest::main Boost::system Boost::filesystem -static-libstdc++)
