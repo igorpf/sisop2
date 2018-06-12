@@ -7,7 +7,7 @@ hunter_add_package(Boost COMPONENTS system filesystem)
 hunter_add_package(spdlog)
 
 # Find dependencies
-find_package(Boost CONFIG REQUIRED system filesystem)
+find_package(Boost CONFIG REQUIRED system filesystem program_options)
 find_package(spdlog CONFIG REQUIRED)
 
 # Add the executable
@@ -25,10 +25,10 @@ add_executable(dropboxServer
         include/ClientThreadPool.hpp
         src/main.cpp
         ../util/src/LoggerFactory.cpp
-        ../util/include/LoggerFactory.hpp ../util/include/logger_wrapper.hpp)
+        ../util/include/LoggerFactory.hpp ../util/include/logger_wrapper.hpp src/server_login_parser.cpp include/server_login_parser.hpp)
 
 # Target libraries
-target_link_libraries(dropboxServer PUBLIC Boost::system Boost::filesystem spdlog::spdlog pthread -static-libstdc++)
+target_link_libraries(dropboxServer PUBLIC Boost::system Boost::program_options Boost::filesystem spdlog::spdlog pthread -static-libstdc++)
 
 # Compile options
 target_compile_options(dropboxServer PUBLIC -std=c++11 -lpthread)

@@ -4,10 +4,10 @@
 
 int main(int argc, char* argv[])
 {
-    auto logger = LoggerFactory::getLoggerForName("ServerMain");
+    auto logger = LoggerWrapper("ServerMain");
     try {
-        // TODO Desenvolver um server_command_parser para obter a porta como parâmetro
         Server server;
+        server.start(argc, argv);
         server.listen();
     } catch (std::exception &exception) {
         logger->error(exception.what());

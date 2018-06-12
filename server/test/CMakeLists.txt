@@ -8,7 +8,7 @@ hunter_add_package(Boost)
 
 # Find dependencies
 find_package(GTest CONFIG REQUIRED)
-find_package(Boost CONFIG REQUIRED system filesystem)
+find_package(Boost CONFIG REQUIRED system filesystem program_options)
 
 # Add the executable
 add_executable(server_test
@@ -25,10 +25,10 @@ add_executable(server_test
         ../include/ClientThread.hpp
         server_test.cpp
         ../src/ClientThreadPool.cpp
-        ../include/ClientThreadPool.hpp ../../util/include/logger_wrapper.hpp)
+        ../include/ClientThreadPool.hpp ../../util/include/logger_wrapper.hpp ../src/server_login_parser.cpp ../include/server_login_parser.hpp)
 
 # Target libraries
-target_link_libraries(server_test PUBLIC GTest::main Boost::system Boost::filesystem -static-libstdc++)
+target_link_libraries(server_test PUBLIC GTest::main Boost::system Boost::program_options Boost::filesystem -static-libstdc++)
 
 # Compile options
 target_compile_options(server_test PUBLIC -std=c++11 -lpthread)

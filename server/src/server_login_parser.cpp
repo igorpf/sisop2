@@ -1,0 +1,76 @@
+#include "../include/server_login_parser.hpp"
+
+#include <iostream>
+
+ServerLoginParser::ServerLoginParser() {
+    description_.add_options()
+            ("help,h", "shows help message")
+            ("type", program_options::value<std::string>(), "server type (primary or backup)")
+            ("port", program_options::value<int64_t>(), "server port")
+            ;
+
+    positional_description_.add("type", 1);
+    positional_description_.add("port", 1);
+}
+
+void ServerLoginParser::ParseInput(int argc, char **argv) {
+    program_options::store(program_options::command_line_parser(argc, argv)
+                                   .options(description_)
+                                   .positional(positional_description_)
+                                   .run(),
+                           variables_map_);
+
+    bool help_specified = variables_map_.count("help") > 0;
+    bool server_info_specified = variables_map_.count("type") > 0 &&
+                                 variables_map_.count("port") > 0;
+
+    if (!help_specified && !server_info_specified)
+        throw std::runtime_error("missing parameters, use --help or -h for usage info");
+}
+
+void ServerLoginParser::ValidateInput() {
+    if (variables_map_.empty())
+        throw std::runtime_error("No arguments have been parsed");
+
+    if (variables_map_.count("help") > 0)
+        return;
+
+    auto type = variables_map_["type"].as<std::string>();
+    if (type != "primary" && type != "backup")
+        throw std::runtime_error("Invalid type for server");
+
+    auto port = variables_map_["port"].as<int64_t>();
+
+    if (port < 0 || port > 65536)
+        throw std::runtime_error("Invalid port");
+}
+
+bool ServerLoginParser::ShowHelpMessage() {
+    if (variables_map_.empty())
+        throw std::runtime_error("No arguments have been parsed");
+
+    if (variables_map_.count("help") == 0)
+        return false;
+
+    std::cout << "Usage: ./dropboxServer [--help] type port\n";
+    std::cout << description_ << std::endl;
+
+    return true;
+}
+
+bool ServerLoginParser::isPrimary() {
+    if (variables_map_.count("type") == 0)
+        throw std::runtime_error("No type available");
+
+    auto type = variables_map_["type"].as<std::string>();
+    return type == "primary";
+}
+
+int64_t ServerLoginParser::GetPort() {
+    if (variables_map_.count("port") == 0)
+        throw std::runtime_error("No port available");
+
+    return variables_map_["port"].as<int64_t >();
+}
+
+

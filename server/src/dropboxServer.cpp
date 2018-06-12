@@ -3,6 +3,7 @@
 #include "../../util/include/File.hpp"
 #include "../include/dropboxServer.hpp"
 #include "../include/ClientThread.hpp"
+#include "../include/server_login_parser.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -29,7 +30,7 @@ Server::Server() : logger_(LOGGER_NAME) {
     thread_pool_.setDisconnectClientCallback(callback);
 }
 
-void Server::start() {
+void Server::start(int argc, char **argv) {
     // Cria a pasta raíz do servidor na home do usuário
     char* home_folder;
 
@@ -43,16 +44,21 @@ void Server::start() {
 
     load_info_from_disk();
 
+    ServerLoginParser loginParser;
+    loginParser.ParseInput(argc, argv);
+    loginParser.ValidateInput();
+    is_primary_ = loginParser.isPrimary();
+
     // Inicializa o socket de comunicação
     if ((socket_ = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
         throw std::runtime_error(util::get_errno_with_message("Error initializing socket"));
 
     memset((void *) &server_addr_, 0, sizeof(struct sockaddr_in));
     server_addr_.sin_family = AF_INET;
-    server_addr_.sin_port = htons(static_cast<uint16_t>(util::DEFAULT_SERVER_PORT));
+    server_addr_.sin_port = htons(static_cast<uint16_t>(loginParser.GetPort()));
     server_addr_.sin_addr.s_addr = INADDR_ANY;
     peer_length_ = sizeof(server_addr_);
-    port_ = util::DEFAULT_SERVER_PORT;
+    port_ = static_cast<int32_t>(loginParser.GetPort());
 
     if (bind(socket_, (struct sockaddr *) &server_addr_, peer_length_) == util::DEFAULT_ERROR_CODE)
         throw std::runtime_error(util::get_errno_with_message("Bind error"));
@@ -91,7 +97,7 @@ void Server::load_info_from_disk() {
 
 void Server::listen() {
     if (!has_started_)
-        start();
+        return;
     logger_->info("Server is listening on port {}", port_);
     char buffer[util::BUFFER_SIZE];
     while (true) {

@@ -20,19 +20,18 @@ struct new_client_connection_info {
 
 class Server {
 public:
-    // TODO Implementar função pra logoff do cliente que remove o dispositivo da lista (é isso que deve acontecer?)
     Server();
 
     /**
-     * Inicializa o servidor e o coloca para ouvir comandos dos clientes
+     * Coloca o servidor para ouvir comandos dos clientes
      */
     void listen();
 
-private:
     /**
      * Inicializa as estruturas internas do servidor
      */
-    void start();
+    void start(int argc, char **argv);
+private:
 
     /**
      * Inicializa as informações dos clientes com base no que já está em disco
@@ -81,6 +80,7 @@ private:
     const int64_t MAX_CLIENT_DEVICES = 2;
 
     bool has_started_;
+    bool is_primary_;
     int32_t port_;
     int32_t next_client_port_ = dropbox_util::DEFAULT_SERVER_PORT;
     struct sockaddr_in server_addr_ {0};
