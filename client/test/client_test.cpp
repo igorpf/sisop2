@@ -66,6 +66,10 @@ public:
         active_session_ = false;
     };
 
+    void change_primary_server_address(std::string ip, int64_t port) override {
+
+    }
+
     std::string last_command_;
     bool active_session_ = true;
 };
@@ -74,7 +78,7 @@ public:
 
 TEST(LoginParserTest, ParseSpecifiedArguments)
 {
-    std::array<const char*, 4> argv = {"dropboxClient", "--userid=id1234", "--hostname=127.0.0.1", "--port=8080"};
+    std::array<const char*, 5> argv = {"dropboxClient", "--userid=id1234", "--hostname=127.0.0.1", "--port=8080", "--frontendport=8000"};
     int argc = argv.size();
 
     LoginCommandParser command_parser;
@@ -84,7 +88,7 @@ TEST(LoginParserTest, ParseSpecifiedArguments)
 
 TEST(LoginParserTest, ParsePositionalArguments)
 {
-    std::array<const char*, 4> argv = {"dropboxClient", "id1234", "127.0.0.1", "8080"};
+    std::array<const char*, 5> argv = {"dropboxClient", "id1234", "127.0.0.1", "8080", "8000"};
     int argc = argv.size();
 
     LoginCommandParser command_parser;
@@ -124,7 +128,7 @@ TEST(LoginParserTest, ValidateWithoutParsing)
 
 TEST(LoginParserTest, ValidateCorrectInfo)
 {
-    std::array<const char*, 4> argv = {"dropboxClient", "id1234", "127.0.0.1", "8080"};
+    std::array<const char*, 5> argv = {"dropboxClient", "id1234", "127.0.0.1", "8080", "8000"};
     int argc = argv.size();
 
     LoginCommandParser command_parser;
@@ -135,7 +139,7 @@ TEST(LoginParserTest, ValidateCorrectInfo)
 
 TEST(LoginParserTest, ValidateShortUserid)
 {
-    std::array<const char*, 4> argv = {"dropboxClient", "id", "127.0.0.1", "8080"};
+    std::array<const char*, 5> argv = {"dropboxClient", "id", "127.0.0.1", "8080", "8000"};
     int argc = argv.size();
 
     LoginCommandParser command_parser;
@@ -146,7 +150,7 @@ TEST(LoginParserTest, ValidateShortUserid)
 
 TEST(LoginParserTest, ValidateInvalidHostname)
 {
-    std::array<const char*, 4> argv = {"dropboxClient", "id1234", "127.0.0", "8080"};
+    std::array<const char*, 5> argv = {"dropboxClient", "id1234", "127.0.0", "8080", "8000"};
     int argc = argv.size();
 
     LoginCommandParser command_parser;
@@ -157,7 +161,7 @@ TEST(LoginParserTest, ValidateInvalidHostname)
 
 TEST(LoginParserTest, ValidateInvalidPort)
 {
-    std::array<const char*, 4> argv = {"dropboxClient", "id1234", "127.0.0.1", "70000"};
+    std::array<const char*, 5> argv = {"dropboxClient", "id1234", "127.0.0.1", "70000", "8000"};
     int argc = argv.size();
 
     LoginCommandParser command_parser;
@@ -190,7 +194,7 @@ TEST(LoginParserTest, ShowHelpMessageWithoutParsing)
 
 TEST(LoginParserTest, DontShowHelpMessage)
 {
-    std::array<const char*, 4> argv = {"dropboxClient", "id1234", "127.0.0.1", "8080"};
+    std::array<const char*, 5> argv = {"dropboxClient", "id1234", "127.0.0.1", "8080", "8000"};
     int argc = argv.size();
 
     LoginCommandParser command_parser;
@@ -203,7 +207,7 @@ TEST(LoginParserTest, DontShowHelpMessage)
 
 TEST(LoginParserTest, GetUserid)
 {
-    std::array<const char*, 4> argv = {"dropboxClient", "id1234", "127.0.0.1", "8080"};
+    std::array<const char*, 5> argv = {"dropboxClient", "id1234", "127.0.0.1", "8080", "8000"};
     int argc = argv.size();
 
     LoginCommandParser command_parser;
@@ -222,7 +226,7 @@ TEST(LoginParserTest, GetUseridWithoutParsing)
 
 TEST(LoginParserTest, GetHostname)
 {
-    std::array<const char*, 4> argv = {"dropboxClient", "id1234", "127.0.0.1", "8080"};
+    std::array<const char*, 5> argv = {"dropboxClient", "id1234", "127.0.0.1", "8080", "8000"};
     int argc = argv.size();
 
     LoginCommandParser command_parser;
@@ -241,7 +245,7 @@ TEST(LoginParserTest, GetHostnameWithoutParsing)
 
 TEST(LoginParserTest, GetPort)
 {
-    std::array<const char*, 4> argv = {"dropboxClient", "id1234", "127.0.0.1", "8080"};
+    std::array<const char*, 5> argv = {"dropboxClient", "id1234", "127.0.0.1", "8080", "8000"};
     int argc = argv.size();
 
     LoginCommandParser command_parser;

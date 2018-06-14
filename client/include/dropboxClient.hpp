@@ -59,6 +59,8 @@ public:
      */
     void close_session() override;
 
+    void change_primary_server_address(std::string ip, int64_t port) override;
+
 private:
     /**
      * Verifica se existe um id salvo no disco e o utiliza

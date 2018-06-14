@@ -20,6 +20,8 @@ public:
     virtual void get_file(const std::string &filename) = 0;
     virtual void delete_file(const std::string& filename) = 0;
 
+    virtual void change_primary_server_address(std::string ip, int64_t port) = 0;
+
     virtual std::vector<std::vector<std::string>> list_server() = 0;
     virtual std::vector<std::vector<std::string>> list_client() = 0;
 

@@ -36,7 +36,7 @@ add_executable(dropboxClient
         src/shell.cpp
         src/sync_thread.cpp
         src/file_watcher.cpp
-        src/main.cpp ../util/include/logger_wrapper.hpp)
+        src/main.cpp ../util/include/logger_wrapper.hpp src/FrontendThread.cpp include/FrontendThread.hpp)
 
 # Target libraries
 target_link_libraries(dropboxClient PUBLIC Boost::program_options Boost::boost Boost::system Boost::filesystem spdlog::spdlog pthread -static-libstdc++)
