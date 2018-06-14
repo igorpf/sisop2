@@ -5,14 +5,24 @@
 #include "../../util/include/dropboxUtil.hpp"
 #include "../../util/include/logger_wrapper.hpp"
 
+struct client_thread_param_list {
+    std::string user_id;
+    std::string device_id;
+    std::string local_directory;
+    std::string logger_name;
+    std::string ip;
+    int32_t port;
+    dropbox_util::SOCKET socket;
+    dropbox_util::client_info &info;
+    pthread_mutex_t &client_info_mutex;
+};
+
 /**
  * Logger name = ClientThread + user_id + device_id position in array
  */
 class ClientThread : public PThreadWrapper {
 public:
-    ClientThread(const std::string &user_id, const std::string &device_id, const std::string &local_directory,
-                 const std::string &logger_name, const std::string &ip, int32_t port,
-                 dropbox_util::SOCKET socket, dropbox_util::client_info &info, pthread_mutex_t &client_info_mutex);
+    ClientThread(client_thread_param_list param_list);
 
 
     /**

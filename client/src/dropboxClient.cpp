@@ -102,7 +102,7 @@ void Client::login_server()
 
     char buffer[util::BUFFER_SIZE]{0};
     recvfrom(socket_, buffer, sizeof(buffer), 0, (struct sockaddr *) &server_addr_, &peer_length_);
-    logger_->debug("Received from client {} port {} the message: {}",
+    logger_->debug("Received from server {} port {} the message: {}",
                    inet_ntoa(server_addr_.sin_addr), ntohs(server_addr_.sin_port), buffer);
     server_addr_.sin_port = htons(static_cast<uint16_t>(std::stoi(buffer)));
 
