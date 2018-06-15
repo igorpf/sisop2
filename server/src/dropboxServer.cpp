@@ -168,10 +168,10 @@ void Server::login_new_client(const std::string &user_id, const std::string &dev
             user_id,
             device_id,
             "ClientThread_" + user_id + "_" + device_id,
-             client_ip,
+            client_ip,
             ntohs(current_client_.sin_port),
-             new_client_connection.socket,
-             *client_iterator
+            new_client_connection.socket,
+            *client_iterator
         };
         thread_pool_.add_client(param_list);
         send_command_confirmation(current_client_);

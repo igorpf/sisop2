@@ -5,7 +5,8 @@
 #include "LoggerFactory.hpp"
 
 /**
- * Logger wrapper class to avoid log resources management
+ * RAII wrapper for Loggers.
+ * Acquires a new logger in the constructor and releases it in the destructor
  */
 
 class LoggerWrapper {
