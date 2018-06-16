@@ -29,7 +29,7 @@ add_executable(client_test
         ../src/shell.cpp
         client_test.cpp
         ../../util/src/LoggerFactory.cpp
-        ../../util/include/LoggerFactory.hpp)
+        ../../util/include/LoggerFactory.hpp ../../util/include/logger_wrapper.hpp)
 
 # Target libraries
 target_link_libraries(client_test PUBLIC GTest::main Boost::program_options Boost::boost Boost::system Boost::filesystem -static-libstdc++)

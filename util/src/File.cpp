@@ -20,12 +20,7 @@ using namespace dropbox_util;
 
 const std::string File::LOGGER_NAME = "File";
 
-File::File() {
-    logger_ = LoggerFactory::getLoggerForName(LOGGER_NAME);
-}
-
-File::~File() {
-    spdlog::drop(LOGGER_NAME);
+File::File() : logger_(LOGGER_NAME) {
 }
 
 int64_t get_file_length(filesystem::path &path) {
@@ -356,4 +351,8 @@ filesystem::perms File::parse_file_permissions_from_string(const std::string &pe
         p = p | it;
     }
     return p;
+}
+
+bool File::file_exists(const std::string &file_path) {
+    return filesystem::exists(filesystem::path(file_path));
 }

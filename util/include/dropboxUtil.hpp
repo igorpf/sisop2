@@ -16,11 +16,12 @@ namespace filesystem = boost::filesystem;
 namespace dropbox_util {
     /// Constantes
     const int32_t BUFFER_SIZE = 64000; // approximately an ip packet size
-    const int64_t TIMEOUT_US  = 50000; // to disable timeout, set 500000000000 as value
+    const int64_t TIMEOUT_US  = 800 * 1000; // to disable timeout, set 500000000000 as value
     const int8_t MAX_RETRANSMISSIONS = 20;
     const int8_t DEFAULT_ERROR_CODE = 1;
     const int8_t EOF_SYMBOL = -1;
     const int16_t DEFAULT_SERVER_PORT = 9001;
+    const int32_t MAX_VALID_PORT = 60000;
     const std::string LOOPBACK_IP = "127.0.0.1";
     const std::string COMMAND_SEPARATOR_TOKEN = ";";
     const std::string ERROR_MESSAGE_INITIAL_TOKEN = "!ERROR: ";
@@ -52,6 +53,22 @@ namespace dropbox_util {
         std::string in_file_path;
     };
 
+    struct client_info {
+        std::string user_id;
+        std::vector<std::string> user_devices;
+        std::vector<file_info> user_files;
+    };
+
+    struct new_client_param_list {
+        std::string user_id;
+        std::string device_id;
+        std::string logger_name;
+        std::string ip;
+        int32_t port;
+        SOCKET socket;
+        client_info &info;
+    };
+
     /// Funções de utilidade geral
     std::vector<std::string> split_words_by_token(const std::string &phrase,
                                                   const std::string &token = COMMAND_SEPARATOR_TOKEN);
@@ -59,6 +76,8 @@ namespace dropbox_util {
     int64_t get_random_number();
     bool starts_with(const std::string& str, const std::string& prefix);
     bool ends_with(const std::string& str, const std::string& suffix);
+
+    std::string get_filename(const std::string &complete_file_path);
 
     /// Parse de string de lista de arquivos
     std::vector<std::vector<std::string>> parse_file_list_string(const std::string& received_data);

@@ -30,15 +30,7 @@ namespace util = dropbox_util;
 
 const std::string Client::LOGGER_NAME = "Client";
 
-Client::Client()
-{
-    logger_ = LoggerFactory::getLoggerForName(LOGGER_NAME);
-}
-
-Client::~Client()
-{
-    spdlog::drop(LOGGER_NAME);
-}
+Client::Client() : logger_(LOGGER_NAME) {}
 
 void Client::start_client(int argc, char **argv)
 {
@@ -107,6 +99,13 @@ void Client::login_server()
                                           << user_id_ << util::COMMAND_SEPARATOR_TOKEN << device_id_);
 
     send_command_and_expect_confirmation(command);
+
+    char buffer[util::BUFFER_SIZE]{0};
+    recvfrom(socket_, buffer, sizeof(buffer), 0, (struct sockaddr *) &server_addr_, &peer_length_);
+    logger_->debug("Received from server {} port {} the message: {}",
+                   inet_ntoa(server_addr_.sin_addr), ntohs(server_addr_.sin_port), buffer);
+    server_addr_.sin_port = htons(static_cast<uint16_t>(std::stoi(buffer)));
+
     logged_in_ = true;
 }
 
@@ -292,11 +291,14 @@ void Client::send_file(const std::string& complete_file_path)
     request.peer_length = peer_length_;
     request.server_address = server_addr_;
     request.socket = socket_;
-    auto tokens = util::split_words_by_token(complete_file_path, "/");
-    std::string filename_only = tokens[tokens.size() - 1];
 
-    std::string command(StringFormatter() << "upload" << util::COMMAND_SEPARATOR_TOKEN << filename_only
-                                          << util::COMMAND_SEPARATOR_TOKEN << user_id_);
+    fs::path filepath(complete_file_path);
+    std::string filename_without_path = filepath.filename().string();
+    std::string local_file_path = StringFormatter() << local_directory_ << "/" << filename_without_path;
+
+    std::string command(StringFormatter() << "upload" << util::COMMAND_SEPARATOR_TOKEN
+                                          << filename_without_path << util::COMMAND_SEPARATOR_TOKEN << user_id_);
+
     send_command_and_expect_confirmation(command);
     util::File file_util;
     file_util.send_file(request);
@@ -361,6 +363,7 @@ std::vector<std::vector<std::string>> Client::list_server()
     request.socket = socket_;
 
     std::string command(StringFormatter() << "list_server" << util::COMMAND_SEPARATOR_TOKEN << user_id_);
+    logger_->debug("sent to server port {}" , ntohs(server_addr_.sin_port));
 
     send_command_and_expect_confirmation(command);
 
@@ -389,7 +392,7 @@ std::vector<std::vector<std::string>> Client::list_client()
 
 void Client::close_session()
 {
-    // TODO Implement client logoff
+    send_command_and_expect_confirmation("logout");
     logger_->debug("Client logged off");
     logged_in_ = false;
 }

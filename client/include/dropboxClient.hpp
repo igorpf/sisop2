@@ -8,12 +8,12 @@
 #include <spdlog/spdlog.h>
 
 #include "../../util/include/dropboxUtil.hpp"
+#include "../../util/include/logger_wrapper.hpp"
 #include "iclient.hpp"
 
 class Client : public IClient {
 public:
     Client();
-    ~Client() override;
 
     /**
      * Inicializa o client fazendo o parse dos argumentos de linha de comando,
@@ -95,7 +95,7 @@ private:
     std::string user_id_;
 
     static const std::string LOGGER_NAME;
-    std::shared_ptr<spdlog::logger> logger_;
+    LoggerWrapper logger_;
 
     const std::string device_id_file_ = ".device_id";
 
@@ -106,6 +106,8 @@ private:
     socklen_t peer_length_;
 
     pthread_mutex_t socket_mutex_ = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_t user_files_mutex_ = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_t modification_buffer_mutex_ = PTHREAD_MUTEX_INITIALIZER;
 };
 
 #endif // SISOP2_CLIENT_INCLUDE_DROPBOXCLIENT_HPP

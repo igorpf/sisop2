@@ -6,6 +6,7 @@
 #include "../../util/include/pthread_wrapper.hpp"
 
 #include "iclient.hpp"
+#include "../../util/include/logger_wrapper.hpp"
 
 /**
  * Classe que encapsula a thread de sincronização do cliente
@@ -13,7 +14,6 @@
 class SyncThread : public PThreadWrapper {
 public:
     explicit SyncThread(IClient& client);
-    ~SyncThread() override;
 
 protected:
     /**
@@ -26,7 +26,7 @@ private:
     int64_t sync_interval_in_microseconds_ = 50000;
 
     static const std::string LOGGER_NAME;
-    std::shared_ptr<spdlog::logger> logger_;
+    LoggerWrapper logger_;
 };
 
 #endif //SISOP2_CLIENT_INCLUDE_SYNC_THREAD_HPP

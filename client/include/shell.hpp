@@ -5,6 +5,7 @@
 #include <spdlog/spdlog.h>
 
 #include "iclient.hpp"
+#include "../../util/include/logger_wrapper.hpp"
 
 /**
  * Classe que implementa uma interface com o usuário na forma de um shell,
@@ -17,8 +18,6 @@ public:
      * executar as funções passadas pelo usuário ou pelo framework de testes
      */
     explicit Shell(IClient& client);
-
-    ~Shell();
 
     /**
      * Função que executa o prompt e interpreta os comandos do usuário
@@ -35,8 +34,8 @@ private:
 
     static const std::string LOGGER_NAME;
     static const std::string STDOUT_LOGGER_NAME;
-    std::shared_ptr<spdlog::logger> logger_;
-    std::shared_ptr<spdlog::logger> stdout_logger_;
+    LoggerWrapper logger_;
+    LoggerWrapper stdout_logger_;
 
     /**
      * Executa a operação indicada pelo usuário

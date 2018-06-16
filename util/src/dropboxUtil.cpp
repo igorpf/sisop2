@@ -7,6 +7,8 @@
 
 #include <boost/algorithm/string.hpp>
 
+using namespace dropbox_util;
+
 std::once_flag rand_init;
 
 std::vector<std::string> dropbox_util::split_words_by_token(const std::string &phrase, const std::string &token) {
@@ -106,4 +108,9 @@ void dropbox_util::remove_filename_from_list(const std::string &filename,
                                        [&filename] (const dropbox_util::file_info& info) ->
                                                bool {return filename == info.name;}),
                         file_list.end());
+}
+
+std::string dropbox_util::get_filename(const std::string &complete_file_path) {
+    auto filename_index = complete_file_path.find_last_of('/');
+    return filename_index != std::string::npos ? complete_file_path.substr(filename_index + 1) : complete_file_path;
 }

@@ -2,6 +2,7 @@
 #include "../../util/include/string_formatter.hpp"
 #include "../../util/include/File.hpp"
 #include "../include/dropboxServer.hpp"
+#include "../include/ClientThread.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -23,12 +24,9 @@ namespace fs = boost::filesystem;
 
 const std::string Server::LOGGER_NAME = "Server";
 
-Server::Server() {
-    logger_ = LoggerFactory::getLoggerForName(LOGGER_NAME);
-}
-
-Server::~Server() {
-    spdlog::drop(LOGGER_NAME);
+Server::Server() : logger_(LOGGER_NAME) {
+    std::function<void(std::string, std::string)> callback = std::bind(remove_device_from_user_wrapper, std::ref(*this), std::placeholders::_1, std::placeholders::_2);
+    thread_pool_.setDisconnectClientCallback(callback);
 }
 
 void Server::start() {
@@ -41,6 +39,7 @@ void Server::start() {
 
     local_directory_ = StringFormatter() << home_folder << "/dropbox_server";
     fs::create_directory(local_directory_);
+    thread_pool_.set_local_directory(local_directory_);
 
     load_info_from_disk();
 
@@ -68,7 +67,7 @@ void Server::load_info_from_disk() {
         }
 
         std::string user_id = entry.path().filename().string();
-        add_client(user_id, "");
+        add_client(user_id);
 
         auto client_iterator = get_client_info(user_id);
 
@@ -99,91 +98,17 @@ void Server::listen() {
         try {
             std::fill(buffer, buffer + sizeof(buffer), 0);
             recvfrom(socket_, buffer, sizeof(buffer), 0, (struct sockaddr *) &current_client_, &peer_length_);
-            logger_->debug("Received from client {} port {} the message: {}", inet_ntoa(current_client_.sin_addr), ntohs(current_client_.sin_port), buffer);
+            logger_->debug("Received from client {} port {} the message: {}",
+                           inet_ntoa(current_client_.sin_addr), ntohs(current_client_.sin_port), buffer);
             parse_command(buffer);
-        } catch (std::string &e) {
-            logger_->error("Error parsing command from client {}", e);
-            send_command_error_message(e);
-        } catch (std::exception &e) {
-            logger_->error("Fatal error parsing command from client {}. Stopping transmission", e.what());
+        } catch (std::runtime_error& runtime_error) {
+            logger_->error("Error parsing command from client {}", runtime_error.what());
             break;
+        } catch (std::logic_error& logic_error) {
+            logger_->error("Error parsing command from client {}", logic_error.what());
+            send_command_error_message(current_client_, logic_error.what());
         }
     }
-}
-
-void Server::receive_file(const std::string& filename, const std::string &user_id) {
-    util::file_transfer_request request;
-    request.socket = socket_;
-    request.server_address = server_addr_;
-    request.peer_length = peer_length_;
-
-    fs::path filepath(filename);
-    std::string filename_without_path = filepath.filename().string();
-    std::string local_file_path = StringFormatter()
-            << local_directory_ << "/" << user_id << "/" << filename_without_path;
-
-    request.in_file_path = local_file_path;
-
-    util::File file_util;
-    file_util.receive_file(request);
-
-    util::file_info received_file_info;
-    received_file_info.name = filename_without_path;
-    received_file_info.size = fs::file_size(local_file_path);
-    received_file_info.last_modification_time = fs::last_write_time(local_file_path);
-
-    auto client_iterator = get_client_info(user_id);
-
-    // Se já existe um registro do arquivo o remove para adição do novo registro
-    remove_file_from_client(user_id, filename);
-
-    client_iterator->user_files.emplace_back(received_file_info);
-}
-
-void Server::send_file(const std::string& filename, const std::string &user_id) {
-    util::file_transfer_request request;
-    request.socket = socket_;
-    request.server_address = current_client_;
-    request.peer_length = peer_length_;
-
-    fs::path filepath(filename);
-    std::string filename_without_path = filepath.filename().string();
-
-    request.in_file_path = StringFormatter() << local_directory_ << "/" << user_id << "/" << filename_without_path;
-
-    util::File file_util;
-    file_util.send_file(request);
-}
-
-void Server::delete_file(const std::string& filename, const std::string &user_id) {
-    fs::path filepath(filename);
-    std::string filename_without_path = filepath.filename().string();
-
-    std::string server_file = StringFormatter() << local_directory_ << "/" << user_id << "/" << filename_without_path;
-    fs::remove(server_file);
-
-    remove_file_from_client(user_id, filename_without_path);
-}
-
-void Server::list_server(const std::string &user_id) {
-    auto client_iterator = get_client_info(user_id);
-    std::string user_file_list {"name;size;modification_time&"};
-
-    for (const auto& file : client_iterator->user_files) {
-        user_file_list.append(StringFormatter() << file.name << ';'<< file.size << ';'
-                                                << file.last_modification_time << '&');
-    }
-
-    // Remove último &
-    user_file_list.pop_back();
-
-    util::file_transfer_request request;
-    request.socket = socket_;
-    request.server_address = current_client_;
-    request.peer_length = peer_length_;
-
-    util::File file_util;
-    file_util.send_list_files(request, user_file_list);
 }
 
 void Server::parse_command(const std::string &command_line) {
@@ -191,51 +116,91 @@ void Server::parse_command(const std::string &command_line) {
     logger_->debug("Parsing command {}", command_line);
     auto tokens = util::split_words_by_token(command_line);
     auto command = tokens[0];
-    // TODO Os comandos do cliente estão preparados pra receber mensagens de erro?
     if (command == "connect") {
         auto user_id = tokens[1], device_id = tokens[2];
-        add_client(user_id, device_id);
-        send_command_confirmation();
-    } else if (command == "download") {
-        send_command_confirmation();
-        send_file(tokens[1], tokens[2]);
-    } else if (command == "upload") {
-        send_command_confirmation();
-        receive_file(tokens[1], tokens[2]);
-    } else if (command == "remove") {
-        delete_file(tokens[1], tokens[2]);
-        send_command_confirmation();
-    } else if (command == "list_server") {
-        send_command_confirmation();
-        list_server(tokens[1]);
+        login_new_client(user_id, device_id);
     }
-    // TODO Erro ao receber comando inválido
+    else {
+        throw std::logic_error(StringFormatter() << "Invalid command sent by client " << command_line);
+    }
 }
 
-void Server::add_client(const std::string& user_id, const std::string& device_id) {
-    if (!has_client_connected(user_id)) {
-        client_info new_client;
-        new_client.user_id = user_id;
-        if (!device_id.empty())
-            new_client.user_devices.emplace_back(device_id);
-        clients_.push_back(new_client);
 
+void Server::add_client(const std::string &user_id) {
+    if(!has_client_connected(user_id)) {
+        dropbox_util::client_info new_client;
+        new_client.user_id = user_id;
+        clients_.push_back(new_client);
         std::string client_path = StringFormatter() << local_directory_ << "/" << user_id;
         fs::create_directory(client_path);
-
-        logger_->info("Connected new client, total clients: {}",  clients_.size());
     }
+}
 
-    auto client_iterator = get_client_info(user_id);
 
-    // Verifica se o dispositivo não está na lista
-    if (std::find(client_iterator->user_devices.begin(), client_iterator->user_devices.end(), device_id)
-        == client_iterator->user_devices.end())
-        // Se não estiver, verifica se o cliente ainda pode adicionar dispositivos
+
+void Server::send_command_confirmation(struct sockaddr_in &client) {
+    sendto(socket_, "ACK", 4, 0, (struct sockaddr *)&client, peer_length_);
+}
+
+void Server::send_command_error_message(struct sockaddr_in &client, const std::string &error_message)  {
+    const std::string complete_error_message = StringFormatter() << util::ERROR_MESSAGE_INITIAL_TOKEN << error_message;
+    sendto(socket_, complete_error_message.c_str(), complete_error_message.size(), 0, (struct sockaddr *)&client, peer_length_);
+}
+
+void Server::login_new_client(const std::string &user_id, const std::string &device_id) {
+    if (!has_client_and_device_connected(user_id, device_id)) {
+        add_client(user_id);
+        auto client_iterator = get_client_info(user_id);
         if (client_iterator->user_devices.size() < MAX_CLIENT_DEVICES)
             client_iterator->user_devices.emplace_back(device_id);
-        // TODO Adicionar mensagem de erro para demais dispositivos
-        // TODO Ignorar/responder com erro requests de demais dispositivos
+        else
+            throw std::logic_error("User achieved maximum devices connected");
+
+        std::string client_ip = inet_ntoa(current_client_.sin_addr);
+        auto new_client_connection = allocate_connection_for_client(client_ip);
+        dropbox_util::new_client_param_list param_list{
+            user_id,
+            device_id,
+            "ClientThread_" + user_id + "_" + device_id,
+            client_ip,
+            ntohs(current_client_.sin_port),
+            new_client_connection.socket,
+            *client_iterator
+        };
+        thread_pool_.add_client(param_list);
+        send_command_confirmation(current_client_);
+        std::string port = std::to_string(new_client_connection.port);
+        sendto(socket_, port.c_str(), port.size(), 0, (struct sockaddr*)&current_client_, peer_length_);
+
+        logger_->info("Connected new device for client, total clients: {}",  clients_.size());
+    }
+    else
+        throw std::logic_error("User has already connected with this device");
+}
+
+new_client_connection_info Server::allocate_connection_for_client(const std::string &ip) {
+    dropbox_util::SOCKET new_socket;
+    next_client_port_++;
+
+    if ((new_socket = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
+        throw std::runtime_error(dropbox_util::get_errno_with_message("Error initializing socket"));
+
+    struct sockaddr_in client_addr_{0};
+    client_addr_.sin_family = AF_INET;
+    client_addr_.sin_addr.s_addr = INADDR_ANY;
+    client_addr_.sin_port = htons(static_cast<uint16_t>(next_client_port_));
+
+    while(bind(new_socket, (struct sockaddr *) &client_addr_, sizeof(client_addr_)) == dropbox_util::DEFAULT_ERROR_CODE) {
+        next_client_port_++;
+        client_addr_.sin_port = htons(static_cast<uint16_t>(next_client_port_));
+        if (next_client_port_ > dropbox_util::MAX_VALID_PORT) {
+            throw std::runtime_error("Could not find new port for the client");
+        }
+    }
+    logger_->debug("Found new connection for client. Socket {}, port {}, ip {}", new_socket, next_client_port_, ip);
+
+    new_client_connection_info new_client{new_socket, next_client_port_};
+    return new_client;
 }
 
 bool Server::has_client_connected(const std::string &client_id) {
@@ -243,21 +208,33 @@ bool Server::has_client_connected(const std::string &client_id) {
     return client_iterator != clients_.end();
 }
 
-std::vector<client_info>::iterator Server::get_client_info(const std::string& user_id) {
+bool Server::has_client_and_device_connected(const std::string &client_id, const std::string &device_id) {
+    auto client_iterator = get_client_info(client_id);
+    if (client_iterator == clients_.end())
+        return false;
+    auto device_iterator = std::find_if(client_iterator->user_devices.begin(), client_iterator->user_devices.end(),
+                                        [&device_id] (const std::string& dev) -> bool {return dev == device_id;});
+    return device_iterator != client_iterator->user_devices.end();
+}
+
+std::vector<dropbox_util::client_info>::iterator Server::get_client_info(const std::string& user_id) {
     return std::find_if(clients_.begin(), clients_.end(),
-                        [&user_id] (const client_info& c) -> bool {return user_id == c.user_id;});
+                        [&user_id] (const dropbox_util::client_info& c) -> bool {return user_id == c.user_id;});
 }
 
-void Server::remove_file_from_client(const std::string &user_id, const std::string &filename) {
+void Server::remove_device_from_user(const std::string &user_id, std::string device_id) {
     auto client_iterator = get_client_info(user_id);
-    util::remove_filename_from_list(filename, client_iterator->user_files);
+    if (client_iterator != clients_.end()) {
+        auto device_iterator = std::find_if(
+                client_iterator->user_devices.begin(), client_iterator->user_devices.end(),
+                [&device_id] (const std::string device) -> bool {return device == device_id;}
+        );
+        if (device_iterator != client_iterator->user_devices.end()) {
+            client_iterator->user_devices.erase(device_iterator);
+        }
+    }
 }
 
-void Server::send_command_confirmation() {
-    sendto(socket_, "ACK", 4, 0, (struct sockaddr *)&current_client_, peer_length_);
-}
-
-void Server::send_command_error_message(const std::string &error_message)  {
-    const std::string complete_error_message = StringFormatter() << util::ERROR_MESSAGE_INITIAL_TOKEN << error_message;
-    sendto(socket_, complete_error_message.c_str(), complete_error_message.size(), 0, (struct sockaddr *)&current_client_, peer_length_);
+void Server::remove_device_from_user_wrapper(Server &server, const std::string &user_id, const std::string &device_id) {
+    server.remove_device_from_user(user_id, device_id);
 }

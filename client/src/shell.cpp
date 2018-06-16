@@ -10,18 +10,7 @@
 const std::string Shell::LOGGER_NAME = "Shell";
 const std::string Shell::STDOUT_LOGGER_NAME = "ClientShell";
 
-Shell::Shell(IClient &client) : client_(client)
-{
-    logger_ = LoggerFactory::getLoggerForName(LOGGER_NAME);
-    stdout_logger_ = spdlog::get(STDOUT_LOGGER_NAME) ?
-            spdlog::get(STDOUT_LOGGER_NAME) : spdlog::stdout_color_mt(STDOUT_LOGGER_NAME);
-}
-
-Shell::~Shell()
-{
-    spdlog::drop(LOGGER_NAME);
-    spdlog::drop(STDOUT_LOGGER_NAME);
-}
+Shell::Shell(IClient &client) : client_(client), logger_(LOGGER_NAME), stdout_logger_(STDOUT_LOGGER_NAME, true) {}
 
 void Shell::loop(std::istream& input_stream)
 {

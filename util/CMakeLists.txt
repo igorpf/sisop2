@@ -23,7 +23,7 @@ add_library(dropboxUtil
         src/table_printer.cpp
         src/LoggerFactory.cpp
         include/LoggerFactory.hpp
-        src/File.cpp)
+        src/File.cpp include/logger_wrapper.hpp)
 
 set(CMAKE_CXX_FLAGS "-std=c++11")
 

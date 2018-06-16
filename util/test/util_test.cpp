@@ -123,6 +123,19 @@ TEST(UtilityFunctions, ShouldIgnoreFile)
     EXPECT_TRUE(dropbox_util::should_ignore_file(backup_file));
 }
 
+TEST(UtilityFunctions, GetFilenameValidFilepath)
+{
+    std::string file_path = "/home/user/filename.txt";
+    ASSERT_EQ(dropbox_util::get_filename(file_path), "filename.txt");
+}
+
+TEST(UtilityFunctions, GetFilenameBadString)
+{
+    std::string file_path = "filename.txt";
+    ASSERT_EQ(dropbox_util::get_filename(file_path), "filename.txt");
+}
+
+
 TEST(UtilityFunctions, RemoveFilenameFromList)
 {
     dropbox_util::file_info file_1 {"file_1", 10, 15623};
@@ -201,6 +214,31 @@ TEST(LoggerFactory, GivenLoggersWithSameNameShouldNotCrash)
     
     ASSERT_NO_THROW(firstLogger = LoggerFactory::getLoggerForName(loggerName));
     ASSERT_NO_THROW(sameNameLogger = LoggerFactory::getLoggerForName(loggerName));
+}
+
+// File
+TEST(File, SendInexistentFile)
+{
+    dropbox_util::file_transfer_request request;
+    request.in_file_path = "InexistentFile";
+
+    dropbox_util::File file_util;
+    ASSERT_ANY_THROW(file_util.send_file(request));
+}
+
+// Error messages
+TEST(ErrorMessage, GetErrorFromErrorMessage)
+{
+    std::string error = " some error that occured",
+            complete_error_message = dropbox_util::ERROR_MESSAGE_INITIAL_TOKEN + error;
+    ASSERT_EQ(dropbox_util::get_error_from_message(complete_error_message), error);
+}
+
+// File
+TEST(ErrorMessage, GetErrorFromNonErrorMessage)
+{
+    std::string error = "Some random error that occured";
+    ASSERT_EQ(dropbox_util::get_error_from_message(error), error);
 }
 
 int main(int argc, char **argv) {

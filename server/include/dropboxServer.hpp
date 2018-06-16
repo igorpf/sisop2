@@ -2,7 +2,9 @@
 #define SISOP2_SERVER_INCLUDE_DROPBOXSERVER_HPP
 
 #include "../../util/include/dropboxUtil.hpp"
+#include "ClientThreadPool.hpp"
 #include "../../util/include/LoggerFactory.hpp"
+#include "../../util/include/logger_wrapper.hpp"
 
 #include <string>
 #include <vector>
@@ -10,46 +12,21 @@
 #include <netinet/in.h>
 #include <spdlog/spdlog.h>
 
-struct client_info {
-    std::string user_id;
-    std::vector<std::string> user_devices;
-    std::vector<dropbox_util::file_info> user_files;
+struct new_client_connection_info {
+    dropbox_util::SOCKET socket;
+    int32_t port;
 };
+
 
 class Server {
 public:
     // TODO Implementar função pra logoff do cliente que remove o dispositivo da lista (é isso que deve acontecer?)
-    // TODO Se um comando falha o próximo sync do cliente falha por falta de ACK, revisar isso
     Server();
-    virtual ~Server();
 
     /**
      * Inicializa o servidor e o coloca para ouvir comandos dos clientes
      */
     void listen();
-
-    // TODO O servidor recebe instruções de manipulação de arquivos sem timestamp, executando sempre
-    // Isso pode ser um problema se dois clientes modificam um arquivo mas enviam as modificações na ordem errada
-    /**
-     * Recebe um arquivo do cliente (upload)
-     */
-    void receive_file(const std::string& filename, const std::string &user_id);
-
-    /**
-     * Envia um arquivo para o cliente (download)
-     */
-    void send_file(const std::string& filename, const std::string &user_id);
-
-    /**
-     * Remove um arquivo do cliente (remove)
-     */
-    void delete_file(const std::string& filename, const std::string &user_id);
-
-    /**
-     * Envia a lista de arquivos do usuário no servidor no formato
-     * nome_arquivo_1;tamanho_arquivo_1;timestamp_arquivo_1&nome_arquivo_2;tamanho_arquivo_2;timestamp_arquivo_2&...
-     */
-     void list_server(const std::string& user_id);
 
 private:
     /**
@@ -66,53 +43,54 @@ private:
     /**
      * Verifica o comando enviado pelo cliente e executa a operação correspondente
      */
-    void parse_command(const std::string& command_line);
+    void parse_command(const std::string &command_line);
 
     /**
-     * Envia uma confirmação ao cliente de que um comando foi recebido
+     * Spawns a new thread to watch for the client's requests
      */
-    void send_command_confirmation();
+    void login_new_client(const std::string &user_id, const std::string &device_id);
 
     /**
-     * Envia uma mensagem de erro ao cliente
+     * Adds new client in memory
      */
-    void send_command_error_message(const std::string &error_message);
+    void add_client(const std::string &user_id);
 
     /**
-     * Adiciona um novo cliente e seu respectivo dispositivo à lista de clientes
-     * Se o cliente já está na lista o novo dispositivo é adicionado
-     * TODO Enviar mensagem de erro quando o cliente já estiver com o número máximo de dispositivos
-     */
-    void add_client(const std::string& user_id, const std::string& device_id);
-
-    /**
-     * Verifica se o cliente já está na lista de usuários
+     * Checks if the client is already on the list of clients
      */
     bool has_client_connected(const std::string &client_id);
 
-    /**
-     * Retorna uma referência (na forma de um iterador) para as informações do usuário na lista
-     */
-    std::vector<client_info>::iterator get_client_info(const std::string& user_id);
+    bool has_client_and_device_connected(const std::string &client_id, const std::string &device_id);
+
+    void remove_device_from_user(const std::string &user_id, std::string device_id);
+    static void remove_device_from_user_wrapper(Server &server, const std::string &user_id, const std::string &device_id);
 
     /**
-     * Remove o arquivo da lista de arquivos do cliente
+     * Returns the client info inside the list of client infos
      */
-    void remove_file_from_client(const std::string& user_id, const std::string& filename);
+    std::vector<dropbox_util::client_info>::iterator get_client_info(const std::string& user_id);
+
+    void send_command_confirmation(struct sockaddr_in &client);
+    void send_command_error_message(struct sockaddr_in &client, const std::string &error_message);
+
+    new_client_connection_info allocate_connection_for_client(const std::string &ip);
 
     static const std::string LOGGER_NAME;
-    std::shared_ptr<spdlog::logger> logger_;
+    LoggerWrapper logger_;
 
     const int64_t MAX_CLIENT_DEVICES = 2;
 
     bool has_started_;
     int32_t port_;
+    int32_t next_client_port_ = dropbox_util::DEFAULT_SERVER_PORT;
     struct sockaddr_in server_addr_ {0};
     struct sockaddr_in current_client_ {0};
     dropbox_util::SOCKET socket_;
     socklen_t peer_length_;
-    std::vector<client_info> clients_;
+    std::vector<dropbox_util::client_info> clients_;
     std::string local_directory_;
+
+    ClientThreadPool thread_pool_;
 };
 
 #endif // SISOP2_SERVER_INCLUDE_DROPBOXSERVER_HPP
