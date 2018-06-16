@@ -77,6 +77,8 @@ namespace dropbox_util {
     bool starts_with(const std::string& str, const std::string& prefix);
     bool ends_with(const std::string& str, const std::string& suffix);
 
+    std::string get_filename(const std::string &complete_file_path);
+
     /// Parse de string de lista de arquivos
     std::vector<std::vector<std::string>> parse_file_list_string(const std::string& received_data);
 

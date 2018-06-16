@@ -10,13 +10,11 @@
 
 namespace fs = boost::filesystem;
 
-ClientThread::ClientThread(const std::string &user_id, const std::string &device_id,
-                           const std::string &local_directory, const std::string &logger_name,
-                           const std::string &ip, int32_t port, dropbox_util::SOCKET socket, dropbox_util::client_info &info,
-                           pthread_mutex_t &client_info_mutex) :
-        user_id_(user_id), device_id_(device_id), logger_name_(logger_name), ip_(ip),
-        port_(port), socket_(socket), info_(info), client_info_mutex_(client_info_mutex), logger_(logger_name) {
-    local_directory_ = StringFormatter() << local_directory << "/" << user_id << "/";
+ClientThread::ClientThread(client_thread_param_list param_list) :
+        user_id_(param_list.user_id), device_id_(param_list.device_id), logger_name_(param_list.logger_name), ip_(param_list.ip),
+        port_(param_list.port), socket_(param_list.socket), info_(param_list.info), client_info_mutex_(param_list.client_info_mutex),
+        logger_(param_list.logger_name) {
+    local_directory_ = StringFormatter() << param_list.local_directory << "/" << param_list.user_id << "/";
 }
 
 void ClientThread::parse_command(const std::string &command_line) {
@@ -185,7 +183,7 @@ void ClientThread::remove_file_from_info(const std::string &filename) {
 void ClientThread::replace_local_file_by_temporary_if_more_recent(const std::string &tmp_file_path, const std::string &local_file_path,
                                                                   const dropbox_util::file_info &received_file_info) {
     LockGuard user_info_lock(client_info_mutex_);
-    std::string local_filename = fs::path(local_file_path).filename().string();
+    std::string local_filename = dropbox_util::get_filename(local_file_path);
     auto file_iterator = std::find_if(info_.user_files.begin(),
                                       info_.user_files.end(),
                                       [&local_filename] (const dropbox_util::file_info &f) -> bool

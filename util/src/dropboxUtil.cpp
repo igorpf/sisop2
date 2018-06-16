@@ -109,3 +109,8 @@ void dropbox_util::remove_filename_from_list(const std::string &filename,
                                                bool {return filename == info.name;}),
                         file_list.end());
 }
+
+std::string dropbox_util::get_filename(const std::string &complete_file_path) {
+    auto filename_index = complete_file_path.find_last_of('/');
+    return filename_index != std::string::npos ? complete_file_path.substr(filename_index + 1) : complete_file_path;
+}

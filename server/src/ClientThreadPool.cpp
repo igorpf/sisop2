@@ -8,12 +8,15 @@ void ClientThreadPool::add_client(dropbox_util::new_client_param_list client_par
         locks_[client_param_list.user_id] = PTHREAD_MUTEX_INITIALIZER;
     }
 
-    auto client = std::make_shared<ClientThread>(
-            client_param_list.user_id, client_param_list.device_id, local_directory_,
-            client_param_list.logger_name, client_param_list.ip,
-            client_param_list.port, client_param_list.socket, client_param_list.info,
-            locks_.find(client_param_list.user_id)->second
-    );
+    client_thread_param_list param_list
+            {
+                client_param_list.user_id, client_param_list.device_id, local_directory_,
+                client_param_list.logger_name, client_param_list.ip,
+                client_param_list.port, client_param_list.socket, client_param_list.info,
+                locks_.find(client_param_list.user_id)->second
+            };
+
+    auto client = std::make_shared<ClientThread>(param_list);
     threads_.push_back(client);
     client->setLogoutCallback(std::bind(remove_client_thread_wrapper, std::ref(*this), client_param_list.user_id,
                                         client_param_list.device_id));

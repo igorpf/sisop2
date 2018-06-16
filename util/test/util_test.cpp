@@ -123,6 +123,19 @@ TEST(UtilityFunctions, ShouldIgnoreFile)
     EXPECT_TRUE(dropbox_util::should_ignore_file(backup_file));
 }
 
+TEST(UtilityFunctions, GetFilenameValidFilepath)
+{
+    std::string file_path = "/home/user/filename.txt";
+    ASSERT_EQ(dropbox_util::get_filename(file_path), "filename.txt");
+}
+
+TEST(UtilityFunctions, GetFilenameBadString)
+{
+    std::string file_path = "filename.txt";
+    ASSERT_EQ(dropbox_util::get_filename(file_path), "filename.txt");
+}
+
+
 TEST(UtilityFunctions, RemoveFilenameFromList)
 {
     dropbox_util::file_info file_1 {"file_1", 10, 15623};
