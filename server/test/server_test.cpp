@@ -15,7 +15,7 @@ TEST(ServerLoginParser, ValidArgumentsPrimary)
 
 TEST(ServerLoginParser, ValidArgumentsBackup)
 {
-    std::array<const char*, 3> argv = {"dropboxServer", "backup", "9001"};
+    std::array<const char*, 5> argv = {"dropboxServer", "backup", "9002", "127.0.0.1", "9001"};
     int argc = argv.size();
 
     ServerLoginParser parser;
@@ -46,7 +46,7 @@ TEST(ServerLoginParser, TestIsPrimary)
 
 TEST(ServerLoginParser, TestNotIsPrimary)
 {
-    std::array<const char*, 3> argv = {"dropboxServer", "backup", "9001"};
+    std::array<const char*, 5> argv = {"dropboxServer", "backup", "9002", "127.0.0.1", "9001"};
     int argc = argv.size();
 
     ServerLoginParser parser;

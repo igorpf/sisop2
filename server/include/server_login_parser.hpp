@@ -47,6 +47,15 @@ public:
      */
     int64_t GetPort();
 
+    /**
+     * Returns the specified port, throws if ParseInput wasn't called before
+     */
+    int64_t GetPrimaryServerPort();
+
+    /**
+     * Returns the specified ip, throws if ParseInput wasn't called before
+     */
+    std::string GetPrimaryServerIp();
 private:
     program_options::options_description description_;
     program_options::positional_options_description positional_description_;

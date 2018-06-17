@@ -49,7 +49,6 @@ void Server::start(int argc, char **argv) {
     loginParser.ValidateInput();
     is_primary_ = loginParser.isPrimary();
 
-    // Inicializa o socket de comunicação
     if ((socket_ = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
         throw std::runtime_error(util::get_errno_with_message("Error initializing socket"));
 
@@ -63,6 +62,14 @@ void Server::start(int argc, char **argv) {
     if (bind(socket_, (struct sockaddr *) &server_addr_, peer_length_) == util::DEFAULT_ERROR_CODE)
         throw std::runtime_error(util::get_errno_with_message("Bind error"));
     logger_->info("Initialized socket of number {} for server", socket_);
+
+    if (!is_primary_) {
+        primary_server_port_ = loginParser.GetPrimaryServerPort();
+        primary_server_ip = loginParser.GetPrimaryServerIp();
+        logger_->info("This is a backup server. Registering to primary {} {}", primary_server_ip, primary_server_port_);
+        register_in_primary_server();
+    }
+
     has_started_ = true;
 }
 
@@ -118,13 +125,16 @@ void Server::listen() {
 }
 
 void Server::parse_command(const std::string &command_line) {
-    // TODO Validar parâmetros
     logger_->debug("Parsing command {}", command_line);
     auto tokens = util::split_words_by_token(command_line);
     auto command = tokens[0];
     if (command == "connect") {
         auto user_id = tokens[1], device_id = tokens[2];
         login_new_client(user_id, device_id);
+    }
+    else if (command == "backup") {
+        auto new_server_id = tokens[1];
+        logger_->info("New server {} registered", new_server_id);
     }
     else {
         throw std::logic_error(StringFormatter() << "Invalid command sent by client " << command_line);
@@ -243,4 +253,13 @@ void Server::remove_device_from_user(const std::string &user_id, std::string dev
 
 void Server::remove_device_from_user_wrapper(Server &server, const std::string &user_id, const std::string &device_id) {
     server.remove_device_from_user(user_id, device_id);
+}
+
+void Server::register_in_primary_server() {
+    struct sockaddr_in primary_server_addr {0};
+    primary_server_addr.sin_family = AF_INET;
+    primary_server_addr.sin_port = htons(static_cast<uint16_t>(primary_server_port_));
+    primary_server_addr.sin_addr.s_addr = inet_addr(primary_server_ip.c_str());
+    std::string command = StringFormatter() << "backup" << dropbox_util::COMMAND_SEPARATOR_TOKEN << "123";
+    sendto(socket_, command.c_str() , command.size(), 0, (struct sockaddr *)&primary_server_addr, sizeof(primary_server_addr));
 }

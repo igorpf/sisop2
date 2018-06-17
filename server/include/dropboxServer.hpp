@@ -74,6 +74,11 @@ private:
 
     new_client_connection_info allocate_connection_for_client(const std::string &ip);
 
+    /**
+     * Register this server to the primary server. Should be called only when this server instance is a backup
+     */
+    void register_in_primary_server();
+
     static const std::string LOGGER_NAME;
     LoggerWrapper logger_;
 
@@ -81,6 +86,9 @@ private:
 
     bool has_started_;
     bool is_primary_;
+    int64_t primary_server_port_;
+    std::string primary_server_ip;
+
     int32_t port_;
     int32_t next_client_port_ = dropbox_util::DEFAULT_SERVER_PORT;
     struct sockaddr_in server_addr_ {0};
