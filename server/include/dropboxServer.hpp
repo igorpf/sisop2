@@ -17,6 +17,10 @@ struct new_client_connection_info {
     int32_t port;
 };
 
+struct replica_manager {
+    std::string ip;
+    int64_t port;
+};
 
 class Server {
 public:
@@ -79,6 +83,9 @@ private:
      */
     void register_in_primary_server();
 
+
+    void add_backup_server();
+
     static const std::string LOGGER_NAME;
     LoggerWrapper logger_;
 
@@ -95,10 +102,13 @@ private:
     struct sockaddr_in current_client_ {0};
     dropbox_util::SOCKET socket_;
     socklen_t peer_length_;
-    std::vector<dropbox_util::client_info> clients_;
-    std::string local_directory_;
 
+    std::string local_directory_;
     ClientThreadPool thread_pool_;
+
+    // Data structures that need to be synchronized
+    std::vector<dropbox_util::client_info> clients_;
+    std::vector<replica_manager> replica_managers;
 };
 
 #endif // SISOP2_SERVER_INCLUDE_DROPBOXSERVER_HPP

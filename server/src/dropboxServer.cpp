@@ -133,8 +133,7 @@ void Server::parse_command(const std::string &command_line) {
         login_new_client(user_id, device_id);
     }
     else if (command == "backup") {
-        auto new_server_id = tokens[1];
-        logger_->info("New server {} registered", new_server_id);
+        add_backup_server();
     }
     else {
         throw std::logic_error(StringFormatter() << "Invalid command sent by client " << command_line);
@@ -262,4 +261,11 @@ void Server::register_in_primary_server() {
     primary_server_addr.sin_addr.s_addr = inet_addr(primary_server_ip.c_str());
     std::string command = StringFormatter() << "backup" << dropbox_util::COMMAND_SEPARATOR_TOKEN << "123";
     sendto(socket_, command.c_str() , command.size(), 0, (struct sockaddr *)&primary_server_addr, sizeof(primary_server_addr));
+}
+
+void Server::add_backup_server() {
+    std::string ip = inet_ntoa(current_client_.sin_addr);
+    int64_t port = ntohs(current_client_.sin_port);
+    replica_manager new_manager{ip, port};
+    replica_managers.emplace_back(new_manager);
 }

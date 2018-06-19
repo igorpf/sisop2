@@ -35,14 +35,22 @@ Nota: para desenvolver usando o CLion é indicado seguir as etapas anteriores an
 Para rodar o cliente:
 
 ```bash
-./_builds/client/dropboxClient
+./_builds/client/dropboxClient < nome_cliente > < ip_servidor > < porta_servidor > < porta_cliente >
 ```
+
+O parâmetro porta_cliente é a porta em que o cliente escutará por novas alterações do servidor primário (frontend).
 
 Para rodar o servidor:
 
 ```bash
-./_builds/server/dropboxServer
+./_builds/server/dropboxServer [backup | primary] < porta > [ip_server_primario] [porta_server_primario]
 ```
+Lembrando que caso o servidor seja primário, não é necessário especificar o ip e porta do primário.
+Caso seja backup, é necessário passar esses parâmetros para que o primário seja notificado.
+
+Convenções para o uso do número das portas:
+- Frontend do cliente: 8001 - 9000
+- Servidor: 9001 - 10000
 
 ## Testes
 
