@@ -76,6 +76,8 @@ void Server::start(int argc, char **argv) {
                 [&](Server &s) -> void {
                     // start election here
                     logger_->info("Received notification that the primary server is down");
+                    // if this server gets elected, stop the detector thread
+                    // serverConnectivityDetectorThread.stop();
                 }, std::ref(*this))
         );
     }
@@ -144,6 +146,9 @@ void Server::parse_command(const std::string &command_line) {
     }
     else if (command == "backup") {
         add_backup_server();
+    }
+    else if (command == dropbox_util::CHECK_PRIMARY_SERVER_MESSAGE) {
+        send_command_confirmation(current_client_);
     }
     else {
         throw std::logic_error(StringFormatter() << "Invalid command sent by client " << command_line);
@@ -279,3 +284,4 @@ void Server::add_backup_server() {
     replica_manager new_manager{ip, port};
     replica_managers.emplace_back(new_manager);
 }
+

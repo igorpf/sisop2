@@ -84,7 +84,6 @@ private:
      */
     void register_in_primary_server();
 
-
     void add_backup_server();
 
     static const std::string LOGGER_NAME;

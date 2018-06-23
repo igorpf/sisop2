@@ -21,6 +21,8 @@ public:
 
     void setPrimaryServerPort(int64_t primary_server_port_);
 
+    void stop();
+
 protected:
     void Run() override;
 
