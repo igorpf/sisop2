@@ -5,6 +5,7 @@
 #include "ClientThreadPool.hpp"
 #include "../../util/include/LoggerFactory.hpp"
 #include "../../util/include/logger_wrapper.hpp"
+#include "PrimaryServerConnectivityDetectorThread.hpp"
 
 #include <string>
 #include <vector>
@@ -95,6 +96,7 @@ private:
     bool is_primary_;
     int64_t primary_server_port_;
     std::string primary_server_ip;
+    PrimaryServerConnectivityDetectorThread serverConnectivityDetectorThread;
 
     int32_t port_;
     int32_t next_client_port_ = dropbox_util::DEFAULT_SERVER_PORT;

@@ -68,6 +68,16 @@ void Server::start(int argc, char **argv) {
         primary_server_ip = loginParser.GetPrimaryServerIp();
         logger_->info("This is a backup server. Registering to primary {} {}", primary_server_ip, primary_server_port_);
         register_in_primary_server();
+        serverConnectivityDetectorThread.setPrimaryServerIp(primary_server_ip);
+        serverConnectivityDetectorThread.setPrimaryServerPort(primary_server_port_);
+        serverConnectivityDetectorThread.Start();
+        serverConnectivityDetectorThread.setNotifyCallback(
+            std::bind(
+                [&](Server &s) -> void {
+                    // start election here
+                    logger_->info("Received notification that the primary server is down");
+                }, std::ref(*this))
+        );
     }
 
     has_started_ = true;

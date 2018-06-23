@@ -25,7 +25,7 @@ add_executable(server_test
         ../include/ClientThread.hpp
         server_test.cpp
         ../src/ClientThreadPool.cpp
-        ../include/ClientThreadPool.hpp ../../util/include/logger_wrapper.hpp ../src/server_login_parser.cpp ../include/server_login_parser.hpp)
+        ../include/ClientThreadPool.hpp ../../util/include/logger_wrapper.hpp ../src/server_login_parser.cpp ../include/server_login_parser.hpp ../src/PrimaryServerConnectivityDetectorThread.cpp ../include/PrimaryServerConnectivityDetectorThread.hpp)
 
 # Target libraries
 target_link_libraries(server_test PUBLIC GTest::main Boost::system Boost::program_options Boost::filesystem -static-libstdc++)

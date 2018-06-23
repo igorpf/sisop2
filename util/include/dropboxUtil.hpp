@@ -25,6 +25,7 @@ namespace dropbox_util {
     const std::string LOOPBACK_IP = "127.0.0.1";
     const std::string COMMAND_SEPARATOR_TOKEN = ";";
     const std::string ERROR_MESSAGE_INITIAL_TOKEN = "!ERROR: ";
+    const std::string CHECK_PRIMARY_SERVER_MESSAGE = "ping";
 
     template <typename Collection, typename UnaryOperator>
     Collection map(Collection col, UnaryOperator op) {

@@ -25,7 +25,7 @@ add_executable(dropboxServer
         include/ClientThreadPool.hpp
         src/main.cpp
         ../util/src/LoggerFactory.cpp
-        ../util/include/LoggerFactory.hpp ../util/include/logger_wrapper.hpp src/server_login_parser.cpp include/server_login_parser.hpp)
+        ../util/include/LoggerFactory.hpp ../util/include/logger_wrapper.hpp src/server_login_parser.cpp include/server_login_parser.hpp src/PrimaryServerConnectivityDetectorThread.cpp include/PrimaryServerConnectivityDetectorThread.hpp)
 
 # Target libraries
 target_link_libraries(dropboxServer PUBLIC Boost::system Boost::program_options Boost::filesystem spdlog::spdlog pthread -static-libstdc++)
