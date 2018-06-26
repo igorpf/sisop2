@@ -52,7 +52,7 @@ private:
     /**
      * Spawns a new thread to watch for the client's requests
      */
-    void login_new_client(const std::string &user_id, const std::string &device_id);
+    void login_new_client(const std::string &user_id, const std::string &device_id, int64_t frontend_port);
 
     /**
      * Adds new client in memory

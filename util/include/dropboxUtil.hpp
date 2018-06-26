@@ -68,6 +68,7 @@ namespace dropbox_util {
         int32_t port;
         SOCKET socket;
         client_info &info;
+        int64_t frontend_port;
     };
 
     /// Funções de utilidade geral

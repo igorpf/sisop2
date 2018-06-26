@@ -13,12 +13,11 @@ namespace fs = boost::filesystem;
 ClientThread::ClientThread(client_thread_param_list param_list) :
         user_id_(param_list.user_id), device_id_(param_list.device_id), logger_name_(param_list.logger_name), ip_(param_list.ip),
         port_(param_list.port), socket_(param_list.socket), info_(param_list.info), client_info_mutex_(param_list.client_info_mutex),
-        logger_(param_list.logger_name) {
+        logger_(param_list.logger_name), frontend_port(param_list.frontend_port) {
     local_directory_ = StringFormatter() << param_list.local_directory << "/" << param_list.user_id << "/";
 }
 
 void ClientThread::parse_command(const std::string &command_line) {
-    // TODO Validar parâmetros
     logger_->debug("Parsing command {}", command_line);
     auto tokens = dropbox_util::split_words_by_token(command_line);
     auto command = tokens[0];

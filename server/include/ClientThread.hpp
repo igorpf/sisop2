@@ -15,6 +15,7 @@ struct client_thread_param_list {
     dropbox_util::SOCKET socket;
     dropbox_util::client_info &info;
     pthread_mutex_t &client_info_mutex;
+    int64_t frontend_port;
 };
 
 /**
@@ -85,6 +86,7 @@ private:
 
     std::string ip_;
     int32_t port_;
+    int64_t frontend_port;
     std::string user_id_;
     std::string device_id_;
 

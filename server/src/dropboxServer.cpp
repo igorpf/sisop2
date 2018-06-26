@@ -142,7 +142,8 @@ void Server::parse_command(const std::string &command_line) {
     auto command = tokens[0];
     if (command == "connect") {
         auto user_id = tokens[1], device_id = tokens[2];
-        login_new_client(user_id, device_id);
+        auto frontend_port = static_cast<int64_t >(std::stoi(tokens[3]));
+        login_new_client(user_id, device_id, frontend_port);
     }
     else if (command == "backup") {
         add_backup_server();
@@ -177,7 +178,7 @@ void Server::send_command_error_message(struct sockaddr_in &client, const std::s
     sendto(socket_, complete_error_message.c_str(), complete_error_message.size(), 0, (struct sockaddr *)&client, peer_length_);
 }
 
-void Server::login_new_client(const std::string &user_id, const std::string &device_id) {
+void Server::login_new_client(const std::string &user_id, const std::string &device_id, int64_t frontend_port) {
     if (!has_client_and_device_connected(user_id, device_id)) {
         add_client(user_id);
         auto client_iterator = get_client_info(user_id);
@@ -195,14 +196,16 @@ void Server::login_new_client(const std::string &user_id, const std::string &dev
             client_ip,
             ntohs(current_client_.sin_port),
             new_client_connection.socket,
-            *client_iterator
+            *client_iterator,
+            frontend_port
         };
         thread_pool_.add_client(param_list);
         send_command_confirmation(current_client_);
         std::string port = std::to_string(new_client_connection.port);
         sendto(socket_, port.c_str(), port.size(), 0, (struct sockaddr*)&current_client_, peer_length_);
 
-        logger_->info("Connected new device for client, total clients: {}",  clients_.size());
+        logger_->info("Connected new device for client, total clients: {}. User_id {} device_id {} frontend_port {}",
+                      clients_.size(), user_id, device_id, frontend_port);
     }
     else
         throw std::logic_error("User has already connected with this device");

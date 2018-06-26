@@ -49,6 +49,7 @@ void Client::start_client(int argc, char **argv)
     port_ = login_command_parser.GetPort();
     hostname_ = login_command_parser.GetHostname();
     user_id_ = login_command_parser.GetUserid();
+    frontend_port_ = login_command_parser.GetFrontendPort();
 
     set_device_id();
 
@@ -96,7 +97,9 @@ void Client::login_server()
     server_addr_.sin_addr.s_addr = inet_addr(hostname_.c_str());
     peer_length_ = sizeof(server_addr_);
     std::string command(StringFormatter() << "connect" << util::COMMAND_SEPARATOR_TOKEN
-                                          << user_id_ << util::COMMAND_SEPARATOR_TOKEN << device_id_);
+                                          << user_id_ << util::COMMAND_SEPARATOR_TOKEN
+                                          << device_id_ << util::COMMAND_SEPARATOR_TOKEN
+                                          << frontend_port_);
 
     send_command_and_expect_confirmation(command);
 
