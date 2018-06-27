@@ -25,7 +25,7 @@ namespace fs = boost::filesystem;
 
 const std::string Server::LOGGER_NAME = "Server";
 
-Server::Server() : logger_(LOGGER_NAME) {
+Server::Server() : logger_(LOGGER_NAME, false, false) {
     std::function<void(std::string, std::string)> callback = std::bind(remove_device_from_user_wrapper, std::ref(*this), std::placeholders::_1, std::placeholders::_2);
     thread_pool_.setDisconnectClientCallback(callback);
 }
@@ -77,8 +77,17 @@ void Server::start(int argc, char **argv) {
                     // start election here
                     logger_->info("Received notification that the primary server is down");
                     // if this server gets elected, stop the detector thread
-                    // serverConnectivityDetectorThread.stop();
-                    // notify_new_elected_server_to_clients();
+                    auto new_manager = replica_managers[0];
+                    if (new_manager.port == port_) { //this is the new server
+                        serverConnectivityDetectorThread.stop();
+                        notify_new_elected_server_to_clients();
+                    } else {
+                        // point to new primary server
+                        primary_server_port_ = new_manager.port;
+                        primary_server_ip = new_manager.ip;
+                        serverConnectivityDetectorThread.setPrimaryServerIp(primary_server_ip);
+                        serverConnectivityDetectorThread.setPrimaryServerPort(primary_server_port_);
+                    }
                 }, std::ref(*this))
         );
     }

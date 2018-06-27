@@ -50,10 +50,12 @@ void PrimaryServerConnectivityDetectorThread::setNotifyCallback(
 
 void PrimaryServerConnectivityDetectorThread::setPrimaryServerIp(const std::string &primary_server_ip_) {
     PrimaryServerConnectivityDetectorThread::primary_server_ip_ = primary_server_ip_;
+    primary_server_addr.sin_addr.s_addr = inet_addr(primary_server_ip_.c_str());
 }
 
 void PrimaryServerConnectivityDetectorThread::setPrimaryServerPort(int64_t primary_server_port_) {
     PrimaryServerConnectivityDetectorThread::primary_server_port_ = primary_server_port_;
+    primary_server_addr.sin_port = htons(static_cast<uint16_t>(primary_server_port_));
 }
 
 void PrimaryServerConnectivityDetectorThread::stop() {
