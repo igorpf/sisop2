@@ -76,6 +76,8 @@ namespace dropbox_util {
         SOCKET socket;
         client_info &info;
         int64_t frontend_port;
+        pthread_mutex_t &clients_buffer_mutex;
+        std::vector<dropbox_util::client_info> &clients_buffer;
     };
 
     /// Funções de utilidade geral

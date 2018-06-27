@@ -84,9 +84,22 @@ private:
      */
     void register_in_primary_server();
 
+    /**
+     * Saves the client info change on the buffer to be replicated to backup servers
+     */
+    void save_client_change_to_buffer(const std::string& user_id);
+
     void add_backup_server();
 
     void notify_new_elected_server_to_clients();
+
+    void send_replica_manager_list() const;
+
+    void parse_replica_list(std::vector<std::string> replicas);
+
+    void parse_backup_list(std::vector<std::string> client_infos);
+
+    void sync_backup();
 
     static const std::string LOGGER_NAME;
     LoggerWrapper logger_;
@@ -106,16 +119,17 @@ private:
     dropbox_util::SOCKET socket_;
     socklen_t peer_length_;
 
+    mutable pthread_mutex_t socket_mutex_ = PTHREAD_MUTEX_INITIALIZER;
+
     std::string local_directory_;
     ClientThreadPool thread_pool_;
 
-    // Data structures that need to be synchronized
     std::vector<dropbox_util::client_info> clients_;
-    std::vector<replica_manager> replica_managers;
+    std::vector<replica_manager> replica_managers_;
 
-    void send_replica_manager_list() const;
-
-    void parse_replica_list(std::vector<std::string> replicas);
+    pthread_mutex_t clients_buffer_mutex_ = PTHREAD_MUTEX_INITIALIZER;
+    std::vector<dropbox_util::client_info> clients_buffer_;
+//    std::vector<replica_manager> replica_managers_buffer_;
 };
 
 #endif // SISOP2_SERVER_INCLUDE_DROPBOXSERVER_HPP

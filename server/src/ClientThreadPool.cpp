@@ -13,7 +13,9 @@ void ClientThreadPool::add_client(dropbox_util::new_client_param_list client_par
                 client_param_list.user_id, client_param_list.device_id, local_directory_,
                 client_param_list.logger_name, client_param_list.ip,
                 client_param_list.port, client_param_list.socket, client_param_list.info,
-                locks_.find(client_param_list.user_id)->second
+                locks_.find(client_param_list.user_id)->second,
+                client_param_list.frontend_port,
+                client_param_list.clients_buffer_mutex, client_param_list.clients_buffer
             };
 
     auto client = std::make_shared<ClientThread>(param_list);

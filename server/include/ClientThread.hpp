@@ -16,6 +16,8 @@ struct client_thread_param_list {
     dropbox_util::client_info &info;
     pthread_mutex_t &client_info_mutex;
     int64_t frontend_port;
+    pthread_mutex_t &clients_buffer_mutex;
+    std::vector<dropbox_util::client_info> &clients_buffer;
 };
 
 /**
@@ -81,6 +83,13 @@ public:
 protected:
     void Run() override;
 private:
+    /**
+     * Saves the client info change on the buffer to be replicated to backup servers
+     */
+    void save_client_change_to_buffer();
+
+    void init_client_address();
+
     std::string logger_name_;
     LoggerWrapper logger_;
 
@@ -97,9 +106,10 @@ private:
     std::string local_directory_;
 
     dropbox_util::client_info &info_;
+    pthread_mutex_t &clients_buffer_mutex_;
+    std::vector<dropbox_util::client_info> &clients_buffer_;
 
     pthread_mutex_t &client_info_mutex_;
-    void init_client_address();
 
     std::function<void()> logout_callback_;
 };

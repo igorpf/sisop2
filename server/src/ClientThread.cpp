@@ -13,7 +13,8 @@ namespace fs = boost::filesystem;
 ClientThread::ClientThread(client_thread_param_list param_list) :
         user_id_(param_list.user_id), device_id_(param_list.device_id), logger_name_(param_list.logger_name), ip_(param_list.ip),
         port_(param_list.port), socket_(param_list.socket), info_(param_list.info), client_info_mutex_(param_list.client_info_mutex),
-        logger_(param_list.logger_name), frontend_port(param_list.frontend_port) {
+        logger_(param_list.logger_name), frontend_port(param_list.frontend_port), clients_buffer_mutex_(param_list.clients_buffer_mutex),
+        clients_buffer_(param_list.clients_buffer) {
     local_directory_ = StringFormatter() << param_list.local_directory << "/" << param_list.user_id << "/";
 }
 
@@ -132,7 +133,10 @@ void ClientThread::receive_file(const std::string& filename, const std::string &
 }
 
 void ClientThread::add_file(const dropbox_util::file_info &received_file_info) {
+    LockGuard client_info_lock(client_info_mutex_);
     info_.user_files.emplace_back(received_file_info);
+    client_info_lock.Unlock();
+    save_client_change_to_buffer();
 }
 
 
@@ -145,6 +149,8 @@ void ClientThread::delete_file(const std::string& filename, const std::string &u
 
     LockGuard user_info_lock(client_info_mutex_);
     remove_file_from_info(filename_without_path);
+    user_info_lock.Unlock();
+    save_client_change_to_buffer();
 }
 
 
@@ -197,6 +203,8 @@ void ClientThread::replace_local_file_by_temporary_if_more_recent(const std::str
     } else {
         fs::remove(fs::path(tmp_file_path));
     }
+    user_info_lock.Unlock();
+    LockGuard client_info_lock(client_info_mutex_);
 }
 
 void ClientThread::setLogoutCallback(const std::function<void()> &logout_callback) {
@@ -211,3 +219,18 @@ const std::string &ClientThread::getDeviceId() const {
     return device_id_;
 }
 
+void ClientThread::save_client_change_to_buffer() {
+    LockGuard client_buffer_lock(clients_buffer_mutex_);
+
+    const std::string& user_id = user_id_;
+
+    // Remove old change from the buffer
+    clients_buffer_.erase(std::remove_if(clients_buffer_.begin(), clients_buffer_.end(),
+                                         [&user_id] (const dropbox_util::client_info &c) -> bool
+                                         {return user_id == c.user_id;}),
+                          clients_buffer_.end());
+
+    // Add to the buffer
+    LockGuard client_info_lock(client_info_mutex_);
+    clients_buffer_.emplace_back(info_);
+}
