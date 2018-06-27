@@ -97,7 +97,7 @@ private:
 
     void parse_replica_list(std::vector<std::string> replicas);
 
-    void parse_backup_list(std::vector<std::string> client_infos);
+    void parse_backup_list(const std::string &client_infos);
 
     void sync_backup();
 

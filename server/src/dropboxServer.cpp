@@ -122,6 +122,7 @@ void Server::load_info_from_disk() {
 
             client_iterator->user_files.emplace_back(user_file_info);
         }
+        save_client_change_to_buffer(user_id);
     }
 }
 
@@ -139,13 +140,11 @@ void Server::listen() {
             logger_->debug("Received from client {} port {} the message: {}",
                            inet_ntoa(current_client_.sin_addr), ntohs(current_client_.sin_port), buffer);
             parse_command(buffer);
-            // TODO Remover
-            sync_backup();
         } catch (std::runtime_error& runtime_error) {
             logger_->error("Error parsing command from client {}", runtime_error.what());
             break;
         } catch (std::logic_error& logic_error) {
-            logger_->error("Error parsing command from client {}", logic_error.what());
+            logger_->error("Error parsing command from client {}, client {} ip {}", logic_error.what());
             send_command_error_message(current_client_, logic_error.what());
         }
     }
@@ -163,6 +162,8 @@ void Server::parse_command(const std::string &command_line) {
     }
     else if (command == "backup") {
         add_backup_server();
+        // TODO Remover
+        sync_backup();
     }
     else if (command == dropbox_util::CHECK_PRIMARY_SERVER_MESSAGE) {
         send_command_confirmation(current_client_);
@@ -174,8 +175,7 @@ void Server::parse_command(const std::string &command_line) {
     }
     else if (command == "backup_sync") {
 //        send_command_confirmation(current_client_);
-        tokens.erase(tokens.begin());
-        parse_backup_list(tokens);
+        parse_backup_list(tokens[1]);
     }
     else {
         throw std::logic_error(StringFormatter() << "Invalid command sent by client " << command_line);
@@ -191,10 +191,62 @@ void Server::parse_replica_list(std::vector<std::string> replicas) {
     }
 }
 
-void Server::parse_backup_list(std::vector<std::string> client_infos) {
-    for (const auto& client_info : client_infos) {
-        std::cout << "New client info: " << std::endl;
-        std::cout << client_info << std::endl;
+void Server::parse_backup_list(const std::string &client_infos) {
+    /*std::string backup_command = StringFormatter() << "backup_sync" << dropbox_util::COMMAND_SEPARATOR_TOKEN;
+
+    for (const auto &info : clients_buffer_) {
+        backup_command.append(info.user_id);
+
+        if (!info.user_devices.empty() and !info.user_files.empty())
+            backup_command.append("%");
+
+        if(!info.user_devices.empty()) {
+            backup_command.append("$");
+            for (const auto &device : info.user_devices) {
+                backup_command.append(StringFormatter() << device.device_id << ","
+                                                        << device.ip << "," << device.port << ","
+                                                        << device.frontend_port << ":");
+            }
+            backup_command.pop_back();
+            backup_command.append("&");
+        }
+
+        if (!info.user_files.empty()) {
+            backup_command.append("#");
+            for (const auto &file : info.user_files) {
+                backup_command.append(StringFormatter() << file.name << ","
+                                                        << file.size << ","
+                                                        << file.last_modification_time << ":");
+            }
+        }
+
+        backup_command.pop_back();
+        backup_command.append("@");*/
+
+    std::cout << "Received info:" << std::endl;
+    std::cout << client_infos << std::endl;
+    auto clients = dropbox_util::split_words_by_token(client_infos, "@");
+
+    for (const auto& client_info : clients) {
+        auto tokens = dropbox_util::split_words_by_token(client_info, "%");
+        std::cout << "user id: " << tokens[0] << std::endl;
+        add_client(tokens[0]);
+
+        if (tokens.size() == 1)
+            continue;
+
+        auto client = get_client_info(tokens[0]);
+        auto devices_and_files = dropbox_util::split_words_by_token(tokens[1], "&");
+
+        for (const auto& elements : devices_and_files) {
+            if (elements[0] == '#') {
+                // Files
+            } else if (elements[0] == '$') {
+                // Devices
+            } else {
+                throw std::runtime_error("Invalid type of client info received from primary server!");
+            }
+        }
     }
 }
 
@@ -413,24 +465,41 @@ void Server::sync_backup() {
         std::string backup_command = StringFormatter() << "backup_sync" << dropbox_util::COMMAND_SEPARATOR_TOKEN;
 
         for (const auto &info : clients_buffer_) {
-            backup_command.append(StringFormatter() << info.user_id << ":");
-            for (const auto &device : info.user_devices) {
-                backup_command.append(StringFormatter() << device.device_id << ","
-                                                        << device.ip << "," << device.port << ","
-                                                        << device.frontend_port << ":");
+            backup_command.append(info.user_id);
+
+            if (!info.user_devices.empty() or !info.user_files.empty())
+                backup_command.append(dropbox_util::USER_INFO_SEPARATOR_TOKEN);
+
+            if(!info.user_devices.empty()) {
+                backup_command.append(dropbox_util::DEVICE_INITIAL_TOKEN);
+                for (const auto &device : info.user_devices) {
+                    backup_command.append(StringFormatter() << device.device_id << ","
+                                                            << device.ip << "," << device.port << ","
+                                                            << device.frontend_port << ":");
+                }
+                backup_command.pop_back();
+                backup_command.append(dropbox_util::DEVICE_FILE_SEPARATOR_TOKEN);
             }
-            for (const auto &file : info.user_files) {
-                backup_command.append(StringFormatter() << file.name << ","
-                                                        << file.size << ","
-                                                        << file.last_modification_time << ":");
+
+            if (!info.user_files.empty()) {
+                backup_command.append(dropbox_util::FILE_INITIAL_TOKEN);
+                for (const auto &file : info.user_files) {
+                    backup_command.append(StringFormatter() << file.name << ","
+                                                            << file.size << ","
+                                                            << file.last_modification_time << ":");
+                }
+                backup_command.pop_back();
             }
+
+            backup_command.append(dropbox_util::USER_LIST_SEPARATOR_TOKEN);
         }
+
+        backup_command.pop_back();
+        logger_->info(backup_command);
 
         clients_buffer_.clear();
 
         client_buffer_lock.Unlock();
-
-        backup_command.pop_back();
 
         LockGuard socket_lock(socket_mutex_);
 
