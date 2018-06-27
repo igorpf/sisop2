@@ -450,6 +450,6 @@ void Client::update_modified_info(dropbox_util::file_info& info) {
 }
 
 void Client::change_primary_server_address(std::string ip, int64_t port) {
-    server_addr_.sin_port = htons(static_cast<uint16_t>(port_));
+    server_addr_.sin_port = htons(static_cast<uint16_t>(port));
     server_addr_.sin_addr.s_addr = inet_addr(ip.c_str());
 }

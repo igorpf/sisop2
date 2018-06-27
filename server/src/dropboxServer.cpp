@@ -78,6 +78,7 @@ void Server::start(int argc, char **argv) {
                     logger_->info("Received notification that the primary server is down");
                     // if this server gets elected, stop the detector thread
                     // serverConnectivityDetectorThread.stop();
+                    // notify_new_elected_server_to_clients();
                 }, std::ref(*this))
         );
     }
@@ -144,6 +145,7 @@ void Server::parse_command(const std::string &command_line) {
         auto user_id = tokens[1], device_id = tokens[2];
         auto frontend_port = static_cast<int64_t >(std::stoi(tokens[3]));
         login_new_client(user_id, device_id, frontend_port);
+//        notify_new_elected_server_to_clients();
     }
     else if (command == "backup") {
         add_backup_server();
@@ -182,19 +184,21 @@ void Server::login_new_client(const std::string &user_id, const std::string &dev
     if (!has_client_and_device_connected(user_id, device_id)) {
         add_client(user_id);
         auto client_iterator = get_client_info(user_id);
-        if (client_iterator->user_devices.size() < MAX_CLIENT_DEVICES)
-            client_iterator->user_devices.emplace_back(device_id);
-        else
+        if (client_iterator->user_devices.size() >= MAX_CLIENT_DEVICES)
             throw std::logic_error("User achieved maximum devices connected");
-
         std::string client_ip = inet_ntoa(current_client_.sin_addr);
+        int32_t client_port = ntohs(current_client_.sin_port);
+
+        dropbox_util::device new_device{device_id, client_ip, client_port, frontend_port};
+        client_iterator->user_devices.emplace_back(new_device);
+
         auto new_client_connection = allocate_connection_for_client(client_ip);
         dropbox_util::new_client_param_list param_list{
             user_id,
             device_id,
             "ClientThread_" + user_id + "_" + device_id,
             client_ip,
-            ntohs(current_client_.sin_port),
+            client_port,
             new_client_connection.socket,
             *client_iterator,
             frontend_port
@@ -246,7 +250,7 @@ bool Server::has_client_and_device_connected(const std::string &client_id, const
     if (client_iterator == clients_.end())
         return false;
     auto device_iterator = std::find_if(client_iterator->user_devices.begin(), client_iterator->user_devices.end(),
-                                        [&device_id] (const std::string& dev) -> bool {return dev == device_id;});
+                                        [&device_id] (const dropbox_util::device& dev) -> bool {return dev.device_id == device_id;});
     return device_iterator != client_iterator->user_devices.end();
 }
 
@@ -260,7 +264,7 @@ void Server::remove_device_from_user(const std::string &user_id, std::string dev
     if (client_iterator != clients_.end()) {
         auto device_iterator = std::find_if(
                 client_iterator->user_devices.begin(), client_iterator->user_devices.end(),
-                [&device_id] (const std::string device) -> bool {return device == device_id;}
+                [&device_id] (const dropbox_util::device& device) -> bool {return device.device_id == device_id;}
         );
         if (device_iterator != client_iterator->user_devices.end()) {
             client_iterator->user_devices.erase(device_iterator);
@@ -286,5 +290,34 @@ void Server::add_backup_server() {
     int64_t port = ntohs(current_client_.sin_port);
     replica_manager new_manager{ip, port};
     replica_managers.emplace_back(new_manager);
+}
+
+void Server::notify_new_elected_server_to_clients() {
+    std::this_thread::sleep_for(std::chrono::microseconds(1000000));
+    for (auto &client : clients_) {
+        for (auto &device : client.user_devices) {
+            logger_->info("Notifying client {} device  ip {} port {}", client.user_id, device.ip, device.frontend_port);
+            if(device.ip.empty() || device.frontend_port == 0)
+                continue;
+            auto new_client_connection = allocate_connection_for_client(device.ip);
+            dropbox_util::new_client_param_list param_list{
+                    client.user_id,
+                    device.device_id,
+                    "ClientThread_" + client.user_id + "_" + device.device_id,
+                    device.ip,
+                    ntohs(current_client_.sin_port),
+                    new_client_connection.socket,
+                    client,
+                    device.frontend_port
+            };
+            thread_pool_.add_client(param_list);
+            struct sockaddr_in primary_server_addr {0};
+            primary_server_addr.sin_family = AF_INET;
+            primary_server_addr.sin_port = htons(static_cast<uint16_t>(device.frontend_port));
+            primary_server_addr.sin_addr.s_addr = inet_addr(device.ip.c_str());
+            std::string command = StringFormatter() << "new_server" << dropbox_util::COMMAND_SEPARATOR_TOKEN << new_client_connection.port;
+            sendto(socket_, command.c_str() , command.size(), 0, (struct sockaddr *)&primary_server_addr, sizeof(primary_server_addr));
+        }
+    }
 }
 

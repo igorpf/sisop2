@@ -54,9 +54,16 @@ namespace dropbox_util {
         std::string in_file_path;
     };
 
+    struct device {
+        std::string device_id;
+        std::string ip;
+        int64_t port;
+        int64_t frontend_port;
+    };
+
     struct client_info {
         std::string user_id;
-        std::vector<std::string> user_devices;
+        std::vector<device> user_devices;
         std::vector<file_info> user_files;
     };
 

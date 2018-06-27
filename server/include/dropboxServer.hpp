@@ -86,6 +86,8 @@ private:
 
     void add_backup_server();
 
+    void notify_new_elected_server_to_clients();
+
     static const std::string LOGGER_NAME;
     LoggerWrapper logger_;
 
