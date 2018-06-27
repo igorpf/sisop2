@@ -153,8 +153,22 @@ void Server::parse_command(const std::string &command_line) {
     else if (command == dropbox_util::CHECK_PRIMARY_SERVER_MESSAGE) {
         send_command_confirmation(current_client_);
     }
+    else if (command == "replica_list") {
+//        send_command_confirmation(current_client_);
+        tokens.erase(tokens.begin());
+        parse_replica_list(tokens);
+    }
     else {
         throw std::logic_error(StringFormatter() << "Invalid command sent by client " << command_line);
+    }
+}
+
+void Server::parse_replica_list(std::vector<std::string> replicas) {
+    replica_managers.clear();
+    for (auto &replica : replicas) {
+        logger_->info("Adding new replica {}", replica);
+        auto tokens = dropbox_util::split_words_by_token(replica, "@");
+        replica_managers.push_back(replica_manager{tokens[0], std::stoi(tokens[1])});
     }
 }
 
@@ -290,6 +304,24 @@ void Server::add_backup_server() {
     int64_t port = ntohs(current_client_.sin_port);
     replica_manager new_manager{ip, port};
     replica_managers.emplace_back(new_manager);
+
+    send_replica_manager_list();
+}
+
+void Server::send_replica_manager_list() const {
+    std::string replica_command = StringFormatter() << "replica_list" << dropbox_util::COMMAND_SEPARATOR_TOKEN;
+    for (auto &manager : replica_managers) {
+        replica_command.append(StringFormatter() << manager.ip << "@" << manager.port << dropbox_util::COMMAND_SEPARATOR_TOKEN);
+    }
+    replica_command.pop_back();
+    for (auto &manager : replica_managers) {
+        struct sockaddr_in replica_addr {0};
+        replica_addr.sin_family = AF_INET;
+        replica_addr.sin_port = htons(static_cast<uint16_t>(manager.port));
+        replica_addr.sin_addr.s_addr = inet_addr(manager.ip.c_str());
+
+        sendto(socket_, replica_command.c_str() , replica_command.size(), 0, (struct sockaddr *)&replica_addr, sizeof(replica_addr));
+    }
 }
 
 void Server::notify_new_elected_server_to_clients() {

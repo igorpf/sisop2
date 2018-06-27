@@ -112,6 +112,10 @@ private:
     // Data structures that need to be synchronized
     std::vector<dropbox_util::client_info> clients_;
     std::vector<replica_manager> replica_managers;
+
+    void send_replica_manager_list() const;
+
+    void parse_replica_list(std::vector<std::string> replicas);
 };
 
 #endif // SISOP2_SERVER_INCLUDE_DROPBOXSERVER_HPP
