@@ -140,6 +140,8 @@ void Server::listen() {
             logger_->debug("Received from client {} port {} the message: {}",
                            inet_ntoa(current_client_.sin_addr), ntohs(current_client_.sin_port), buffer);
             parse_command(buffer);
+            // TODO Remover
+            sync_backup();
         } catch (std::runtime_error& runtime_error) {
             logger_->error("Error parsing command from client {}", runtime_error.what());
             break;
@@ -162,8 +164,6 @@ void Server::parse_command(const std::string &command_line) {
     }
     else if (command == "backup") {
         add_backup_server();
-        // TODO Remover
-        sync_backup();
     }
     else if (command == dropbox_util::CHECK_PRIMARY_SERVER_MESSAGE) {
         send_command_confirmation(current_client_);
@@ -192,37 +192,6 @@ void Server::parse_replica_list(std::vector<std::string> replicas) {
 }
 
 void Server::parse_backup_list(const std::string &client_infos) {
-    /*std::string backup_command = StringFormatter() << "backup_sync" << dropbox_util::COMMAND_SEPARATOR_TOKEN;
-
-    for (const auto &info : clients_buffer_) {
-        backup_command.append(info.user_id);
-
-        if (!info.user_devices.empty() and !info.user_files.empty())
-            backup_command.append("%");
-
-        if(!info.user_devices.empty()) {
-            backup_command.append("$");
-            for (const auto &device : info.user_devices) {
-                backup_command.append(StringFormatter() << device.device_id << ","
-                                                        << device.ip << "," << device.port << ","
-                                                        << device.frontend_port << ":");
-            }
-            backup_command.pop_back();
-            backup_command.append("&");
-        }
-
-        if (!info.user_files.empty()) {
-            backup_command.append("#");
-            for (const auto &file : info.user_files) {
-                backup_command.append(StringFormatter() << file.name << ","
-                                                        << file.size << ","
-                                                        << file.last_modification_time << ":");
-            }
-        }
-
-        backup_command.pop_back();
-        backup_command.append("@");*/
-
     std::cout << "Received info:" << std::endl;
     std::cout << client_infos << std::endl;
     auto clients = dropbox_util::split_words_by_token(client_infos, "@");
@@ -235,14 +204,31 @@ void Server::parse_backup_list(const std::string &client_infos) {
         if (tokens.size() == 1)
             continue;
 
-        auto client = get_client_info(tokens[0]);
+        auto client_iterator = get_client_info(tokens[0]);
         auto devices_and_files = dropbox_util::split_words_by_token(tokens[1], "&");
 
         for (const auto& elements : devices_and_files) {
             if (elements[0] == '#') {
                 // Files
+                std::cout << "User files:" << std::endl;
+                auto files = dropbox_util::split_words_by_token(elements.substr(1, elements.size() - 1), ":");
+                for (const auto& file : files) {
+                    auto fields = dropbox_util::split_words_by_token(file, ",");
+                    std::cout << "File name: " << fields[0] << std::endl;
+                    std::cout << "File size: " << fields[1] << std::endl;
+                    std::cout << "File timestamp: " << fields[2] << std::endl;
+                }
             } else if (elements[0] == '$') {
                 // Devices
+                std::cout << "User devices:" << std::endl;
+                auto devices = dropbox_util::split_words_by_token(elements.substr(1, elements.size() - 1), ":");
+                for (const auto& device : devices) {
+                    auto fields = dropbox_util::split_words_by_token(device, ",");
+                    std::cout << "Device id: " << fields[0] << std::endl;
+                    std::cout << "Device ip: " << fields[1] << std::endl;
+                    std::cout << "Device port: " << fields[2] << std::endl;
+                    std::cout << "Device frontend port: " << fields[3] << std::endl;
+                }
             } else {
                 throw std::runtime_error("Invalid type of client info received from primary server!");
             }
@@ -283,6 +269,8 @@ void Server::login_new_client(const std::string &user_id, const std::string &dev
 
         dropbox_util::device new_device{device_id, client_ip, client_port, frontend_port};
         client_iterator->user_devices.emplace_back(new_device);
+
+        save_client_change_to_buffer(user_id);
 
         auto new_client_connection = allocate_connection_for_client(client_ip);
         dropbox_util::new_client_param_list param_list{

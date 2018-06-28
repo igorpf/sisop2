@@ -4,14 +4,15 @@
 
 const std::string FrontendThread::LOGGER_NAME = "FrontendThread";
 
-FrontendThread::FrontendThread(IClient &client_) : client_(client_),  logger_(LOGGER_NAME) {}
+FrontendThread::FrontendThread(IClient& client) : client_(client),  logger_(LOGGER_NAME) {}
 
 void FrontendThread::Run() {
     init_socket();
 
-    while(true) {
+    while(client_.logged_in_) {
         try {
             char buffer[dropbox_util::BUFFER_SIZE];
+            // TODO Implementar timeout para poder fazer o exit
             recvfrom(socket_, buffer, sizeof(buffer), 0, (struct sockaddr *) &server_addr_, &peer_length_);
             logger_->info("Received message from new primary server: {}", buffer);
 

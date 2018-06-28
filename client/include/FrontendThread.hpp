@@ -13,7 +13,7 @@
 
 class FrontendThread : public PThreadWrapper {
 public:
-    FrontendThread(IClient& client_);
+    FrontendThread(IClient& client);
     void parse_command_line_input(int argc, char** argv);
 
 protected:
