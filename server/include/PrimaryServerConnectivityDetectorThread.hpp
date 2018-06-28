@@ -23,6 +23,10 @@ public:
 
     void stop();
 
+    void pause_for_election();
+
+    void proceed_after_election();
+
 protected:
     void Run() override;
 
@@ -42,6 +46,8 @@ private:
      * gets elected as a primary server, this thread should stop running.
      */
     bool is_backup_ = true;
+
+    bool is_election_happening_ = false;
     std::string primary_server_ip_;
     int64_t primary_server_port_;
 

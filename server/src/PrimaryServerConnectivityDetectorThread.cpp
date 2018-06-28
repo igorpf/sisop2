@@ -11,6 +11,7 @@ void PrimaryServerConnectivityDetectorThread::Run() {
 
     logger_->info("Started thread. Primary server is on ip {} port {}", primary_server_ip_, primary_server_port_);
     while(is_backup_) {
+        if (is_election_happening_) continue;
         std::string command = StringFormatter() << dropbox_util::CHECK_PRIMARY_SERVER_MESSAGE;
         char ack[dropbox_util::BUFFER_SIZE]{0};
         ssize_t received_bytes;
@@ -61,4 +62,12 @@ void PrimaryServerConnectivityDetectorThread::setPrimaryServerPort(int64_t prima
 void PrimaryServerConnectivityDetectorThread::stop() {
     is_backup_ = false;
     Join();
+}
+
+void PrimaryServerConnectivityDetectorThread::pause_for_election() {
+    is_election_happening_ = true;
+}
+
+void PrimaryServerConnectivityDetectorThread::proceed_after_election() {
+    is_election_happening_ = false;
 }

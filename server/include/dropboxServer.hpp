@@ -88,6 +88,18 @@ private:
 
     void notify_new_elected_server_to_clients();
 
+    void start_election();
+
+    void continue_election(int64_t id);
+
+    void notify_elected_server_to_next_participant(int64_t id);
+
+    replica_manager get_next_replica_in_ring();
+
+    replica_manager get_new_primary_server(int64_t id);
+
+    void remove_new_primary_server_from_backup_list(int64_t id);
+
     static const std::string LOGGER_NAME;
     LoggerWrapper logger_;
 
@@ -98,6 +110,10 @@ private:
     int64_t primary_server_port_;
     std::string primary_server_ip;
     PrimaryServerConnectivityDetectorThread serverConnectivityDetectorThread;
+
+    bool has_participated_in_election_ = false;
+    int64_t id_;
+
 
     int32_t port_;
     int32_t next_client_port_ = dropbox_util::DEFAULT_SERVER_PORT;

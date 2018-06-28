@@ -58,6 +58,7 @@ void Server::start(int argc, char **argv) {
     server_addr_.sin_addr.s_addr = INADDR_ANY;
     peer_length_ = sizeof(server_addr_);
     port_ = static_cast<int32_t>(loginParser.GetPort());
+    id_ = port_;
 
     if (bind(socket_, (struct sockaddr *) &server_addr_, peer_length_) == util::DEFAULT_ERROR_CODE)
         throw std::runtime_error(util::get_errno_with_message("Bind error"));
@@ -75,19 +76,10 @@ void Server::start(int argc, char **argv) {
             std::bind(
                 [&](Server &s) -> void {
                     // start election here
-                    logger_->info("Received notification that the primary server is down");
+                    logger_->info("Received notification that the primary server is down. Starting new election");
                     // if this server gets elected, stop the detector thread
-                    auto new_manager = replica_managers[0];
-                    if (new_manager.port == port_) { //this is the new server
-                        serverConnectivityDetectorThread.stop();
-                        notify_new_elected_server_to_clients();
-                    } else {
-                        // point to new primary server
-                        primary_server_port_ = new_manager.port;
-                        primary_server_ip = new_manager.ip;
-                        serverConnectivityDetectorThread.setPrimaryServerIp(primary_server_ip);
-                        serverConnectivityDetectorThread.setPrimaryServerPort(primary_server_port_);
-                    }
+                    start_election();
+                    serverConnectivityDetectorThread.pause_for_election();
                 }, std::ref(*this))
         );
     }
@@ -154,18 +146,28 @@ void Server::parse_command(const std::string &command_line) {
         auto user_id = tokens[1], device_id = tokens[2];
         auto frontend_port = static_cast<int64_t >(std::stoi(tokens[3]));
         login_new_client(user_id, device_id, frontend_port);
-//        notify_new_elected_server_to_clients();
     }
     else if (command == "backup") {
         add_backup_server();
     }
     else if (command == dropbox_util::CHECK_PRIMARY_SERVER_MESSAGE) {
+//        logger_->info("dei sinal de vida pro client {} port {}",
+//                       inet_ntoa(current_client_.sin_addr), ntohs(current_client_.sin_port));
         send_command_confirmation(current_client_);
     }
     else if (command == "replica_list") {
-//        send_command_confirmation(current_client_);
         tokens.erase(tokens.begin());
         parse_replica_list(tokens);
+    }
+    else if (command == "election") {
+        auto id = tokens[1];
+        logger_->info("Received election {}", id);
+        continue_election(std::stoi(id));
+    }
+    else if (command == "elected") {
+        auto id = tokens[1];
+        logger_->info("Received elected {}", id);
+        notify_elected_server_to_next_participant(std::stoi(id));
     }
     else {
         throw std::logic_error(StringFormatter() << "Invalid command sent by client " << command_line);
@@ -359,6 +361,108 @@ void Server::notify_new_elected_server_to_clients() {
             std::string command = StringFormatter() << "new_server" << dropbox_util::COMMAND_SEPARATOR_TOKEN << new_client_connection.port;
             sendto(socket_, command.c_str() , command.size(), 0, (struct sockaddr *)&primary_server_addr, sizeof(primary_server_addr));
         }
+    }
+}
+
+void Server::continue_election(int64_t id) {
+    auto next_server = get_next_replica_in_ring();
+    struct sockaddr_in primary_server_addr {0};
+    primary_server_addr.sin_family = AF_INET;
+    primary_server_addr.sin_port = htons(static_cast<uint16_t>(next_server.port));
+    primary_server_addr.sin_addr.s_addr = inet_addr(next_server.ip.c_str());
+
+    if (id > id_) {
+        std::string command = StringFormatter() << "election" << dropbox_util::COMMAND_SEPARATOR_TOKEN << id;
+        sendto(socket_, command.c_str() , command.size(), 0, (struct sockaddr *)&primary_server_addr, sizeof(primary_server_addr));
+    }
+    else if (id == id_){
+        //this guy has been elected
+        has_participated_in_election_ = false;
+        std::string command = StringFormatter() << "elected" << dropbox_util::COMMAND_SEPARATOR_TOKEN << id;
+        sendto(socket_, command.c_str() , command.size(), 0, (struct sockaddr *)&primary_server_addr, sizeof(primary_server_addr));
+    }
+    else if (!has_participated_in_election_) {
+        std::string command = StringFormatter() << "election" << dropbox_util::COMMAND_SEPARATOR_TOKEN << id_;
+        sendto(socket_, command.c_str() , command.size(), 0, (struct sockaddr *)&primary_server_addr, sizeof(primary_server_addr));
+    }
+}
+
+replica_manager Server::get_next_replica_in_ring() {
+    for(auto replica_iterator = replica_managers.begin(); replica_iterator != replica_managers.end(); replica_iterator++) {
+        if (replica_iterator->port == port_) {
+            replica_iterator++;
+            return replica_iterator != replica_managers.end()? *replica_iterator : *replica_managers.begin();
+        }
+    }
+    return *replica_managers.begin();
+}
+
+void Server::notify_elected_server_to_next_participant(int64_t id) {
+//                    auto new_manager = replica_managers[0];
+//                    if (new_manager.port == port_) { //this is the new server
+//                        serverConnectivityDetectorThread.stop();
+//                        notify_new_elected_server_to_clients();
+//                    } else {
+//                        // point to new primary server
+//                        primary_server_port_ = new_manager.port;
+//                        primary_server_ip = new_manager.ip;
+//                        serverConnectivityDetectorThread.setPrimaryServerIp(primary_server_ip);
+//                        serverConnectivityDetectorThread.setPrimaryServerPort(primary_server_port_);
+//                    }
+    if (id == id_) {
+        // the message has passed by everyone
+        logger_->info("I have been elected!");
+        serverConnectivityDetectorThread.stop();
+        notify_new_elected_server_to_clients();
+    } else {
+        auto new_server = get_new_primary_server(id);
+//        remove_new_primary_server_from_backup_list(id);
+        primary_server_port_ = new_server.port;
+        primary_server_ip = new_server.ip;
+        serverConnectivityDetectorThread.setPrimaryServerIp(primary_server_ip);
+        serverConnectivityDetectorThread.setPrimaryServerPort(primary_server_port_);
+
+        has_participated_in_election_ = false;
+        auto next_server = get_next_replica_in_ring();
+        struct sockaddr_in primary_server_addr {0};
+        primary_server_addr.sin_family = AF_INET;
+        primary_server_addr.sin_port = htons(static_cast<uint16_t>(next_server.port));
+        primary_server_addr.sin_addr.s_addr = inet_addr(next_server.ip.c_str());
+
+        std::string command = StringFormatter() << "elected" << dropbox_util::COMMAND_SEPARATOR_TOKEN << id;
+        sendto(socket_, command.c_str() , command.size(), 0, (struct sockaddr *)&primary_server_addr, sizeof(primary_server_addr));
+
+        serverConnectivityDetectorThread.proceed_after_election();
+    }
+}
+
+void Server::start_election() {
+    if (has_participated_in_election_) return;
+    has_participated_in_election_ = true;
+    auto next_server = get_next_replica_in_ring();
+    struct sockaddr_in primary_server_addr {0};
+    primary_server_addr.sin_family = AF_INET;
+    primary_server_addr.sin_port = htons(static_cast<uint16_t>(next_server.port));
+    primary_server_addr.sin_addr.s_addr = inet_addr(next_server.ip.c_str());
+
+    std::string command = StringFormatter() << "election" << dropbox_util::COMMAND_SEPARATOR_TOKEN << id_;
+    sendto(socket_, command.c_str() , command.size(), 0, (struct sockaddr *)&primary_server_addr, sizeof(primary_server_addr));
+}
+
+replica_manager Server::get_new_primary_server(int64_t id) {
+    for (auto &replica_manager : replica_managers) {
+        if (replica_manager.port == id) {
+            return replica_manager;
+        }
+    }
+    return replica_manager();
+}
+
+void Server::remove_new_primary_server_from_backup_list(int64_t id) {
+    auto server_iterator = std::find_if(replica_managers.begin(), replica_managers.end(),
+                      [&id] (const replica_manager& r) -> bool {return id == r.port;});
+    if (server_iterator != replica_managers.end()) {
+        replica_managers.erase(server_iterator);
     }
 }
 
