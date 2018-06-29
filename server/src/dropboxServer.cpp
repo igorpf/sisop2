@@ -140,8 +140,9 @@ void Server::listen() {
             logger_->debug("Received from client {} port {} the message: {}",
                            inet_ntoa(current_client_.sin_addr), ntohs(current_client_.sin_port), buffer);
             parse_command(buffer);
-            // TODO Remover
-            sync_backup();
+            // TODO Criar thread para sincronização
+            if (is_primary_)
+                sync_backup();
         } catch (std::runtime_error& runtime_error) {
             logger_->error("Error parsing command from client {}", runtime_error.what());
             break;
@@ -191,14 +192,11 @@ void Server::parse_replica_list(std::vector<std::string> replicas) {
     }
 }
 
-void Server::parse_backup_list(const std::string &client_infos) {
-    std::cout << "Received info:" << std::endl;
-    std::cout << client_infos << std::endl;
-    auto clients = dropbox_util::split_words_by_token(client_infos, "@");
+void Server::parse_backup_list(const std::string& client_info_list) {
+    auto clients = dropbox_util::split_words_by_token(client_info_list, "@");
 
     for (const auto& client_info : clients) {
         auto tokens = dropbox_util::split_words_by_token(client_info, "%");
-        std::cout << "user id: " << tokens[0] << std::endl;
         add_client(tokens[0]);
 
         if (tokens.size() == 1)
@@ -210,24 +208,55 @@ void Server::parse_backup_list(const std::string &client_infos) {
         for (const auto& elements : devices_and_files) {
             if (elements[0] == '#') {
                 // Files
-                std::cout << "User files:" << std::endl;
                 auto files = dropbox_util::split_words_by_token(elements.substr(1, elements.size() - 1), ":");
                 for (const auto& file : files) {
+                    // TODO(jfguimaraes) If the file has changed, download the new version
+                    // TODO(jfguimaraes) Check for deleted files
+                    // Create new file info
                     auto fields = dropbox_util::split_words_by_token(file, ",");
-                    std::cout << "File name: " << fields[0] << std::endl;
-                    std::cout << "File size: " << fields[1] << std::endl;
-                    std::cout << "File timestamp: " << fields[2] << std::endl;
+                    dropbox_util::file_info new_file {fields[0],
+                                                      std::stoi(fields[1]),
+                                                      std::stoi(fields[2])};
+                    auto file_iterator = std::find_if(client_iterator->user_files.begin(), client_iterator->user_files.end(),
+                            [&new_file] (const dropbox_util::file_info& f) -> bool {return new_file.name == f.name;});
+
+                    if (file_iterator != client_iterator->user_files.end() &&
+                        file_iterator->last_modification_time < new_file.last_modification_time) {
+                        // Remove old file info from the client info
+                        client_iterator->user_files.erase(std::remove_if(client_iterator->user_files.begin(),
+                                                                         client_iterator->user_files.end(),
+                                                                         [&new_file]
+                                                                                 (const dropbox_util::file_info& f) -> bool
+                                                                         {return new_file.name == f.name;}),
+                                                            client_iterator->user_files.end());
+
+                        // Add to the file list
+                        client_iterator->user_files.emplace_back(new_file);
+
+                    }
                 }
             } else if (elements[0] == '$') {
                 // Devices
-                std::cout << "User devices:" << std::endl;
                 auto devices = dropbox_util::split_words_by_token(elements.substr(1, elements.size() - 1), ":");
                 for (const auto& device : devices) {
+                    // TODO(jfguimaraes) First check if device already exists before updating on the list
+                    // Create new device info
                     auto fields = dropbox_util::split_words_by_token(device, ",");
-                    std::cout << "Device id: " << fields[0] << std::endl;
-                    std::cout << "Device ip: " << fields[1] << std::endl;
-                    std::cout << "Device port: " << fields[2] << std::endl;
-                    std::cout << "Device frontend port: " << fields[3] << std::endl;
+                    dropbox_util::device new_device {fields[0],
+                                                     fields[1],
+                                                     std::stoi(fields[2]),
+                                                     std::stoi(fields[3])};
+
+                    // Remove old device info from the client info
+                    client_iterator->user_devices.erase(std::remove_if(client_iterator->user_devices.begin(),
+                                                                       client_iterator->user_devices.end(),
+                                                                       [&new_device]
+                                                                               (const dropbox_util::device& d) -> bool
+                                                                       {return new_device.device_id == d.device_id;}),
+                                                        client_iterator->user_devices.end());
+
+                    // Add to the device list
+                    client_iterator->user_devices.emplace_back(new_device);
                 }
             } else {
                 throw std::runtime_error("Invalid type of client info received from primary server!");
@@ -449,7 +478,7 @@ void Server::notify_new_elected_server_to_clients() {
 void Server::sync_backup() {
     LockGuard client_buffer_lock(clients_buffer_mutex_);
 
-    if (!clients_buffer_.empty()) {
+    if (!clients_buffer_.empty() && !replica_managers_.empty()) {
         std::string backup_command = StringFormatter() << "backup_sync" << dropbox_util::COMMAND_SEPARATOR_TOKEN;
 
         for (const auto &info : clients_buffer_) {
