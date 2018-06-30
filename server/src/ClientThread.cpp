@@ -117,7 +117,6 @@ void ClientThread::receive_file(const std::string& filename, const std::string &
     std::string local_file_path = StringFormatter() << local_directory_ << filename_without_path;
     std::string tmp_file_path = StringFormatter() << local_directory_ << temp_filename;
 
-
     request.in_file_path = tmp_file_path;
 
     dropbox_util::File file_util;
@@ -128,17 +127,8 @@ void ClientThread::receive_file(const std::string& filename, const std::string &
     received_file_info.size = fs::file_size(tmp_file_path);
     received_file_info.last_modification_time = fs::last_write_time(tmp_file_path);
 
-
     replace_local_file_by_temporary_if_more_recent(tmp_file_path, local_file_path, received_file_info);
 }
-
-void ClientThread::add_file(const dropbox_util::file_info &received_file_info) {
-    LockGuard client_info_lock(client_info_mutex_);
-    info_.user_files.emplace_back(received_file_info);
-    client_info_lock.Unlock();
-    save_client_change_to_buffer();
-}
-
 
 void ClientThread::delete_file(const std::string& filename, const std::string &user_id) {
     fs::path filepath(filename);
@@ -152,7 +142,6 @@ void ClientThread::delete_file(const std::string& filename, const std::string &u
     user_info_lock.Unlock();
     save_client_change_to_buffer();
 }
-
 
 void ClientThread::list_server(const std::string &user_id) {
     std::string user_file_list {"name;size;modification_time&"};
@@ -199,12 +188,12 @@ void ClientThread::replace_local_file_by_temporary_if_more_recent(const std::str
     if (!file_already_exists_in_info || is_temp_file_more_recent) {
         fs::rename(fs::path(tmp_file_path), fs::path(local_file_path));
         remove_file_from_info(local_filename);
-        add_file(received_file_info);
+        info_.user_files.emplace_back(received_file_info);
+        user_info_lock.Unlock();
+        save_client_change_to_buffer();
     } else {
         fs::remove(fs::path(tmp_file_path));
     }
-    user_info_lock.Unlock();
-    LockGuard client_info_lock(client_info_mutex_);
 }
 
 void ClientThread::setLogoutCallback(const std::function<void()> &logout_callback) {
@@ -231,6 +220,6 @@ void ClientThread::save_client_change_to_buffer() {
                           clients_buffer_.end());
 
     // Add to the buffer
-    LockGuard client_info_lock(client_info_mutex_);
+    LockGuard user_info_lock(client_info_mutex_);
     clients_buffer_.emplace_back(info_);
 }

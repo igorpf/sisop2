@@ -177,6 +177,16 @@ void Server::parse_command(const std::string &command_line) {
     else if (command == "backup_sync") {
 //        send_command_confirmation(current_client_);
         parse_backup_list(tokens[1]);
+        std::cout << "Clients info:" << std::endl;
+        for (const auto& client_info : clients_) {
+            std::cout << "Id: " << client_info.user_id << std::endl;
+            for (const auto& device_info : client_info.user_devices) {
+                std::cout << "Device name: " << device_info.device_id << " ip: " << device_info.ip << " port: " << device_info.port << " frontend port: " << device_info.frontend_port << std::endl;
+            }
+            for (const auto& file_info : client_info.user_files) {
+                std::cout << "File name: " << file_info.name << " size: "<< file_info.size << " timestamp: " << file_info.last_modification_time << std::endl;
+            }
+        }
     }
     else {
         throw std::logic_error(StringFormatter() << "Invalid command sent by client " << command_line);
@@ -209,6 +219,8 @@ void Server::parse_backup_list(const std::string& client_info_list) {
             if (elements[0] == '#') {
                 // Files
                 auto files = dropbox_util::split_words_by_token(elements.substr(1, elements.size() - 1), ":");
+
+                // Check for new files or modifications on existing files
                 for (const auto& file : files) {
                     // TODO(jfguimaraes) If the file has changed, download the new version
                     // TODO(jfguimaraes) Check for deleted files
@@ -232,9 +244,32 @@ void Server::parse_backup_list(const std::string& client_info_list) {
 
                         // Add to the file list
                         client_iterator->user_files.emplace_back(new_file);
-
                     }
                 }
+
+                // Check for files removed
+                // TODO(jfguimaraes) Q: Is this a good idea? A: No
+                std::vector<std::string> missing_files;
+
+                for (const auto& file : client_iterator->user_files) {
+                    auto file_iterator = std::find_if(files.begin(), files.end(),
+                            [&file] (const std::string& new_file) -> bool {
+                                auto fields = dropbox_util::split_words_by_token(new_file, ",");
+                                return fields[0] == file.name;
+                    });
+
+                    if (file_iterator == files.end())
+                        missing_files.emplace_back(file.name);
+                }
+
+                for (const auto& missing_file : missing_files)
+                    client_iterator->user_files.erase(std::remove_if(client_iterator->user_files.begin(),
+                                                                     client_iterator->user_files.end(),
+                                                                     [&missing_file]
+                                                                             (const dropbox_util::file_info& f) -> bool
+                                                                     {return missing_file == f.name;}),
+                                                      client_iterator->user_files.end());
+
             } else if (elements[0] == '$') {
                 // Devices
                 auto devices = dropbox_util::split_words_by_token(elements.substr(1, elements.size() - 1), ":");

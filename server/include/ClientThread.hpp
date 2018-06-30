@@ -45,8 +45,6 @@ public:
      */
     void delete_file(const std::string& filename, const std::string &user_id);
 
-    void add_file(const dropbox_util::file_info &received_file_info);
-
     /**
      * Envia a lista de arquivos do usuário no servidor no formato
      * nome_arquivo_1;tamanho_arquivo_1;timestamp_arquivo_1&nome_arquivo_2;tamanho_arquivo_2;timestamp_arquivo_2&...
