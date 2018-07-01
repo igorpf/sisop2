@@ -1,10 +1,4 @@
-#include "../../util/include/dropboxUtil.hpp"
-#include "../../util/include/string_formatter.hpp"
-#include "../../util/include/File.hpp"
-#include "../../util/include/lock_guard.hpp"
 #include "../include/dropboxServer.hpp"
-#include "../include/ClientThread.hpp"
-#include "../include/server_login_parser.hpp"
 
 #include <algorithm>
 #include <stdexcept>
@@ -20,13 +14,27 @@
 
 #include <boost/filesystem.hpp>
 
+#include "../../util/include/dropboxUtil.hpp"
+#include "../../util/include/string_formatter.hpp"
+#include "../../util/include/File.hpp"
+#include "../../util/include/lock_guard.hpp"
+
+#include "../include/ClientThread.hpp"
+#include "../include/server_login_parser.hpp"
+
+#include <iostream>
+
 namespace util = dropbox_util;
 namespace fs = boost::filesystem;
 
 const std::string Server::LOGGER_NAME = "Server";
 
-Server::Server() : logger_(LOGGER_NAME, false, false) {
-    std::function<void(std::string, std::string)> callback = std::bind(remove_device_from_user_wrapper, std::ref(*this), std::placeholders::_1, std::placeholders::_2);
+Server::Server() : logger_(LOGGER_NAME, false, false),
+                   backup_sync_thread_(is_primary_, socket_mutex_, socket_,
+                                       replica_managers_mutex_, replica_managers_,
+                                       clients_buffer_mutex_, clients_buffer_) {
+    std::function<void(std::string, std::string)> callback = std::bind(remove_device_from_user_wrapper,
+            std::ref(*this), std::placeholders::_1, std::placeholders::_2);
     thread_pool_.setDisconnectClientCallback(callback);
 }
 
@@ -90,6 +98,8 @@ void Server::start(int argc, char **argv) {
                     }
                 }, std::ref(*this))
         );
+    } else {
+        backup_sync_thread_.Start();
     }
 
     has_started_ = true;
@@ -139,9 +149,6 @@ void Server::listen() {
             logger_->debug("Received from client {} port {} the message: {}",
                            inet_ntoa(current_client_.sin_addr), ntohs(current_client_.sin_port), buffer);
             parse_command(buffer);
-            // TODO Criar thread para sincronização
-            if (is_primary_)
-                sync_backup();
         } catch (std::runtime_error& runtime_error) {
             logger_->error("Error parsing command from client {}", runtime_error.what());
             break;
@@ -183,11 +190,12 @@ void Server::parse_command(const std::string &command_line) {
 }
 
 void Server::parse_replica_list(std::vector<std::string> replicas) {
+    LockGuard replica_managers_lock(replica_managers_mutex_);
     replica_managers_.clear();
     for (auto &replica : replicas) {
         logger_->info("Adding new replica {}", replica);
         auto tokens = dropbox_util::split_words_by_token(replica, "@");
-        replica_managers_.emplace_back(replica_manager{tokens[0], std::stoi(tokens[1])});
+        replica_managers_.emplace_back(util::replica_manager{tokens[0], std::stoi(tokens[1])});
     }
 }
 
@@ -438,9 +446,10 @@ void Server::save_client_change_to_buffer(const std::string& user_id) {
 void Server::add_backup_server() {
     std::string ip = inet_ntoa(current_client_.sin_addr);
     int64_t port = ntohs(current_client_.sin_port);
-    replica_manager new_manager {ip, port};
+    util::replica_manager new_manager {ip, port};
+    LockGuard replica_managers_lock(replica_managers_mutex_);
     replica_managers_.emplace_back(new_manager);
-//    replica_managers_buffer_.emplace_back(new_manager);
+    replica_managers_lock.Unlock();
 
     send_replica_manager_list();
 }
@@ -496,63 +505,6 @@ void Server::notify_new_elected_server_to_clients() {
             primary_server_addr.sin_addr.s_addr = inet_addr(device.ip.c_str());
             std::string command = StringFormatter() << "new_server" << dropbox_util::COMMAND_SEPARATOR_TOKEN << new_client_connection.port;
             sendto(socket_, command.c_str() , command.size(), 0, (struct sockaddr *)&primary_server_addr, sizeof(primary_server_addr));
-        }
-    }
-}
-
-void Server::sync_backup() {
-    LockGuard client_buffer_lock(clients_buffer_mutex_);
-
-    if (!clients_buffer_.empty() && !replica_managers_.empty()) {
-        std::string backup_command = StringFormatter() << "backup_sync" << dropbox_util::COMMAND_SEPARATOR_TOKEN;
-
-        for (const auto &info : clients_buffer_) {
-            backup_command.append(info.user_id);
-
-            if (!info.user_devices.empty() or !info.user_files.empty())
-                backup_command.append(dropbox_util::USER_INFO_SEPARATOR_TOKEN);
-
-            if(!info.user_devices.empty()) {
-                backup_command.append(dropbox_util::DEVICE_INITIAL_TOKEN);
-                for (const auto &device : info.user_devices) {
-                    backup_command.append(StringFormatter() << device.device_id << ","
-                                                            << device.ip << "," << device.port << ","
-                                                            << device.frontend_port << ":");
-                }
-                backup_command.pop_back();
-                backup_command.append(dropbox_util::DEVICE_FILE_SEPARATOR_TOKEN);
-            }
-
-            if (!info.user_files.empty()) {
-                backup_command.append(dropbox_util::FILE_INITIAL_TOKEN);
-                for (const auto &file : info.user_files) {
-                    backup_command.append(StringFormatter() << file.name << ","
-                                                            << file.size << ","
-                                                            << file.last_modification_time << ":");
-                }
-                backup_command.pop_back();
-            }
-
-            backup_command.append(dropbox_util::USER_LIST_SEPARATOR_TOKEN);
-        }
-
-        backup_command.pop_back();
-        logger_->info(backup_command);
-
-        clients_buffer_.clear();
-
-        client_buffer_lock.Unlock();
-
-        LockGuard socket_lock(socket_mutex_);
-
-        for (auto &manager : replica_managers_) {
-            struct sockaddr_in replica_addr{0};
-            replica_addr.sin_family = AF_INET;
-            replica_addr.sin_port = htons(static_cast<uint16_t>(manager.port));
-            replica_addr.sin_addr.s_addr = inet_addr(manager.ip.c_str());
-
-            sendto(socket_, backup_command.c_str(), backup_command.size(), 0, (struct sockaddr *) &replica_addr,
-                   sizeof(replica_addr));
         }
     }
 }

@@ -1,26 +1,22 @@
 #ifndef SISOP2_SERVER_INCLUDE_DROPBOXSERVER_HPP
 #define SISOP2_SERVER_INCLUDE_DROPBOXSERVER_HPP
 
-#include "../../util/include/dropboxUtil.hpp"
-#include "ClientThreadPool.hpp"
-#include "../../util/include/LoggerFactory.hpp"
-#include "../../util/include/logger_wrapper.hpp"
-#include "PrimaryServerConnectivityDetectorThread.hpp"
-
 #include <string>
 #include <vector>
-
 #include <netinet/in.h>
 #include <spdlog/spdlog.h>
+
+#include "../../util/include/dropboxUtil.hpp"
+#include "../../util/include/LoggerFactory.hpp"
+#include "../../util/include/logger_wrapper.hpp"
+
+#include "PrimaryServerConnectivityDetectorThread.hpp"
+#include "ClientThreadPool.hpp"
+#include "backup_sync_thread.hpp"
 
 struct new_client_connection_info {
     dropbox_util::SOCKET socket;
     int32_t port;
-};
-
-struct replica_manager {
-    std::string ip;
-    int64_t port;
 };
 
 class Server {
@@ -99,8 +95,6 @@ private:
 
     void parse_backup_list(const std::string& client_info_list);
 
-    void sync_backup();
-
     static const std::string LOGGER_NAME;
     LoggerWrapper logger_;
 
@@ -123,13 +117,15 @@ private:
 
     std::string local_directory_;
     ClientThreadPool thread_pool_;
+    BackupSyncThread backup_sync_thread_;
 
     std::vector<dropbox_util::client_info> clients_;
-    std::vector<replica_manager> replica_managers_;
+
+    pthread_mutex_t replica_managers_mutex_ = PTHREAD_MUTEX_INITIALIZER;
+    std::vector<dropbox_util::replica_manager> replica_managers_;
 
     pthread_mutex_t clients_buffer_mutex_ = PTHREAD_MUTEX_INITIALIZER;
     std::vector<dropbox_util::client_info> clients_buffer_;
-//    std::vector<replica_manager> replica_managers_buffer_;
 };
 
 #endif // SISOP2_SERVER_INCLUDE_DROPBOXSERVER_HPP

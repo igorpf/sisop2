@@ -72,6 +72,11 @@ namespace dropbox_util {
         std::vector<file_info> user_files;
     };
 
+    struct replica_manager {
+        std::string ip;
+        int64_t port;
+    };
+
     struct new_client_param_list {
         std::string user_id;
         std::string device_id;
