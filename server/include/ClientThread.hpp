@@ -27,7 +27,6 @@ class ClientThread : public PThreadWrapper {
 public:
     ClientThread(client_thread_param_list param_list);
 
-
     /**
      * Envia um arquivo para o cliente (download)
      */

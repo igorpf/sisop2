@@ -22,8 +22,6 @@
 #include "../include/ClientThread.hpp"
 #include "../include/server_login_parser.hpp"
 
-#include <iostream>
-
 namespace util = dropbox_util;
 namespace fs = boost::filesystem;
 
@@ -46,16 +44,19 @@ void Server::start(int argc, char **argv) {
         home_folder = getpwuid(getuid())->pw_dir;
     }
 
-    local_directory_ = StringFormatter() << home_folder << "/dropbox_server";
-    fs::create_directory(local_directory_);
-    thread_pool_.set_local_directory(local_directory_);
-
-    load_info_from_disk();
-
     ServerLoginParser loginParser;
     loginParser.ParseInput(argc, argv);
     loginParser.ValidateInput();
     is_primary_ = loginParser.isPrimary();
+
+    local_directory_ = StringFormatter() << home_folder << "/dropbox_server";
+    // TODO(jfguimaraes) Remover, somente para teste do servidor de backup local
+    if (!is_primary_)
+        local_directory_.append("_backup");
+    fs::create_directory(local_directory_);
+    thread_pool_.set_local_directory(local_directory_);
+
+    load_info_from_disk();
 
     if ((socket_ = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
         throw std::runtime_error(util::get_errno_with_message("Error initializing socket"));
@@ -204,12 +205,13 @@ void Server::parse_backup_list(const std::string& client_info_list) {
 
     for (const auto& client_info : clients) {
         auto tokens = dropbox_util::split_words_by_token(client_info, "%");
-        add_client(tokens[0]);
+        auto user_id {tokens[0]};
+        add_client(user_id);
 
         if (tokens.size() == 1)
             continue;
 
-        auto client_iterator = get_client_info(tokens[0]);
+        auto client_iterator = get_client_info(user_id);
         auto devices_and_files = dropbox_util::split_words_by_token(tokens[1], "&");
 
         for (const auto& elements : devices_and_files) {
@@ -240,9 +242,15 @@ void Server::parse_backup_list(const std::string& client_info_list) {
 
                         // Add to the file list
                         client_iterator->user_files.emplace_back(new_file);
+
+                        // Downloads the new version
+                        get_file(fields[0], user_id);
                     } else if (file_iterator == client_iterator->user_files.end()) {
                         // New file, add to the list
                         client_iterator->user_files.emplace_back(new_file);
+
+                        // Downloads the file
+                        get_file(fields[0], user_id);
                     }
                 }
 
@@ -296,6 +304,38 @@ void Server::parse_backup_list(const std::string& client_info_list) {
             }
         }
     }
+}
+
+void Server::get_file(const std::string& filename, const std::string& user_id)
+{
+    LockGuard lock(socket_mutex_);
+
+    util::file_transfer_request request;
+    request.peer_length = peer_length_;
+    request.server_address = server_addr_;
+    request.socket = socket_;
+
+    std::string temp_filename = StringFormatter() << "." << dropbox_util::get_random_number();
+
+    fs::path filepath(filename);
+    std::string filename_without_path = filepath.filename().string();
+    std::string local_file_path = StringFormatter() << local_directory_ << "/" << user_id << "/" << filename_without_path;
+    std::string tmp_file_path = StringFormatter() << local_directory_ << "/" << user_id << "/" << temp_filename;
+
+    request.in_file_path = tmp_file_path;
+
+    std::string command(StringFormatter() << "download" << util::COMMAND_SEPARATOR_TOKEN
+                                          << filename_without_path << util::COMMAND_SEPARATOR_TOKEN << user_id);
+
+    send_command_and_expect_confirmation(command);
+
+    util::File file_util;
+    file_util.receive_file(request);
+
+    lock.Unlock();
+
+    std::string local_filename = dropbox_util::get_filename(local_file_path);
+    fs::rename(fs::path(tmp_file_path), fs::path(local_file_path));
 }
 
 void Server::add_client(const std::string &user_id) {
@@ -422,12 +462,43 @@ void Server::remove_device_from_user_wrapper(Server &server, const std::string &
 }
 
 void Server::register_in_primary_server() {
-    struct sockaddr_in primary_server_addr {0};
-    primary_server_addr.sin_family = AF_INET;
-    primary_server_addr.sin_port = htons(static_cast<uint16_t>(primary_server_port_));
-    primary_server_addr.sin_addr.s_addr = inet_addr(primary_server_ip.c_str());
+    primary_server_thread_addr_.sin_family = AF_INET;
+    primary_server_thread_addr_.sin_port = htons(static_cast<uint16_t>(primary_server_port_));
+    primary_server_thread_addr_.sin_addr.s_addr = inet_addr(primary_server_ip.c_str());
     std::string command = StringFormatter() << "backup" << dropbox_util::COMMAND_SEPARATOR_TOKEN << "123";
-    sendto(socket_, command.c_str() , command.size(), 0, (struct sockaddr *)&primary_server_addr, sizeof(primary_server_addr));
+
+    send_command_and_expect_confirmation(command);
+
+    char buffer[util::BUFFER_SIZE] {0};
+    recvfrom(socket_, buffer, sizeof(buffer), 0, (struct sockaddr *) &primary_server_thread_addr_, &peer_length_);
+    logger_->debug("Received from primary server {} port {} the message: {}",
+                   inet_ntoa(primary_server_thread_addr_.sin_addr), ntohs(primary_server_thread_addr_.sin_port), buffer);
+    primary_server_thread_addr_.sin_port = htons(static_cast<uint16_t>(std::stoi(buffer)));
+}
+
+void Server::send_command_and_expect_confirmation(const std::string& command) {
+    logger_->debug("Sent command {} to server. Expecting ACK", command);
+    struct timeval set_timeout_val = {0, util::TIMEOUT_US},
+            unset_timeout_val = {0, 0};
+    char ack[util::BUFFER_SIZE]{0};
+    ssize_t received_bytes;
+
+    setsockopt(socket_, SOL_SOCKET, SO_RCVTIMEO, &set_timeout_val, sizeof(set_timeout_val));
+    sendto(socket_, command.c_str(), command.size(), 0, (struct sockaddr *) &primary_server_thread_addr_, peer_length_);
+    received_bytes = recvfrom(socket_, ack, sizeof(ack), 0,(struct sockaddr *) &primary_server_thread_addr_, &peer_length_);
+    setsockopt(socket_, SOL_SOCKET, SO_RCVTIMEO, &unset_timeout_val, sizeof(unset_timeout_val));
+
+    if (received_bytes <= 0)
+        throw std::runtime_error("Server is unreachable!");
+
+    if (strcmp("ACK", ack) != 0) {
+        std::string message = util::get_error_from_message(ack);
+
+        throw std::logic_error(StringFormatter() << "Sent command " << command << " but failed to receive ACK. Received "
+                                                 << message << " from server.");
+    }
+
+    logger_->debug("Received ACK from server");
 }
 
 void Server::save_client_change_to_buffer(const std::string& user_id) {
@@ -447,6 +518,16 @@ void Server::add_backup_server() {
     std::string ip = inet_ntoa(current_client_.sin_addr);
     int64_t port = ntohs(current_client_.sin_port);
     util::replica_manager new_manager {ip, port};
+
+    auto new_client_connection = allocate_connection_for_client(ip);
+    thread_pool_.add_backup_server(StringFormatter() << "Backup_thread_" << port,
+                                   ip, port, new_client_connection.socket);
+
+    send_command_confirmation(current_client_);
+    std::string thread_port = std::to_string(new_client_connection.port);
+
+    sendto(socket_, thread_port.c_str(), thread_port.size(), 0, (struct sockaddr*)&current_client_, peer_length_);
+
     LockGuard replica_managers_lock(replica_managers_mutex_);
     replica_managers_.emplace_back(new_manager);
     replica_managers_lock.Unlock();
@@ -457,6 +538,7 @@ void Server::add_backup_server() {
 void Server::send_replica_manager_list() const {
     std::string replica_command = StringFormatter() << "replica_list" << dropbox_util::COMMAND_SEPARATOR_TOKEN;
 
+    LockGuard replica_managers_lock(replica_managers_mutex_);
     for (auto &manager : replica_managers_) {
         replica_command.append(StringFormatter() << manager.ip << "@" << manager.port << dropbox_util::COMMAND_SEPARATOR_TOKEN);
     }

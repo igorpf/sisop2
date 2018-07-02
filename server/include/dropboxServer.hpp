@@ -95,6 +95,10 @@ private:
 
     void parse_backup_list(const std::string& client_info_list);
 
+    void send_command_and_expect_confirmation(const std::string& command);
+
+    void get_file(const std::string& filename, const std::string& user_id);
+
     static const std::string LOGGER_NAME;
     LoggerWrapper logger_;
 
@@ -109,6 +113,7 @@ private:
     int32_t port_;
     int32_t next_client_port_ = dropbox_util::DEFAULT_SERVER_PORT;
     struct sockaddr_in server_addr_ {0};
+    struct sockaddr_in primary_server_thread_addr_ {0};
     struct sockaddr_in current_client_ {0};
     dropbox_util::SOCKET socket_;
     socklen_t peer_length_;
@@ -121,7 +126,7 @@ private:
 
     std::vector<dropbox_util::client_info> clients_;
 
-    pthread_mutex_t replica_managers_mutex_ = PTHREAD_MUTEX_INITIALIZER;
+    mutable pthread_mutex_t replica_managers_mutex_ = PTHREAD_MUTEX_INITIALIZER;
     std::vector<dropbox_util::replica_manager> replica_managers_;
 
     pthread_mutex_t clients_buffer_mutex_ = PTHREAD_MUTEX_INITIALIZER;

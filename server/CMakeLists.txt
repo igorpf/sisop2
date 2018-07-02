@@ -25,12 +25,14 @@ add_executable(dropboxServer
         include/ClientThreadPool.hpp
         include/PrimaryServerConnectivityDetectorThread.hpp
         include/backup_sync_thread.hpp
+        include/backup_file_sync_thread.hpp
         include/dropboxServer.hpp
         src/server_login_parser.cpp
         src/ClientThread.cpp
         src/ClientThreadPool.cpp
         src/PrimaryServerConnectivityDetectorThread.cpp
         src/backup_sync_thread.cpp
+        src/backup_file_sync_thread.cpp
         src/dropboxServer.cpp
         src/main.cpp)
 
