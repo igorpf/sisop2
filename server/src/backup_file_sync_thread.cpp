@@ -76,7 +76,6 @@ void BackupFileSyncThread::send_file(const std::string& filename, const std::str
 
     send_command_confirmation();
 
-    // TODO(jfguimaraes) This doesn't look good
     if (locks_.count(user_id) > 0) {
         LockGuard client_lock(locks_[user_id]);
         dropbox_util::File file_util;

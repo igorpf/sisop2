@@ -221,7 +221,6 @@ void Server::parse_backup_list(const std::string& client_info_list) {
 
                 // Check for new files or modifications on existing files
                 for (const auto& file : files) {
-                    // TODO(jfguimaraes) If the file has changed, download the new version
                     // Create new file info
                     auto fields = dropbox_util::split_words_by_token(file, ",");
                     dropbox_util::file_info new_file {fields[0],
@@ -286,7 +285,6 @@ void Server::parse_backup_list(const std::string& client_info_list) {
                 // Devices
                 auto devices = dropbox_util::split_words_by_token(elements.substr(1, elements.size() - 1), ":");
                 for (const auto& device : devices) {
-                    // TODO(jfguimaraes) First check if device already exists before updating on the list
                     // Create new device info
                     auto fields = dropbox_util::split_words_by_token(device, ",");
                     dropbox_util::device new_device {fields[0],

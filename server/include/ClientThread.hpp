@@ -25,14 +25,13 @@ struct client_thread_param_list {
  */
 class ClientThread : public PThreadWrapper {
 public:
-    ClientThread(client_thread_param_list param_list);
+    explicit ClientThread(client_thread_param_list param_list);
 
     /**
      * Envia um arquivo para o cliente (download)
      */
     void send_file(const std::string& filename, const std::string &user_id);
 
-    // TODO O servidor recebe instruções de manipulação de arquivos sem timestamp, executando sempre
     // Isso pode ser um problema se dois clientes modificam um arquivo mas enviam as modificações na ordem errada
     /**
      * Recebe um arquivo do cliente (upload)

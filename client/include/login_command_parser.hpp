@@ -7,7 +7,6 @@
 
 namespace program_options = boost::program_options;
 
-// TODO(jfguimaraes) Traduzir aqui
 /**
  * Class for parsing and validating user input, making parameters available through get functions
  * and making it possible to show a helper message if the user specifies so

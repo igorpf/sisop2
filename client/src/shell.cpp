@@ -52,7 +52,6 @@ void Shell::loop(std::istream& input_stream)
 
 void Shell::execute_operation()
 {
-    // TODO Use a map to map the strings to the functions
     if (operation_ == "upload")
         operation_upload();
     else if (operation_ == "download")
