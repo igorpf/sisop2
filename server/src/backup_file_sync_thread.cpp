@@ -69,7 +69,7 @@ void BackupFileSyncThread::send_file(const std::string& filename, const std::str
     fs::path filepath(filename);
     std::string filename_without_path = filepath.filename().string();
 
-    request.in_file_path = StringFormatter() << local_directory_ << user_id << "/" << filename_without_path;
+    request.in_file_path = StringFormatter() << local_directory_ << "/" << user_id << "/" << filename_without_path;
 
     if(!dropbox_util::File::file_exists(request.in_file_path))
         throw std::logic_error("The requested file does not exist!");

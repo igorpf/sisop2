@@ -154,7 +154,7 @@ void Server::listen() {
             logger_->error("Error parsing command from client {}", runtime_error.what());
             break;
         } catch (std::logic_error& logic_error) {
-            logger_->error("Error parsing command from client {}, client {} ip {}", logic_error.what());
+            logger_->error("Error parsing command from client {}", logic_error.what());
             send_command_error_message(current_client_, logic_error.what());
         }
     }
@@ -268,13 +268,19 @@ void Server::parse_backup_list(const std::string& client_info_list) {
                         missing_files.emplace_back(file.name);
                 }
 
-                for (const auto& missing_file : missing_files)
+                for (const auto& missing_file : missing_files) {
+                    // Removes the file from the user info
                     client_iterator->user_files.erase(std::remove_if(client_iterator->user_files.begin(),
                                                                      client_iterator->user_files.end(),
                                                                      [&missing_file]
-                                                                             (const dropbox_util::file_info& f) -> bool
-                                                                     {return missing_file == f.name;}),
+                                                                             (const dropbox_util::file_info &f) -> bool {
+                                                                         return missing_file == f.name;
+                                                                     }),
                                                       client_iterator->user_files.end());
+
+                    // Removes the file from the disk
+                    fs::remove(fs::path(StringFormatter() << local_directory_ << "/" << user_id << "/" << missing_file));
+                }
 
             } else if (elements[0] == '$') {
                 // Devices
