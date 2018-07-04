@@ -217,7 +217,6 @@ std::vector<std::vector<std::string>> File::receive_list_files(dropbox_util::fil
         std::fill(buffer, buffer + sizeof(buffer), 0);
         received_bytes = recvfrom(request.socket, buffer, sizeof(buffer), 0, (struct sockaddr *) &client_addr, &request.peer_length);
         if(received_bytes < 0) {
-            // TODO Retry?
             throw std::runtime_error("Error receiving packet from client");
         }
         writable_packet = received_bytes > 1 || (received_bytes == 1 && buffer[0] != EOF_SYMBOL);

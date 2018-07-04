@@ -10,7 +10,6 @@
 namespace filesystem = boost::filesystem;
 
 namespace dropbox_util {
-    // TODO Acho que devia se chamar algo como TransferHelper
     class File {
     public:
         File();

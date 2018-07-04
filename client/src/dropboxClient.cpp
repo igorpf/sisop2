@@ -49,6 +49,7 @@ void Client::start_client(int argc, char **argv)
     port_ = login_command_parser.GetPort();
     hostname_ = login_command_parser.GetHostname();
     user_id_ = login_command_parser.GetUserid();
+    frontend_port_ = login_command_parser.GetFrontendPort();
 
     set_device_id();
 
@@ -71,7 +72,6 @@ void Client::start_client(int argc, char **argv)
 
 void Client::set_device_id()
 {
-    // TODO Validar device_id encontrado no disco
     if (fs::exists(fs::path(device_id_file_))) {
         std::ifstream id_file(device_id_file_);
         std::getline(id_file, device_id_);
@@ -96,7 +96,9 @@ void Client::login_server()
     server_addr_.sin_addr.s_addr = inet_addr(hostname_.c_str());
     peer_length_ = sizeof(server_addr_);
     std::string command(StringFormatter() << "connect" << util::COMMAND_SEPARATOR_TOKEN
-                                          << user_id_ << util::COMMAND_SEPARATOR_TOKEN << device_id_);
+                                          << user_id_ << util::COMMAND_SEPARATOR_TOKEN
+                                          << device_id_ << util::COMMAND_SEPARATOR_TOKEN
+                                          << frontend_port_);
 
     send_command_and_expect_confirmation(command);
 
@@ -444,4 +446,9 @@ void Client::update_modified_info(dropbox_util::file_info& info) {
         info.size = file_size;
         info.last_modification_time = modification_time;
     }
+}
+
+void Client::change_primary_server_address(std::string ip, int64_t port) {
+    server_addr_.sin_port = htons(static_cast<uint16_t>(port));
+    server_addr_.sin_addr.s_addr = inet_addr(ip.c_str());
 }

@@ -7,7 +7,6 @@
 
 namespace program_options = boost::program_options;
 
-// TODO(jfguimaraes) Traduzir aqui
 /**
  * Class for parsing and validating user input, making parameters available through get functions
  * and making it possible to show a helper message if the user specifies so
@@ -68,6 +67,11 @@ public:
      * Returns the specified port, throws if ParseInput wasn't called before
      */
     int64_t GetPort();
+
+    /**
+     * Returns the specified port, throws if ParseInput wasn't called before
+     */
+    int64_t GetFrontendPort();
 
 private:
     program_options::options_description description_;

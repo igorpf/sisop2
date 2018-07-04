@@ -9,7 +9,6 @@
 
 #include <netinet/in.h>
 
-//TODO(jfguimaraes) Tornar Util uma biblioteca
 
 namespace filesystem = boost::filesystem;
 
@@ -24,7 +23,13 @@ namespace dropbox_util {
     const int32_t MAX_VALID_PORT = 60000;
     const std::string LOOPBACK_IP = "127.0.0.1";
     const std::string COMMAND_SEPARATOR_TOKEN = ";";
+    const std::string USER_LIST_SEPARATOR_TOKEN = "@";
+    const std::string USER_INFO_SEPARATOR_TOKEN = "%";
+    const std::string DEVICE_FILE_SEPARATOR_TOKEN = "&";
+    const std::string DEVICE_INITIAL_TOKEN = "$";
+    const std::string FILE_INITIAL_TOKEN = "#";
     const std::string ERROR_MESSAGE_INITIAL_TOKEN = "!ERROR: ";
+    const std::string CHECK_PRIMARY_SERVER_MESSAGE = "ping";
 
     template <typename Collection, typename UnaryOperator>
     Collection map(Collection col, UnaryOperator op) {
@@ -53,10 +58,22 @@ namespace dropbox_util {
         std::string in_file_path;
     };
 
+    struct device {
+        std::string device_id;
+        std::string ip;
+        int64_t port;
+        int64_t frontend_port;
+    };
+
     struct client_info {
         std::string user_id;
-        std::vector<std::string> user_devices;
+        std::vector<device> user_devices;
         std::vector<file_info> user_files;
+    };
+
+    struct replica_manager {
+        std::string ip;
+        int64_t port;
     };
 
     struct new_client_param_list {
@@ -67,6 +84,9 @@ namespace dropbox_util {
         int32_t port;
         SOCKET socket;
         client_info &info;
+        int64_t frontend_port;
+        pthread_mutex_t &clients_buffer_mutex;
+        std::vector<dropbox_util::client_info> &clients_buffer;
     };
 
     /// Funções de utilidade geral

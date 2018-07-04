@@ -8,10 +8,11 @@
 #include "../include/sync_thread.hpp"
 #include "../include/shell.hpp"
 #include "../../util/include/LoggerFactory.hpp"
+#include "../include/FrontendThread.hpp"
 
 int main(int argc, char* argv[])
 {
-    auto logger = spdlog::stdout_color_mt("ClientMain");
+    auto logger = LoggerWrapper("ClientMain", true);
 
     try {
         Client client;
@@ -24,11 +25,16 @@ int main(int argc, char* argv[])
         SyncThread sync_thread(client);
         sync_thread.Start();
 
+        FrontendThread frontend_thread(client);
+        frontend_thread.parse_command_line_input(argc, argv);
+        frontend_thread.Start();
+
         Shell shell(client);
         shell.loop();
 
         file_watcher.Join();
         sync_thread.Join();
+        frontend_thread.Join();
     } catch (std::exception &exception) {
         logger->error(exception.what());
     }

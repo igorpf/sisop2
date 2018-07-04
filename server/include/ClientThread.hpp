@@ -15,6 +15,9 @@ struct client_thread_param_list {
     dropbox_util::SOCKET socket;
     dropbox_util::client_info &info;
     pthread_mutex_t &client_info_mutex;
+    int64_t frontend_port;
+    pthread_mutex_t &clients_buffer_mutex;
+    std::vector<dropbox_util::client_info> &clients_buffer;
 };
 
 /**
@@ -22,15 +25,13 @@ struct client_thread_param_list {
  */
 class ClientThread : public PThreadWrapper {
 public:
-    ClientThread(client_thread_param_list param_list);
-
+    explicit ClientThread(client_thread_param_list param_list);
 
     /**
      * Envia um arquivo para o cliente (download)
      */
     void send_file(const std::string& filename, const std::string &user_id);
 
-    // TODO O servidor recebe instruções de manipulação de arquivos sem timestamp, executando sempre
     // Isso pode ser um problema se dois clientes modificam um arquivo mas enviam as modificações na ordem errada
     /**
      * Recebe um arquivo do cliente (upload)
@@ -41,8 +42,6 @@ public:
      * Remove um arquivo do cliente (remove)
      */
     void delete_file(const std::string& filename, const std::string &user_id);
-
-    void add_file(const dropbox_util::file_info &received_file_info);
 
     /**
      * Envia a lista de arquivos do usuário no servidor no formato
@@ -80,11 +79,19 @@ public:
 protected:
     void Run() override;
 private:
+    /**
+     * Saves the client info change on the buffer to be replicated to backup servers
+     */
+    void save_client_change_to_buffer();
+
+    void init_client_address();
+
     std::string logger_name_;
     LoggerWrapper logger_;
 
     std::string ip_;
     int32_t port_;
+    int64_t frontend_port;
     std::string user_id_;
     std::string device_id_;
 
@@ -95,9 +102,10 @@ private:
     std::string local_directory_;
 
     dropbox_util::client_info &info_;
+    pthread_mutex_t &clients_buffer_mutex_;
+    std::vector<dropbox_util::client_info> &clients_buffer_;
 
     pthread_mutex_t &client_info_mutex_;
-    void init_client_address();
 
     std::function<void()> logout_callback_;
 };

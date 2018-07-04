@@ -12,11 +12,13 @@ LoginCommandParser::LoginCommandParser() {
             ("userid", program_options::value<std::string>(), "user identifier")
             ("hostname", program_options::value<std::string>(), "server hostname")
             ("port", program_options::value<int64_t>(), "server port")
+            ("frontendport", program_options::value<int64_t>(), "frontend port")
             ;
 
     positional_description_.add("userid", 1);
     positional_description_.add("hostname", 1);
     positional_description_.add("port", 1);
+    positional_description_.add("frontendport", 1);
 }
 
 void LoginCommandParser::ParseInput(int argc, char **argv) {
@@ -29,7 +31,8 @@ void LoginCommandParser::ParseInput(int argc, char **argv) {
     bool help_specified = variables_map_.count("help") > 0;
     bool client_info_specified = variables_map_.count("userid") > 0 &&
                                  variables_map_.count("hostname") > 0 &&
-                                 variables_map_.count("port") > 0;
+                                 variables_map_.count("port") > 0 &&
+                                 variables_map_.count("frontendport") > 0;
 
     if (!help_specified && !client_info_specified)
         throw std::runtime_error("missing parameters, use --help or -h for usage info");
@@ -54,10 +57,14 @@ void LoginCommandParser::ValidateInput() {
     if (error_code)
         throw std::runtime_error("Invalid hostname: " + error_code.message());
 
-    auto port = variables_map_["port"].as<int64_t>();
+    auto server_port = variables_map_["port"].as<int64_t>(),
+         frontend_port = variables_map_["frontendport"].as<int64_t>();
 
-    if (port < 0 || port > 65536)
+    if (server_port < 0 || server_port > 65536)
         throw std::runtime_error("Invalid port");
+
+    if (frontend_port < 0 || frontend_port > 65536)
+        throw std::runtime_error("Invalid frontend port");
 }
 
 bool LoginCommandParser::ShowHelpMessage() {
@@ -92,4 +99,11 @@ int64_t LoginCommandParser::GetPort() {
         throw std::runtime_error("No port available");
 
     return variables_map_["port"].as<int64_t >();
+}
+
+int64_t LoginCommandParser::GetFrontendPort() {
+    if (variables_map_.count("frontendport") == 0)
+        throw std::runtime_error("No port available");
+
+    return variables_map_["frontendport"].as<int64_t >();
 }

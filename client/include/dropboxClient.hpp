@@ -59,6 +59,8 @@ public:
      */
     void close_session() override;
 
+    void change_primary_server_address(std::string ip, int64_t port) override;
+
 private:
     /**
      * Verifica se existe um id salvo no disco e o utiliza
@@ -99,6 +101,7 @@ private:
 
     const std::string device_id_file_ = ".device_id";
 
+    int64_t frontend_port_;
     int64_t port_;
     std::string hostname_;
     struct sockaddr_in server_addr_;

@@ -12,8 +12,8 @@
 class LoggerWrapper {
 public:
 
-    explicit LoggerWrapper(const std::string &logger_name, bool is_stdout = false) : logger_name_(logger_name) {
-        logger_ = LoggerFactory::getLoggerForName(logger_name);
+    explicit LoggerWrapper(const std::string &logger_name, bool is_stdout = false, bool debug_enabled = false) : logger_name_(logger_name) {
+        logger_ = LoggerFactory::getLoggerForName(logger_name, is_stdout, debug_enabled);
     }
 
     virtual ~LoggerWrapper() {
