@@ -50,9 +50,6 @@ void Server::start(int argc, char **argv) {
     is_primary_ = loginParser.isPrimary();
 
     local_directory_ = StringFormatter() << home_folder << "/dropbox_server";
-    // TODO(jfguimaraes) Remover, somente para teste do servidor de backup local
-    if (!is_primary_)
-        local_directory_.append("_backup");
     fs::create_directory(local_directory_);
     thread_pool_.set_local_directory(local_directory_);
 

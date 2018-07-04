@@ -9,7 +9,6 @@
 
 #include <netinet/in.h>
 
-//TODO(jfguimaraes) Tornar Util uma biblioteca
 
 namespace filesystem = boost::filesystem;
 
