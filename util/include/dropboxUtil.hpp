@@ -24,6 +24,11 @@ namespace dropbox_util {
     const int32_t MAX_VALID_PORT = 60000;
     const std::string LOOPBACK_IP = "127.0.0.1";
     const std::string COMMAND_SEPARATOR_TOKEN = ";";
+    const std::string USER_LIST_SEPARATOR_TOKEN = "@";
+    const std::string USER_INFO_SEPARATOR_TOKEN = "%";
+    const std::string DEVICE_FILE_SEPARATOR_TOKEN = "&";
+    const std::string DEVICE_INITIAL_TOKEN = "$";
+    const std::string FILE_INITIAL_TOKEN = "#";
     const std::string ERROR_MESSAGE_INITIAL_TOKEN = "!ERROR: ";
     const std::string CHECK_PRIMARY_SERVER_MESSAGE = "ping";
 
@@ -67,6 +72,11 @@ namespace dropbox_util {
         std::vector<file_info> user_files;
     };
 
+    struct replica_manager {
+        std::string ip;
+        int64_t port;
+    };
+
     struct new_client_param_list {
         std::string user_id;
         std::string device_id;
@@ -76,6 +86,8 @@ namespace dropbox_util {
         SOCKET socket;
         client_info &info;
         int64_t frontend_port;
+        pthread_mutex_t &clients_buffer_mutex;
+        std::vector<dropbox_util::client_info> &clients_buffer;
     };
 
     /// Funções de utilidade geral

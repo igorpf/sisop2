@@ -72,7 +72,6 @@ void Client::start_client(int argc, char **argv)
 
 void Client::set_device_id()
 {
-    // TODO Validar device_id encontrado no disco
     if (fs::exists(fs::path(device_id_file_))) {
         std::ifstream id_file(device_id_file_);
         std::getline(id_file, device_id_);

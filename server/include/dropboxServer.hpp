@@ -1,26 +1,22 @@
 #ifndef SISOP2_SERVER_INCLUDE_DROPBOXSERVER_HPP
 #define SISOP2_SERVER_INCLUDE_DROPBOXSERVER_HPP
 
-#include "../../util/include/dropboxUtil.hpp"
-#include "ClientThreadPool.hpp"
-#include "../../util/include/LoggerFactory.hpp"
-#include "../../util/include/logger_wrapper.hpp"
-#include "PrimaryServerConnectivityDetectorThread.hpp"
-
 #include <string>
 #include <vector>
-
 #include <netinet/in.h>
 #include <spdlog/spdlog.h>
+
+#include "../../util/include/dropboxUtil.hpp"
+#include "../../util/include/LoggerFactory.hpp"
+#include "../../util/include/logger_wrapper.hpp"
+
+#include "PrimaryServerConnectivityDetectorThread.hpp"
+#include "ClientThreadPool.hpp"
+#include "backup_sync_thread.hpp"
 
 struct new_client_connection_info {
     dropbox_util::SOCKET socket;
     int32_t port;
-};
-
-struct replica_manager {
-    std::string ip;
-    int64_t port;
 };
 
 class Server {
@@ -84,9 +80,24 @@ private:
      */
     void register_in_primary_server();
 
+    /**
+     * Saves the client info change on the buffer to be replicated to backup servers
+     */
+    void save_client_change_to_buffer(const std::string& user_id);
+
     void add_backup_server();
 
     void notify_new_elected_server_to_clients();
+
+    void send_replica_manager_list() const;
+
+    void parse_replica_list(std::vector<std::string> replicas);
+
+    void parse_backup_list(const std::string& client_info_list);
+
+    void send_command_and_expect_confirmation(const std::string& command);
+
+    void get_file(const std::string& filename, const std::string& user_id);
 
     void start_election();
 
@@ -94,9 +105,9 @@ private:
 
     void notify_elected_server_to_next_participant(int64_t id);
 
-    replica_manager get_next_replica_in_ring();
+    dropbox_util::replica_manager get_next_replica_in_ring();
 
-    replica_manager get_new_primary_server(int64_t id);
+    dropbox_util::replica_manager get_new_primary_server(int64_t id);
 
     void remove_new_primary_server_from_backup_list(int64_t id);
 
@@ -118,20 +129,24 @@ private:
     int32_t port_;
     int32_t next_client_port_ = dropbox_util::DEFAULT_SERVER_PORT;
     struct sockaddr_in server_addr_ {0};
+    struct sockaddr_in primary_server_thread_addr_ {0};
     struct sockaddr_in current_client_ {0};
     dropbox_util::SOCKET socket_;
     socklen_t peer_length_;
 
+    mutable pthread_mutex_t socket_mutex_ = PTHREAD_MUTEX_INITIALIZER;
+
     std::string local_directory_;
     ClientThreadPool thread_pool_;
+    BackupSyncThread backup_sync_thread_;
 
-    // Data structures that need to be synchronized
     std::vector<dropbox_util::client_info> clients_;
-    std::vector<replica_manager> replica_managers;
 
-    void send_replica_manager_list() const;
+    mutable pthread_mutex_t replica_managers_mutex_ = PTHREAD_MUTEX_INITIALIZER;
+    std::vector<dropbox_util::replica_manager> replica_managers_;
 
-    void parse_replica_list(std::vector<std::string> replicas);
+    pthread_mutex_t clients_buffer_mutex_ = PTHREAD_MUTEX_INITIALIZER;
+    std::vector<dropbox_util::client_info> clients_buffer_;
 };
 
 #endif // SISOP2_SERVER_INCLUDE_DROPBOXSERVER_HPP

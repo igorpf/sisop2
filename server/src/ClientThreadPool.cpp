@@ -1,6 +1,9 @@
+#include "../include/ClientThreadPool.hpp"
+
 #include <memory>
 #include <arpa/inet.h>
-#include "../include/ClientThreadPool.hpp"
+
+
 
 void ClientThreadPool::add_client(dropbox_util::new_client_param_list client_param_list) {
     auto client_lock_iterator = locks_.find(client_param_list.user_id);
@@ -13,7 +16,9 @@ void ClientThreadPool::add_client(dropbox_util::new_client_param_list client_par
                 client_param_list.user_id, client_param_list.device_id, local_directory_,
                 client_param_list.logger_name, client_param_list.ip,
                 client_param_list.port, client_param_list.socket, client_param_list.info,
-                locks_.find(client_param_list.user_id)->second
+                locks_.find(client_param_list.user_id)->second,
+                client_param_list.frontend_port,
+                client_param_list.clients_buffer_mutex, client_param_list.clients_buffer
             };
 
     auto client = std::make_shared<ClientThread>(param_list);
@@ -21,6 +26,13 @@ void ClientThreadPool::add_client(dropbox_util::new_client_param_list client_par
     client->setLogoutCallback(std::bind(remove_client_thread_wrapper, std::ref(*this), client_param_list.user_id,
                                         client_param_list.device_id));
     client->Start();
+}
+
+void ClientThreadPool::add_backup_server(const std::string& logger_name, const std::string& ip,
+                                         int64_t port, dropbox_util::SOCKET socket) {
+    auto backup_thread = std::make_shared<BackupFileSyncThread>(logger_name, ip, port, socket, locks_, local_directory_);
+    backup_threads_.emplace_back(backup_thread);
+    backup_thread->Start();
 }
 
 void ClientThreadPool::set_local_directory(const std::string &local_directory) {

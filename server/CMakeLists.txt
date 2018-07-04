@@ -13,19 +13,28 @@ find_package(spdlog CONFIG REQUIRED)
 # Add the executable
 add_executable(dropboxServer
         ../util/include/dropboxUtil.hpp
-        ../util/src/dropboxUtil.cpp
         ../util/include/File.hpp
+        ../util/include/logger_wrapper.hpp
+        ../util/include/LoggerFactory.hpp
+        ../util/include/pthread_wrapper.hpp
+        ../util/src/dropboxUtil.cpp
         ../util/src/File.cpp
-        include/dropboxServer.hpp
-        src/dropboxServer.cpp
-        src/main.cpp
-        src/ClientThread.cpp
-        include/ClientThread.hpp
-        src/ClientThreadPool.cpp
-        include/ClientThreadPool.hpp
-        src/main.cpp
         ../util/src/LoggerFactory.cpp
-        ../util/include/LoggerFactory.hpp ../util/include/logger_wrapper.hpp src/server_login_parser.cpp include/server_login_parser.hpp src/PrimaryServerConnectivityDetectorThread.cpp include/PrimaryServerConnectivityDetectorThread.hpp)
+        include/server_login_parser.hpp
+        include/ClientThread.hpp
+        include/ClientThreadPool.hpp
+        include/PrimaryServerConnectivityDetectorThread.hpp
+        include/backup_sync_thread.hpp
+        include/backup_file_sync_thread.hpp
+        include/dropboxServer.hpp
+        src/server_login_parser.cpp
+        src/ClientThread.cpp
+        src/ClientThreadPool.cpp
+        src/PrimaryServerConnectivityDetectorThread.cpp
+        src/backup_sync_thread.cpp
+        src/backup_file_sync_thread.cpp
+        src/dropboxServer.cpp
+        src/main.cpp)
 
 # Target libraries
 target_link_libraries(dropboxServer PUBLIC Boost::system Boost::program_options Boost::filesystem spdlog::spdlog pthread -static-libstdc++)
