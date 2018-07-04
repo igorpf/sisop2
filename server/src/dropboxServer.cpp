@@ -596,6 +596,7 @@ void Server::notify_new_elected_server_to_clients() {
 
 void Server::continue_election(int64_t id) {
     auto next_server = get_next_replica_in_ring();
+    logger_->info("Continue election to backup {} {}", next_server.ip, next_server.port);
     struct sockaddr_in primary_server_addr {0};
     primary_server_addr.sin_family = AF_INET;
     primary_server_addr.sin_port = htons(static_cast<uint16_t>(next_server.port));
@@ -646,6 +647,7 @@ void Server::notify_elected_server_to_next_participant(int64_t id) {
         primary_server_addr.sin_family = AF_INET;
         primary_server_addr.sin_port = htons(static_cast<uint16_t>(next_server.port));
         primary_server_addr.sin_addr.s_addr = inet_addr(next_server.ip.c_str());
+        logger_->info("Notify elected {} to backup {} {}", id, next_server.ip, next_server.port);
 
         std::string command = StringFormatter() << "elected" << dropbox_util::COMMAND_SEPARATOR_TOKEN << id;
         sendto(socket_, command.c_str() , command.size(), 0, (struct sockaddr *)&primary_server_addr, sizeof(primary_server_addr));
