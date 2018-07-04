@@ -165,8 +165,6 @@ void Server::parse_command(const std::string &command_line) {
         add_backup_server();
     }
     else if (command == dropbox_util::CHECK_PRIMARY_SERVER_MESSAGE) {
-//        logger_->info("dei sinal de vida pro client {} port {}",
-//                       inet_ntoa(current_client_.sin_addr), ntohs(current_client_.sin_port));
         send_command_confirmation(current_client_);
     }
     else if (command == "replica_list") {
@@ -174,7 +172,6 @@ void Server::parse_command(const std::string &command_line) {
         parse_replica_list(tokens);
     }
     else if (command == "backup_sync") {
-//        send_command_confirmation(current_client_);
         parse_backup_list(tokens[1]);
     }
     else if (command == "election") {
@@ -631,17 +628,6 @@ dropbox_util::replica_manager Server::get_next_replica_in_ring() {
 }
 
 void Server::notify_elected_server_to_next_participant(int64_t id) {
-//                    auto new_manager = replica_managers[0];
-//                    if (new_manager.port == port_) { //this is the new server
-//                        serverConnectivityDetectorThread.stop();
-//                        notify_new_elected_server_to_clients();
-//                    } else {
-//                        // point to new primary server
-//                        primary_server_port_ = new_manager.port;
-//                        primary_server_ip = new_manager.ip;
-//                        serverConnectivityDetectorThread.setPrimaryServerIp(primary_server_ip);
-//                        serverConnectivityDetectorThread.setPrimaryServerPort(primary_server_port_);
-//                    }
     if (id == id_) {
         // the message has passed by everyone
         logger_->info("I have been elected!");
