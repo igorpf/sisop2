@@ -635,7 +635,6 @@ void Server::notify_elected_server_to_next_participant(int64_t id) {
         notify_new_elected_server_to_clients();
     } else {
         auto new_server = get_new_primary_server(id);
-//        remove_new_primary_server_from_backup_list(id);
         primary_server_port_ = new_server.port;
         primary_server_ip = new_server.ip;
         serverConnectivityDetectorThread.setPrimaryServerIp(primary_server_ip);
@@ -652,6 +651,9 @@ void Server::notify_elected_server_to_next_participant(int64_t id) {
         sendto(socket_, command.c_str() , command.size(), 0, (struct sockaddr *)&primary_server_addr, sizeof(primary_server_addr));
 
         serverConnectivityDetectorThread.proceed_after_election();
+
+        remove_new_primary_server_from_backup_list(id);
+        send_replica_manager_list();
     }
 }
 
@@ -678,10 +680,8 @@ dropbox_util::replica_manager Server::get_new_primary_server(int64_t id) {
 }
 
 void Server::remove_new_primary_server_from_backup_list(int64_t id) {
-    auto server_iterator = std::find_if(replica_managers_.begin(), replica_managers_.end(),
-                      [&id] (const dropbox_util::replica_manager& r) -> bool {return id == r.port;});
-    if (server_iterator != replica_managers_.end()) {
-        replica_managers_.erase(server_iterator);
-    }
+    replica_managers_.erase(std::remove_if(replica_managers_.begin(), replica_managers_.end(),
+                                           [&id] (const dropbox_util::replica_manager& r) -> bool
+                                           {return id == r.port;}),
+                            replica_managers_.end());
 }
-
